@@ -1,7 +1,7 @@
 /**
  *  @ignore
  */
-export function wrapObjectKeysInBrackets<T>(
+export function wrapObjectKeysInBrackets<T extends Record<string, unknown>>(
   inputObj: T
 ): Record<string, T[keyof T]> {
   return Object.entries(inputObj).reduce(

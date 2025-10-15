@@ -1,7 +1,7 @@
 /**
  * @ignore
  */
-export function prefixObjectKeys<T>(
+export function prefixObjectKeys<T extends Record<string, unknown>>(
   inputObject: T,
   prefix: string
 ): Record<string, T[keyof T]> {
