@@ -9,3 +9,7 @@ export * from './lib/core/interfaces/survey-respondent.interface';
 export * from './lib/surveys/inline-survey/inline-survey';
 export * from './lib/surveys/modal-survey/modal-survey';
 export * from './lib/surveys/window-survey/window-survey';
+export * from './lib/surveys/button-trigger-survey/button-trigger-survey';
+export * from './lib/surveys/button-trigger-survey/button-trigger-survey-config.interface';
+export * from './lib/surveys/button-trigger-survey/button-position.type';
+export * from './lib/surveys/button-trigger-survey/button-style-preset.type';

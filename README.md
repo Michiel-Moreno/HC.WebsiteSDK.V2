@@ -134,6 +134,118 @@ Please consult the docs for more [configuration options](https://hellocustomer.g
   ```
 Please consult the docs for more [configuration options](https://hellocustomer.github.io/HC.WebsiteSDK.V2/interfaces/windowsurveyconfig.html).
 
+***
+
+### Button Trigger Survey
+The Button Trigger Survey creates a floating feedback button that can trigger any survey type or custom action. Unlike other survey types, it doesn't require a UrlBuilder - just an `onTrigger` callback.
+
+#### Example - Basic usage (script tag)
+```html
+<script src="https://resources.hellocustomer.com/hubfs/HC.WebsiteSDK.V2/website-touchpoint-v2.js"></script>
+<script>
+    // Create URL builder and modal survey
+    const urlBuilder = new hcWebsiteTouchpoint.UrlBuilder({
+      baseUrl: 'https://base.com',
+      tenantId: 'xxx',
+      touchPointId: 'zzzzz',
+      language: 'EN'
+    });
+
+    const modalSurvey = new hcWebsiteTouchpoint.ModalSurvey(urlBuilder, {
+      showByDefault: false
+    });
+
+    // Create button trigger
+    const feedbackButton = new hcWebsiteTouchpoint.ButtonTriggerSurvey({
+      position: 'bottom-right',
+      stylePreset: 'pill-button',
+      text: 'Give Feedback',
+      onTrigger: () => modalSurvey.show()
+    });
+</script>
+```
+
+#### Available Positions
+- `bottom-right`, `bottom-left`, `top-right`, `top-left` (corners)
+- `left-center`, `right-center` (side tabs)
+- `bottom-center`, `top-center` (banners)
+
+#### Style Presets
+
+**Pill Button** (default) - Rounded button with text and optional icon
+```js
+const button = new hcWebsiteTouchpoint.ButtonTriggerSurvey({
+  position: 'bottom-right',
+  stylePreset: 'pill-button',
+  text: 'Feedback',
+  onTrigger: () => modalSurvey.show()
+});
+```
+
+**Circle Button** - Circular button with icon only
+```js
+const button = new hcWebsiteTouchpoint.ButtonTriggerSurvey({
+  position: 'bottom-left',
+  stylePreset: 'circle-button',
+  icon: '<svg>...</svg>',
+  onTrigger: () => modalSurvey.show()
+});
+```
+
+**Side Tab** - Vertical tab on left or right edge
+```js
+const button = new hcWebsiteTouchpoint.ButtonTriggerSurvey({
+  position: 'right-center',
+  stylePreset: 'side-tab',
+  text: 'Feedback',
+  onTrigger: () => windowSurvey.open()
+});
+```
+
+**Banner** - Full-width banner at top or bottom
+```js
+const button = new hcWebsiteTouchpoint.ButtonTriggerSurvey({
+  position: 'top-center',
+  stylePreset: 'banner',
+  text: 'We value your feedback - Click here to share',
+  onTrigger: () => modalSurvey.show()
+});
+```
+
+#### Custom Styling Example
+```js
+const button = new hcWebsiteTouchpoint.ButtonTriggerSurvey({
+  position: 'bottom-right',
+  stylePreset: 'pill-button',
+  text: 'Custom Button',
+  onTrigger: () => modalSurvey.show(),
+  customStyle: {
+    buttonStyle: {
+      backgroundColor: '#ff6b6b',
+      color: 'white',
+      fontSize: '16px'
+    }
+  }
+});
+```
+
+#### Button Quarantine
+You can set a quarantine period for the button visibility (independent of survey quarantine):
+```js
+const button = new hcWebsiteTouchpoint.ButtonTriggerSurvey({
+  position: 'bottom-right',
+  text: 'Feedback',
+  onTrigger: () => modalSurvey.show(),
+  quarantineConfig: {
+    period: 7 // Don't show button for 7 days after it's shown
+  }
+});
+```
+
+Please consult the docs for more [configuration options](https://hellocustomer.github.io/HC.WebsiteSDK.V2/interfaces/buttontriggersurveyconfig.html).
+
+***
+
 ## Quarantine
   It is possible to set a quarantine period for any survey type - once the survey is opened, it defines how many days should elapse before the survey could be shown again. Quarantine is applied per touchpoint (touchpointId).
   #### Example (inline survey)
