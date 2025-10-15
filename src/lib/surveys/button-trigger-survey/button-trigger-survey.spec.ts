@@ -1019,4 +1019,67 @@ describe('ButtonTriggerSurvey', () => {
       expect(onHide).toHaveBeenCalled();
     });
   });
+
+  describe('M. Dynamic URL Updates Tests', () => {
+    test('should handle updateUrlConfig gracefully (no urlFactory)', () => {
+      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
+
+      const config: ButtonTriggerSurveyConfig = {
+        position: 'bottom-right',
+        text: 'Feedback',
+        onTrigger: noop,
+      };
+
+      const survey = new ButtonTriggerSurvey(config);
+
+      // Should not throw
+      expect(() => {
+        survey.updateUrlConfig({ extra: { test: 'value' } });
+      }).not.toThrow();
+
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('no URL factory available'),
+      );
+
+      consoleSpy.mockRestore();
+    });
+
+    test('should not have updateAndReload method', () => {
+      const config: ButtonTriggerSurveyConfig = {
+        position: 'bottom-right',
+        text: 'Feedback',
+        onTrigger: noop,
+      };
+
+      const survey = new ButtonTriggerSurvey(config);
+
+      // ButtonTriggerSurvey should not have updateAndReload because it has no iframe
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      expect((survey as any).updateAndReload).toBeUndefined();
+    });
+
+    test('should not crash with multiple updateUrlConfig calls', () => {
+      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
+
+      const config: ButtonTriggerSurveyConfig = {
+        position: 'bottom-right',
+        text: 'Feedback',
+        onTrigger: noop,
+      };
+
+      const survey = new ButtonTriggerSurvey(config);
+
+      // Should handle multiple calls gracefully
+      expect(() => {
+        survey.updateUrlConfig({ extra: { step: '1' } });
+        survey.updateUrlConfig({ extra: { step: '2' } });
+        survey.updateUrlConfig({ language: 'FR' });
+      }).not.toThrow();
+
+      // Should have warned 3 times
+      expect(consoleSpy).toHaveBeenCalledTimes(3);
+
+      consoleSpy.mockRestore();
+    });
+  });
 });

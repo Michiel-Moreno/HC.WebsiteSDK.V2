@@ -52,6 +52,7 @@ describe('WindowSurvey', () => {
           .fn()
           .mockReturnValue('https://example.com/survey?entry.test=value'),
         getSurveyIdentifier: jest.fn().mockReturnValue('test-survey-id'),
+        patchConfig: jest.fn(),
       }),
     } as unknown as UrlBuilder;
   });
@@ -539,6 +540,81 @@ describe('WindowSurvey', () => {
       // destroy() calls close() internally, so both should be called
       expect(onClose).toHaveBeenCalled();
       expect(onDestroy).toHaveBeenCalled();
+    });
+  });
+
+  describe('I. Dynamic URL Updates Tests', () => {
+    test('should update URL config for next open()', () => {
+      const config: WindowSurveyConfig = {
+        openOnCreation: false,
+      };
+
+      const survey = new WindowSurvey(mockUrlBuilder, config);
+      const urlFactory = mockUrlBuilder.getUrlFactory();
+
+      const patchConfigSpy = jest.spyOn(urlFactory, 'patchConfig');
+
+      survey.updateUrlConfig({
+        extra: { source: 'email' },
+      });
+
+      expect(patchConfigSpy).toHaveBeenCalledWith({
+        extra: { source: 'email' },
+      });
+    });
+
+    test('should use updated URL when opening window', () => {
+      const config: WindowSurveyConfig = {
+        openOnCreation: false,
+      };
+
+      const survey = new WindowSurvey(mockUrlBuilder, config);
+      const urlFactory = mockUrlBuilder.getUrlFactory();
+
+      const newUrl =
+        'https://example.com/survey?entry.test=value&entry.source=email';
+      (urlFactory.getUrlWithParams as jest.Mock).mockReturnValue(newUrl);
+
+      survey.updateUrlConfig({ extra: { source: 'email' } });
+      survey.open();
+
+      expect(windowOpenSpy).toHaveBeenCalledWith(newUrl, '_blank');
+    });
+
+    test('should not have updateAndReload method', () => {
+      const config: WindowSurveyConfig = {
+        openOnCreation: false,
+      };
+
+      const survey = new WindowSurvey(mockUrlBuilder, config);
+
+      // WindowSurvey should not have updateAndReload because popups can't be reloaded
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      expect((survey as any).updateAndReload).toBeUndefined();
+    });
+
+    test('should work with multiple sequential config updates', () => {
+      const config: WindowSurveyConfig = {
+        openOnCreation: false,
+      };
+
+      const survey = new WindowSurvey(mockUrlBuilder, config);
+      const urlFactory = mockUrlBuilder.getUrlFactory();
+
+      const patchConfigSpy = jest.spyOn(urlFactory, 'patchConfig');
+
+      survey.updateUrlConfig({ extra: { step: '1' } });
+      survey.updateUrlConfig({ extra: { step: '2' } });
+      survey.updateUrlConfig({ language: 'FR' });
+
+      expect(patchConfigSpy).toHaveBeenCalledTimes(3);
+      expect(patchConfigSpy).toHaveBeenNthCalledWith(1, {
+        extra: { step: '1' },
+      });
+      expect(patchConfigSpy).toHaveBeenNthCalledWith(2, {
+        extra: { step: '2' },
+      });
+      expect(patchConfigSpy).toHaveBeenNthCalledWith(3, { language: 'FR' });
     });
   });
 });

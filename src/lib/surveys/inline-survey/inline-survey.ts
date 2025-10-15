@@ -106,6 +106,32 @@ export class InlineSurvey extends BaseSurvey<InlineSurveyConfig> {
   }
 
   /**
+   * Update survey configuration and reload iframe automatically
+   * Convenience method that combines updateUrlConfig() and reload()
+   *
+   * @param patch - Partial config to merge with existing
+   *
+   * @example
+   * ```typescript
+   * // User logs in - update metadata and reload
+   * user.onLogin((userData) => {
+   *   survey.updateAndReload({
+   *     extra: {
+   *       respondent: {
+   *         id: userData.id,
+   *         email: userData.email,
+   *       }
+   *     }
+   *   });
+   * });
+   * ```
+   */
+  public updateAndReload(patch: Record<string, unknown>): void {
+    this.updateUrlConfig(patch);
+    this.reload();
+  }
+
+  /**
    * Destroy survey iframe
    */
   public destroy(): void {

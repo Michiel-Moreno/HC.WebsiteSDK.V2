@@ -121,4 +121,43 @@ export abstract class BaseSurvey<TConfig extends BaseSurveyConfig> {
   public clearQuarantine(): void {
     this.quarantineService.clearQuarantine();
   }
+
+  /**
+   * Update survey URL configuration dynamically
+   * Only affects URL parameters, not DOM structure
+   *
+   * Note: Changes take effect on next reload() call for surveys with iframes
+   *
+   * @param patch - Partial config to merge with existing
+   *
+   * @example
+   * ```typescript
+   * // Add user metadata after login
+   * survey.updateUrlConfig({
+   *   extra: {
+   *     respondent: { id: '123', email: 'user@example.com' }
+   *   }
+   * });
+   * survey.reload(); // Apply changes
+   * ```
+   *
+   * @example
+   * ```typescript
+   * // Update language dynamically
+   * survey.updateUrlConfig({
+   *   language: 'FR'
+   * });
+   * survey.reload();
+   * ```
+   */
+  public updateUrlConfig(patch: Record<string, unknown>): void {
+    if (!this.urlFactory) {
+      console.warn(
+        '[Hello Customer SDK] updateUrlConfig called but no URL factory available. ' +
+          'This survey type does not support URL configuration updates.',
+      );
+      return;
+    }
+    this.urlFactory.patchConfig(patch);
+  }
 }

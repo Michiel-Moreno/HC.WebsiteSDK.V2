@@ -154,6 +154,29 @@ export class ModalSurvey extends BaseSurvey<ModalSurveyConfig> {
   }
 
   /**
+   * Update survey configuration and reload iframe automatically
+   * Convenience method that combines updateUrlConfig() and reload()
+   *
+   * @param patch - Partial config to merge with existing
+   *
+   * @example
+   * ```typescript
+   * // Update metadata when user selects option
+   * selectElement.addEventListener('change', (e) => {
+   *   modalSurvey.updateAndReload({
+   *     extra: {
+   *       selectedOption: e.target.value
+   *     }
+   *   });
+   * });
+   * ```
+   */
+  public updateAndReload(patch: Record<string, unknown>): void {
+    this.updateUrlConfig(patch);
+    this.reload();
+  }
+
+  /**
    * Destroy modal and clean up all event listeners
    * Removes modal from DOM and prevents memory leaks
    */

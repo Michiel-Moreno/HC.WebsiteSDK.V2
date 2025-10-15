@@ -44,6 +44,7 @@ describe('InlineSurvey', () => {
           .fn()
           .mockReturnValue('https://example.com/survey?entry.test=value'),
         getSurveyIdentifier: jest.fn().mockReturnValue('test-survey-id'),
+        patchConfig: jest.fn(),
       }),
     } as unknown as UrlBuilder;
   });
@@ -619,6 +620,142 @@ describe('InlineSurvey', () => {
       expect(onShow).toHaveBeenCalledTimes(1);
       expect(onHide).toHaveBeenCalledTimes(2);
       expect(onDestroy).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('G. Dynamic URL Updates Tests', () => {
+    test('should update URL config without recreating survey', () => {
+      const container = document.createElement('div');
+      container.id = 'survey-container';
+      document.body.appendChild(container);
+
+      const config: InlineSurveyConfig = {
+        elementSelector: '#survey-container',
+      };
+
+      const survey = new InlineSurvey(mockUrlBuilder, config);
+      const urlFactory = mockUrlBuilder.getUrlFactory();
+
+      // Mock patchConfig
+      const patchConfigSpy = jest.spyOn(urlFactory, 'patchConfig');
+
+      survey.updateUrlConfig({
+        extra: { newData: 'test' },
+      });
+
+      expect(patchConfigSpy).toHaveBeenCalledWith({
+        extra: { newData: 'test' },
+      });
+    });
+
+    test('should update and reload with updateAndReload', () => {
+      const container = document.createElement('div');
+      container.id = 'survey-container';
+      document.body.appendChild(container);
+
+      const config: InlineSurveyConfig = {
+        elementSelector: '#survey-container',
+      };
+
+      const survey = new InlineSurvey(mockUrlBuilder, config);
+      const urlFactory = mockUrlBuilder.getUrlFactory();
+
+      const newUrl =
+        'https://example.com/survey?entry.test=value&entry.userId=123';
+
+      (urlFactory.getUrlWithParams as jest.Mock).mockReturnValue(newUrl);
+
+      survey.updateAndReload({
+        extra: { userId: '123' },
+      });
+
+      expect(survey.iFrame.src).toBe(newUrl);
+    });
+
+    test('should merge nested extra config correctly', () => {
+      const container = document.createElement('div');
+      container.id = 'survey-container';
+      document.body.appendChild(container);
+
+      const config: InlineSurveyConfig = {
+        elementSelector: '#survey-container',
+      };
+
+      const survey = new InlineSurvey(mockUrlBuilder, config);
+      const urlFactory = mockUrlBuilder.getUrlFactory();
+
+      const patchConfigSpy = jest.spyOn(urlFactory, 'patchConfig');
+
+      survey.updateUrlConfig({
+        extra: {
+          respondent: { id: '123', email: 'user@example.com' },
+          metadata: { source: 'web' },
+        },
+      });
+
+      expect(patchConfigSpy).toHaveBeenCalledWith({
+        extra: {
+          respondent: { id: '123', email: 'user@example.com' },
+          metadata: { source: 'web' },
+        },
+      });
+    });
+
+    test('should call patchConfig and reload separately', () => {
+      const container = document.createElement('div');
+      container.id = 'survey-container';
+      document.body.appendChild(container);
+
+      const config: InlineSurveyConfig = {
+        elementSelector: '#survey-container',
+      };
+
+      const survey = new InlineSurvey(mockUrlBuilder, config);
+      const urlFactory = mockUrlBuilder.getUrlFactory();
+
+      const patchConfigSpy = jest.spyOn(urlFactory, 'patchConfig');
+      const getUrlWithParamsSpy = jest.spyOn(urlFactory, 'getUrlWithParams');
+
+      const newUrl = 'https://example.com/survey?entry.language=FR';
+      (getUrlWithParamsSpy as jest.Mock).mockReturnValue(newUrl);
+
+      survey.updateAndReload({
+        language: 'FR',
+      });
+
+      expect(patchConfigSpy).toHaveBeenCalledWith({ language: 'FR' });
+      expect(getUrlWithParamsSpy).toHaveBeenCalled();
+      expect(survey.iFrame.src).toBe(newUrl);
+    });
+
+    test('should work with multiple sequential updates', () => {
+      const container = document.createElement('div');
+      container.id = 'survey-container';
+      document.body.appendChild(container);
+
+      const config: InlineSurveyConfig = {
+        elementSelector: '#survey-container',
+      };
+
+      const survey = new InlineSurvey(mockUrlBuilder, config);
+      const urlFactory = mockUrlBuilder.getUrlFactory();
+
+      const patchConfigSpy = jest.spyOn(urlFactory, 'patchConfig');
+
+      survey.updateUrlConfig({ extra: { step: '1' } });
+      survey.updateUrlConfig({ extra: { step: '2' } });
+      survey.updateUrlConfig({ extra: { step: '3' } });
+
+      expect(patchConfigSpy).toHaveBeenCalledTimes(3);
+      expect(patchConfigSpy).toHaveBeenNthCalledWith(1, {
+        extra: { step: '1' },
+      });
+      expect(patchConfigSpy).toHaveBeenNthCalledWith(2, {
+        extra: { step: '2' },
+      });
+      expect(patchConfigSpy).toHaveBeenNthCalledWith(3, {
+        extra: { step: '3' },
+      });
     });
   });
 });
