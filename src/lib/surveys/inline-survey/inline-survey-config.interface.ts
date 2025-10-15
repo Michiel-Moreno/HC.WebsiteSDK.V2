@@ -1,11 +1,8 @@
-import { SurveyCallbacks } from '../common/survey-callbacks.interface';
-import { SurveyQuarantineConfig } from '../common/survey-quarantine-config.interface';
+import { BaseSurveyConfig } from '../common/base-survey-config.interface';
 
-export interface InlineSurveyConfig {
+export interface InlineSurveyConfig extends BaseSurveyConfig {
   elementSelector: string;
   fillContainer?: boolean;
   iFrameCssClasses?: string[];
   iFrameInlineStylesRules?: Partial<CSSStyleDeclaration>;
-  quarantineConfig?: SurveyQuarantineConfig;
-  callbacks?: SurveyCallbacks;
 }

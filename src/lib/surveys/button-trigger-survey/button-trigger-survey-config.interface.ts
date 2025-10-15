@@ -1,5 +1,4 @@
-import { SurveyCallbacks } from '../common/survey-callbacks.interface';
-import { SurveyQuarantineConfig } from '../common/survey-quarantine-config.interface';
+import { BaseSurveyConfig } from '../common/base-survey-config.interface';
 
 import { ButtonPosition } from './button-position.type';
 import { ButtonStylePreset } from './button-style-preset.type';
@@ -21,7 +20,7 @@ export interface ButtonTriggerStyleConfig {
  *
  * @category Button Trigger
  */
-export interface ButtonTriggerSurveyConfig {
+export interface ButtonTriggerSurveyConfig extends BaseSurveyConfig {
   /**
    * Position of the button on the screen
    * @default 'bottom-right'
@@ -92,12 +91,6 @@ export interface ButtonTriggerSurveyConfig {
   enableAnimation?: boolean;
 
   /**
-   * Quarantine configuration for button visibility
-   * Note: This is separate from survey quarantine
-   */
-  quarantineConfig?: SurveyQuarantineConfig;
-
-  /**
    * Unique identifier for quarantine tracking
    * If not provided, generated from position + text
    * Ensures quarantine persists across page reloads
@@ -115,9 +108,4 @@ export interface ButtonTriggerSurveyConfig {
    * Accessibility label for screen readers
    */
   ariaLabel?: string;
-
-  /**
-   * Lifecycle event callbacks
-   */
-  callbacks?: SurveyCallbacks;
 }

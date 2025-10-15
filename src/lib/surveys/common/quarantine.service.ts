@@ -70,6 +70,32 @@ export class QuarantineService {
     return Math.ceil(remainingDays);
   }
 
+  /**
+   * Get detailed quarantine status
+   * @returns Object with isQuarantined flag and remaining days
+   */
+  getQuarantineStatus(): { isQuarantined: boolean; remainingDays: number } {
+    const isQuarantined = this.isUnderQuarantine();
+    const remainingDays = isQuarantined ? this.getRemainingDays() : 0;
+
+    return {
+      isQuarantined,
+      remainingDays,
+    };
+  }
+
+  /**
+   * Manually clear quarantine
+   * Removes quarantine start data from localStorage
+   */
+  clearQuarantine(): void {
+    if (this.quarantineConfig) {
+      localStorage.removeItem(
+        `${QuarantineService.quarantineStartKey}:${this.surveyIdentifier}`,
+      );
+    }
+  }
+
   private getQuarantineStartData(): string | null {
     return localStorage.getItem(
       `${QuarantineService.quarantineStartKey}:${this.surveyIdentifier}`,

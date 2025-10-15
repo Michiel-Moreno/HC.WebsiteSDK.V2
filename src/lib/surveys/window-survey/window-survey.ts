@@ -1,7 +1,6 @@
 import { CannotOpenWindowException } from '../../core/exceptions/cannot-open-window.exception';
-import { UrlFactory } from '../../core/factories/url.factory';
 import { UrlBuilder } from '../../url-builder/url.builder';
-import { QuarantineService } from '../common/quarantine.service';
+import { BaseSurvey } from '../common/base-survey';
 
 import { WindowSurveyConfig } from './window-survey-config.interface';
 import { WindowSurveyConfigValidator } from './window-survey.config-validator';
@@ -48,23 +47,17 @@ import { WindowSurveyConfigValidator } from './window-survey.config-validator';
  * ```
  * @category Surveys
  */
-export class WindowSurvey {
+export class WindowSurvey extends BaseSurvey<WindowSurveyConfig> {
   private windowHandle: Window | undefined | null;
-  private readonly urlFactory: UrlFactory;
-  private readonly validator: WindowSurveyConfigValidator;
-  private readonly quarantineService: QuarantineService;
 
   constructor(
     configBuilder: UrlBuilder,
     private windowConfig: WindowSurveyConfig,
   ) {
-    this.urlFactory = configBuilder.getUrlFactory();
-    this.validator = new WindowSurveyConfigValidator();
-    this.quarantineService = new QuarantineService(
-      this.urlFactory.getSurveyIdentifier(),
-      windowConfig.quarantineConfig,
-    );
-    this.validator.validateAndThrowOnErrors(windowConfig);
+    // Call parent constructor with UrlBuilder, config, and validator
+    super(configBuilder, windowConfig, new WindowSurveyConfigValidator());
+
+    // WindowSurvey-specific initialization
     if (this.windowConfig.openOnCreation) this.open();
   }
 
@@ -79,13 +72,13 @@ export class WindowSurvey {
     if (!this.quarantineService.isUnderQuarantine()) {
       if (this.windowConfig.openNewWindow)
         this.windowHandle = window.open(
-          this.urlFactory.getUrlWithParams(),
+          this.urlFactory!.getUrlWithParams(),
           '_blank',
           'toolbar=0,location=0,menubar=0,height=800,width=700',
         );
       else
         this.windowHandle = window.open(
-          this.urlFactory.getUrlWithParams(),
+          this.urlFactory!.getUrlWithParams(),
           '_blank',
         );
       if (!this.windowHandle) {
@@ -99,6 +92,22 @@ export class WindowSurvey {
       const remainingDays = this.quarantineService.getRemainingDays();
       this.windowConfig.callbacks?.onQuarantineBlocked?.(remainingDays);
     }
+  }
+
+  /**
+   * Show survey (alias for open())
+   * Implements abstract method from BaseSurvey
+   */
+  public show(): void {
+    this.open();
+  }
+
+  /**
+   * Hide survey (alias for close())
+   * Implements abstract method from BaseSurvey
+   */
+  public hide(): void {
+    this.close();
   }
 
   /**

@@ -1,7 +1,7 @@
 import { InvalidQuerySelectorException } from '../../core/exceptions/invalid-query-selector.exception';
 import { StyledElementFactory } from '../../core/factories/styled-element.factory';
 import { trueByDefault } from '../../core/utils/true-by-default.util';
-import { QuarantineService } from '../common/quarantine.service';
+import { BaseSurvey } from '../common/base-survey';
 
 import { ButtonPosition } from './button-position.type';
 import { ButtonStylePreset } from './button-style-preset.type';
@@ -49,34 +49,30 @@ import { ButtonTriggerSurveyConfigValidator } from './button-trigger-survey.conf
  *
  * @category Surveys
  */
-export class ButtonTriggerSurvey {
+export class ButtonTriggerSurvey extends BaseSurvey<ButtonTriggerSurveyConfig> {
   private readonly buttonHandle: HTMLButtonElement;
   private readonly containerHandle: HTMLDivElement;
-  private readonly validator: ButtonTriggerSurveyConfigValidator;
-  private readonly quarantineService: QuarantineService;
   private readonly position: ButtonPosition;
   private readonly stylePreset: ButtonStylePreset;
   private clickHandler: EventListener | null = null;
 
-  constructor(private config: ButtonTriggerSurveyConfig) {
-    // Validate configuration
-    this.validator = new ButtonTriggerSurveyConfigValidator();
-    this.validator.validateAndThrowOnErrors(config);
-
-    // Set defaults
-    this.position = config.position || 'bottom-right';
-    this.stylePreset = config.stylePreset || 'pill-button';
+  constructor(config: ButtonTriggerSurveyConfig) {
+    // Set defaults before calling super
+    const position = config.position || 'bottom-right';
+    const stylePreset = config.stylePreset || 'pill-button';
 
     // Generate stable identifier for quarantine
     // Uses config.quarantineId if provided, otherwise generates from position + text
     // This ensures quarantine persists across page reloads
     const quarantineId =
       config.quarantineId ||
-      `button-trigger-${this.position}-${config.text || 'default'}`;
-    this.quarantineService = new QuarantineService(
-      quarantineId,
-      config.quarantineConfig,
-    );
+      `button-trigger-${position}-${config.text || 'default'}`;
+
+    // Call parent constructor with null UrlBuilder (ButtonTrigger doesn't use surveys)
+    super(null, config, new ButtonTriggerSurveyConfigValidator(), quarantineId);
+
+    this.position = position;
+    this.stylePreset = stylePreset;
 
     // Create button DOM
     const [container, button] = this.createButton();

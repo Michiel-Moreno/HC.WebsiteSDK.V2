@@ -1,9 +1,8 @@
 import { InvalidQuerySelectorException } from '../../core/exceptions/invalid-query-selector.exception';
 import { StyledElementFactory } from '../../core/factories/styled-element.factory';
-import { UrlFactory } from '../../core/factories/url.factory';
 import { trueByDefault } from '../../core/utils/true-by-default.util';
 import { UrlBuilder } from '../../url-builder/url.builder';
-import { QuarantineService } from '../common/quarantine.service';
+import { BaseSurvey } from '../common/base-survey';
 
 import { ClassNamesConfigType } from './class-names-config.type';
 import { ModalSurveyConfig } from './modal-survey-config.interface';
@@ -71,12 +70,9 @@ import { closeIconSvgElementFactory } from './modal-survey.svg-factory';
  *
  * @category Surveys
  */
-export class ModalSurvey {
+export class ModalSurvey extends BaseSurvey<ModalSurveyConfig> {
   private readonly iFrameHandle: HTMLIFrameElement;
   private readonly modalHandle: HTMLDivElement;
-  private readonly urlFactory: UrlFactory;
-  private readonly validator: ModalSurveyConfigValidator;
-  private readonly quarantineService: QuarantineService;
   private eventListeners: Array<{
     element: HTMLElement | Window;
     event: string;
@@ -89,13 +85,10 @@ export class ModalSurvey {
     configBuilder: UrlBuilder,
     private modalConfig: ModalSurveyConfig,
   ) {
-    this.urlFactory = configBuilder.getUrlFactory();
-    this.validator = new ModalSurveyConfigValidator();
-    this.validator.validateAndThrowOnErrors(modalConfig);
-    this.quarantineService = new QuarantineService(
-      this.urlFactory.getSurveyIdentifier(),
-      modalConfig.quarantineConfig,
-    );
+    // Call parent constructor with UrlBuilder, config, and validator
+    super(configBuilder, modalConfig, new ModalSurveyConfigValidator());
+
+    // ModalSurvey-specific initialization
     this.computedStyles = this.computeModalStyle();
     this.computedClassNames = this.computeClassNames();
     const [root, frame] = this.createModal();
@@ -125,6 +118,14 @@ export class ModalSurvey {
   }
 
   /**
+   * Hide modal window (alias for close())
+   * Implements abstract method from BaseSurvey
+   */
+  public hide(): void {
+    this.close();
+  }
+
+  /**
    * Open modal window
    */
   public show(): void {
@@ -149,7 +150,7 @@ export class ModalSurvey {
    * Reload iframe content using url from attached url factory object
    */
   public reload(): void {
-    this.iFrameHandle.src = this.urlFactory.getUrlWithParams();
+    this.iFrameHandle.src = this.urlFactory!.getUrlWithParams();
   }
 
   /**

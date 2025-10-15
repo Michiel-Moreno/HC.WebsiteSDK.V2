@@ -1,7 +1,6 @@
-import { SurveyCallbacks } from '../common/survey-callbacks.interface';
-import { SurveyQuarantineConfig } from '../common/survey-quarantine-config.interface';
+import { BaseSurveyConfig } from '../common/base-survey-config.interface';
 
-export interface WindowSurveyConfig {
+export interface WindowSurveyConfig extends BaseSurveyConfig {
   /**
    * Specifies if the survey should be open in a new window
    *
@@ -12,9 +11,4 @@ export interface WindowSurveyConfig {
    * @default false
    */
   openOnCreation?: boolean;
-  quarantineConfig?: SurveyQuarantineConfig;
-  /**
-   * Lifecycle event callbacks
-   */
-  callbacks?: SurveyCallbacks;
 }

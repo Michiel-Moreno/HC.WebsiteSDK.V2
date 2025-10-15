@@ -1,10 +1,9 @@
-import { SurveyCallbacks } from '../common/survey-callbacks.interface';
-import { SurveyQuarantineConfig } from '../common/survey-quarantine-config.interface';
+import { BaseSurveyConfig } from '../common/base-survey-config.interface';
 
 import { ClassNamesConfigType } from './class-names-config.type';
 import { ModalSurveyStyleConfig } from './modal-survey-style-config.interface';
 
-export interface ModalSurveyConfig {
+export interface ModalSurveyConfig extends BaseSurveyConfig {
   /**
    * Override default modal css class names
    */
@@ -35,7 +34,6 @@ export interface ModalSurveyConfig {
    * Override default modal style
    */
   modalStyle?: ModalSurveyStyleConfig;
-  quarantineConfig?: SurveyQuarantineConfig;
   /**
    * @default false
    */
@@ -44,10 +42,6 @@ export interface ModalSurveyConfig {
    * @default true
    */
   translucentBackground?: boolean;
-  /**
-   * Lifecycle event callbacks
-   */
-  callbacks?: SurveyCallbacks;
   /**
    * ARIA label for the modal dialog
    * Used by screen readers to announce the modal

@@ -1,8 +1,7 @@
 import { InvalidQuerySelectorException } from '../../core/exceptions/invalid-query-selector.exception';
 import { StyledElementFactory } from '../../core/factories/styled-element.factory';
-import { UrlFactory } from '../../core/factories/url.factory';
 import { UrlBuilder } from '../../url-builder/url.builder';
-import { QuarantineService } from '../common/quarantine.service';
+import { BaseSurvey } from '../common/base-survey';
 
 import { InlineSurveyConfig } from './inline-survey-config.interface';
 import { InlineSurveyConfigValidator } from './inline-survey.config-validator';
@@ -48,25 +47,21 @@ import { InlineSurveyConfigValidator } from './inline-survey.config-validator';
  *
  * @category Surveys
  */
-export class InlineSurvey {
+export class InlineSurvey extends BaseSurvey<InlineSurveyConfig> {
   private readonly iFrameHandle: HTMLIFrameElement;
-  private readonly validator: InlineSurveyConfigValidator;
-  private readonly urlFactory: UrlFactory;
-  private readonly quarantineService: QuarantineService;
 
   constructor(
     configBuilder: UrlBuilder,
     private inlineConfig: InlineSurveyConfig,
   ) {
-    this.urlFactory = configBuilder.getUrlFactory();
-    this.validator = new InlineSurveyConfigValidator();
-    this.validator.validateAndThrowOnErrors(inlineConfig);
+    // Call parent constructor with UrlBuilder, config, and validator
+    super(configBuilder, inlineConfig, new InlineSurveyConfigValidator());
+
+    // InlineSurvey-specific initialization
     this.iFrameHandle = this.createIframeElement();
-    this.quarantineService = new QuarantineService(
-      this.urlFactory.getSurveyIdentifier(),
-      inlineConfig.quarantineConfig,
-    );
     this.reload();
+
+    // Handle quarantine state
     if (this.quarantineService.isUnderQuarantine()) {
       this.hide();
     } else {
@@ -107,7 +102,7 @@ export class InlineSurvey {
    * Reload survey iframe with url produced bu UrlFactory
    */
   public reload(): void {
-    this.iFrameHandle.src = this.urlFactory.getUrlWithParams();
+    this.iFrameHandle.src = this.urlFactory!.getUrlWithParams();
   }
 
   /**
