@@ -82,6 +82,8 @@ export class ModalSurvey {
     event: string;
     handler: EventListener;
   }> = [];
+  private readonly computedStyles: Required<ModalSurveyStyleConfig>;
+  private readonly computedClassNames: Required<ClassNamesConfigType>;
 
   constructor(
     configBuilder: UrlBuilder,
@@ -94,6 +96,8 @@ export class ModalSurvey {
       this.urlFactory.getSurveyIdentifier(),
       modalConfig.quarantineConfig,
     );
+    this.computedStyles = this.computeModalStyle();
+    this.computedClassNames = this.computeClassNames();
     const [root, frame] = this.createModal();
     this.iFrameHandle = frame;
     this.modalHandle = root;
@@ -174,7 +178,7 @@ export class ModalSurvey {
     this.eventListeners.push({ element, event, handler });
   }
 
-  private getModalStyle(): Required<ModalSurveyStyleConfig> {
+  private computeModalStyle(): Required<ModalSurveyStyleConfig> {
     return {
       rootDivStyle: this.modalConfig.ignoreDefaultStyles
         ? this.modalConfig?.modalStyle?.rootDivStyle || {}
@@ -233,7 +237,7 @@ export class ModalSurvey {
     };
   }
 
-  private getClassNames(): Required<ClassNamesConfigType> {
+  private computeClassNames(): Required<ClassNamesConfigType> {
     return {
       rootDivStyle:
         this.modalConfig?.classNames?.rootDivStyle ||
@@ -263,6 +267,14 @@ export class ModalSurvey {
         this.modalConfig?.classNames?.footerLogoStyle ||
         modalDefaultStyles.classNames.footerLogoStyle,
     };
+  }
+
+  private getModalStyle(): Required<ModalSurveyStyleConfig> {
+    return this.computedStyles;
+  }
+
+  private getClassNames(): Required<ClassNamesConfigType> {
+    return this.computedClassNames;
   }
 
   /**
