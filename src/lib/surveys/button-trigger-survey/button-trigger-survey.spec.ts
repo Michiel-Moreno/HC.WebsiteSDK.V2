@@ -910,4 +910,112 @@ describe('ButtonTriggerSurvey', () => {
       ).toBe(true);
     });
   });
+
+  describe('L. Lifecycle Callbacks Tests', () => {
+    test('should call onShow when button is shown', () => {
+      const onShow = jest.fn();
+      const config: ButtonTriggerSurveyConfig = {
+        onTrigger: noop,
+        showByDefault: false,
+        callbacks: { onShow },
+      };
+
+      const survey = new ButtonTriggerSurvey(config);
+      survey.show();
+
+      expect(onShow).toHaveBeenCalled();
+    });
+
+    test('should call onHide when button is hidden', () => {
+      const onHide = jest.fn();
+      const config: ButtonTriggerSurveyConfig = {
+        onTrigger: noop,
+        showByDefault: true,
+        callbacks: { onHide },
+      };
+
+      const survey = new ButtonTriggerSurvey(config);
+      survey.hide();
+
+      expect(onHide).toHaveBeenCalled();
+    });
+
+    test('should call onDestroy when survey is destroyed', () => {
+      const onDestroy = jest.fn();
+      const config: ButtonTriggerSurveyConfig = {
+        onTrigger: noop,
+        callbacks: { onDestroy },
+      };
+
+      const survey = new ButtonTriggerSurvey(config);
+      survey.destroy();
+
+      expect(onDestroy).toHaveBeenCalled();
+    });
+
+    test('should call onQuarantineBlocked when blocked by quarantine', () => {
+      // Set quarantine
+      const quarantineKey =
+        'hcSDK.SurveyQuarantineStart:button-trigger-bottom-right-Test';
+      localStorageMock.store[quarantineKey] = Date.now().toString();
+
+      const onQuarantineBlocked = jest.fn();
+      const config: ButtonTriggerSurveyConfig = {
+        onTrigger: noop,
+        quarantineConfig: { period: 7 },
+        showByDefault: false,
+        text: 'Test',
+        callbacks: { onQuarantineBlocked },
+      };
+
+      const survey = new ButtonTriggerSurvey(config);
+      survey.show();
+
+      expect(onQuarantineBlocked).toHaveBeenCalled();
+      expect(onQuarantineBlocked).toHaveBeenCalledWith(expect.any(Number));
+    });
+
+    test('should not throw if callbacks are not provided', () => {
+      const config: ButtonTriggerSurveyConfig = {
+        onTrigger: noop,
+        showByDefault: false,
+      };
+
+      const survey = new ButtonTriggerSurvey(config);
+
+      expect(() => {
+        survey.show();
+        survey.hide();
+        survey.destroy();
+      }).not.toThrow();
+    });
+
+    test('should call onShow when created with showByDefault=true', () => {
+      const onShow = jest.fn();
+      const config: ButtonTriggerSurveyConfig = {
+        onTrigger: noop,
+        showByDefault: true,
+        callbacks: { onShow },
+      };
+
+      new ButtonTriggerSurvey(config);
+
+      // Constructor calls show() when showByDefault is true (or undefined, which defaults to true)
+      expect(onShow).toHaveBeenCalled();
+    });
+
+    test('should call onHide when created with showByDefault=false', () => {
+      const onHide = jest.fn();
+      const config: ButtonTriggerSurveyConfig = {
+        onTrigger: noop,
+        showByDefault: false,
+        callbacks: { onHide },
+      };
+
+      new ButtonTriggerSurvey(config);
+
+      // Constructor calls hide() when showByDefault is false
+      expect(onHide).toHaveBeenCalled();
+    });
+  });
 });

@@ -117,6 +117,7 @@ export class ModalSurvey {
   public close(): void {
     const styleClasses = this.getClassNames();
     this.modalHandle.classList.remove(styleClasses.modalVisible);
+    this.modalConfig.callbacks?.onClose?.();
   }
 
   /**
@@ -127,6 +128,11 @@ export class ModalSurvey {
       const styleClasses = this.getClassNames();
       this.modalHandle.classList.add(styleClasses.modalVisible);
       this.quarantineService.startQuarantine();
+      this.modalConfig.callbacks?.onShow?.();
+    } else {
+      // Placeholder for remainingDays - will be replaced in Phase 2B
+      const remainingDays = 7;
+      this.modalConfig.callbacks?.onQuarantineBlocked?.(remainingDays);
     }
   }
 
@@ -152,6 +158,8 @@ export class ModalSurvey {
     if (this.modalHandle.parentElement) {
       this.modalHandle.parentElement.removeChild(this.modalHandle);
     }
+
+    this.modalConfig.callbacks?.onDestroy?.();
   }
 
   /**
@@ -299,6 +307,16 @@ export class ModalSurvey {
       styleClasses.iFrameStyle,
       modalStyle.iFrameStyle,
     ).styledElement;
+
+    // Add event listeners for iframe load and error
+    iFrame.addEventListener('load', () => {
+      this.modalConfig.callbacks?.onLoad?.(iFrame);
+    });
+
+    iFrame.addEventListener('error', () => {
+      const error = new Error('Failed to load survey iframe');
+      this.modalConfig.callbacks?.onError?.(error);
+    });
 
     const footer = new StyledElementFactory(
       document.createElement('div'),

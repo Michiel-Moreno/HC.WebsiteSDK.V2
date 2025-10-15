@@ -451,4 +451,173 @@ describe('InlineSurvey', () => {
       expect(survey.iFrame.tagName).toBe('IFRAME');
     });
   });
+
+  describe('F. Lifecycle Callbacks Tests', () => {
+    test('should call onShow when survey is shown', () => {
+      const container = document.createElement('div');
+      container.id = 'survey-container';
+      document.body.appendChild(container);
+
+      const onShow = jest.fn();
+      const config: InlineSurveyConfig = {
+        elementSelector: '#survey-container',
+        callbacks: { onShow },
+      };
+
+      const survey = new InlineSurvey(mockUrlBuilder, config);
+
+      // Hide first, then show to trigger callback
+      survey.hide();
+      localStorageMock.clear();
+      survey.show();
+
+      expect(onShow).toHaveBeenCalled();
+    });
+
+    test('should call onHide when survey is hidden', () => {
+      const container = document.createElement('div');
+      container.id = 'survey-container';
+      document.body.appendChild(container);
+
+      const onHide = jest.fn();
+      const config: InlineSurveyConfig = {
+        elementSelector: '#survey-container',
+        callbacks: { onHide },
+      };
+
+      const survey = new InlineSurvey(mockUrlBuilder, config);
+      survey.hide();
+
+      expect(onHide).toHaveBeenCalled();
+    });
+
+    test('should call onDestroy when survey is destroyed', () => {
+      const container = document.createElement('div');
+      container.id = 'survey-container';
+      document.body.appendChild(container);
+
+      const onDestroy = jest.fn();
+      const config: InlineSurveyConfig = {
+        elementSelector: '#survey-container',
+        callbacks: { onDestroy },
+      };
+
+      const survey = new InlineSurvey(mockUrlBuilder, config);
+      survey.destroy();
+
+      expect(onDestroy).toHaveBeenCalled();
+    });
+
+    test('should call onLoad when iframe loads', (done) => {
+      const container = document.createElement('div');
+      container.id = 'survey-container';
+      document.body.appendChild(container);
+
+      const onLoad = jest.fn((iframe) => {
+        expect(iframe).toBeDefined();
+        expect(iframe.tagName).toBe('IFRAME');
+        done();
+      });
+
+      const config: InlineSurveyConfig = {
+        elementSelector: '#survey-container',
+        callbacks: { onLoad },
+      };
+
+      const survey = new InlineSurvey(mockUrlBuilder, config);
+
+      // Trigger load event
+      const loadEvent = new Event('load');
+      survey.iFrame.dispatchEvent(loadEvent);
+    });
+
+    test('should call onError when iframe fails to load', () => {
+      const container = document.createElement('div');
+      container.id = 'survey-container';
+      document.body.appendChild(container);
+
+      const onError = jest.fn();
+      const config: InlineSurveyConfig = {
+        elementSelector: '#survey-container',
+        callbacks: { onError },
+      };
+
+      const survey = new InlineSurvey(mockUrlBuilder, config);
+
+      // Trigger error event
+      const errorEvent = new Event('error');
+      survey.iFrame.dispatchEvent(errorEvent);
+
+      expect(onError).toHaveBeenCalled();
+      expect(onError).toHaveBeenCalledWith(expect.any(Error));
+    });
+
+    test('should call onQuarantineBlocked when blocked by quarantine', () => {
+      const container = document.createElement('div');
+      container.id = 'survey-container';
+      document.body.appendChild(container);
+
+      // Set quarantine
+      const quarantineKey = 'hcSDK.SurveyQuarantineStart:test-survey-id';
+      localStorageMock.store[quarantineKey] = Date.now().toString();
+
+      const onQuarantineBlocked = jest.fn();
+      const config: InlineSurveyConfig = {
+        elementSelector: '#survey-container',
+        quarantineConfig: { period: 7 },
+        callbacks: { onQuarantineBlocked },
+      };
+
+      const survey = new InlineSurvey(mockUrlBuilder, config);
+      survey.show();
+
+      expect(onQuarantineBlocked).toHaveBeenCalled();
+      expect(onQuarantineBlocked).toHaveBeenCalledWith(expect.any(Number));
+    });
+
+    test('should not throw if callbacks are not provided', () => {
+      const container = document.createElement('div');
+      container.id = 'survey-container';
+      document.body.appendChild(container);
+
+      const config: InlineSurveyConfig = {
+        elementSelector: '#survey-container',
+      };
+
+      const survey = new InlineSurvey(mockUrlBuilder, config);
+
+      expect(() => {
+        survey.show();
+        survey.hide();
+        survey.destroy();
+      }).not.toThrow();
+    });
+
+    test('should handle multiple callbacks being called', () => {
+      const container = document.createElement('div');
+      container.id = 'survey-container';
+      document.body.appendChild(container);
+
+      const onShow = jest.fn();
+      const onHide = jest.fn();
+      const onDestroy = jest.fn();
+
+      const config: InlineSurveyConfig = {
+        elementSelector: '#survey-container',
+        callbacks: { onShow, onHide, onDestroy },
+      };
+
+      const survey = new InlineSurvey(mockUrlBuilder, config);
+
+      survey.hide();
+      localStorageMock.clear();
+      survey.show();
+      survey.hide();
+      survey.destroy();
+
+      expect(onShow).toHaveBeenCalledTimes(1);
+      expect(onHide).toHaveBeenCalledTimes(2);
+      expect(onDestroy).toHaveBeenCalledTimes(1);
+    });
+  });
 });

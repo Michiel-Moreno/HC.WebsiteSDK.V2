@@ -6,6 +6,7 @@ export * from './lib/core/interfaces/survey-config.interface';
 export * from './lib/core/interfaces/survey-extra-config.interface';
 export * from './lib/core/interfaces/survey-metadata.interface';
 export * from './lib/core/interfaces/survey-respondent.interface';
+export * from './lib/surveys/common/survey-callbacks.interface';
 export * from './lib/surveys/inline-survey/inline-survey';
 export * from './lib/surveys/modal-survey/modal-survey';
 export * from './lib/surveys/window-survey/window-survey';

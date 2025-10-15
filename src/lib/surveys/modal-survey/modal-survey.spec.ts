@@ -814,4 +814,137 @@ describe('ModalSurvey', () => {
       expect(document.body.contains(survey.modalContainer)).toBe(false);
     });
   });
+
+  describe('L. Lifecycle Callbacks Tests', () => {
+    test('should call onShow when modal is shown', () => {
+      const onShow = jest.fn();
+      const config: ModalSurveyConfig = {
+        showByDefault: false,
+        callbacks: { onShow },
+      };
+
+      const survey = new ModalSurvey(mockUrlBuilder, config);
+
+      localStorageMock.clear();
+      survey.show();
+
+      expect(onShow).toHaveBeenCalled();
+    });
+
+    test('should call onClose when modal is closed', () => {
+      const onClose = jest.fn();
+      const config: ModalSurveyConfig = {
+        showByDefault: true,
+        callbacks: { onClose },
+      };
+
+      const survey = new ModalSurvey(mockUrlBuilder, config);
+      survey.close();
+
+      expect(onClose).toHaveBeenCalled();
+    });
+
+    test('should call onDestroy when modal is destroyed', () => {
+      const onDestroy = jest.fn();
+      const config: ModalSurveyConfig = {
+        callbacks: { onDestroy },
+      };
+
+      const survey = new ModalSurvey(mockUrlBuilder, config);
+      survey.destroy();
+
+      expect(onDestroy).toHaveBeenCalled();
+    });
+
+    test('should call onLoad when iframe loads', (done) => {
+      const onLoad = jest.fn((iframe) => {
+        expect(iframe).toBeDefined();
+        expect(iframe.tagName).toBe('IFRAME');
+        done();
+      });
+
+      const config: ModalSurveyConfig = {
+        callbacks: { onLoad },
+      };
+
+      const survey = new ModalSurvey(mockUrlBuilder, config);
+
+      // Trigger load event
+      const loadEvent = new Event('load');
+      survey.iFrame.dispatchEvent(loadEvent);
+    });
+
+    test('should call onError when iframe fails to load', () => {
+      const onError = jest.fn();
+      const config: ModalSurveyConfig = {
+        callbacks: { onError },
+      };
+
+      const survey = new ModalSurvey(mockUrlBuilder, config);
+
+      // Trigger error event
+      const errorEvent = new Event('error');
+      survey.iFrame.dispatchEvent(errorEvent);
+
+      expect(onError).toHaveBeenCalled();
+      expect(onError).toHaveBeenCalledWith(expect.any(Error));
+    });
+
+    test('should call onQuarantineBlocked when blocked by quarantine', () => {
+      // Set quarantine
+      const quarantineKey = 'hcSDK.SurveyQuarantineStart:test-survey-id';
+      localStorageMock.store[quarantineKey] = Date.now().toString();
+
+      const onQuarantineBlocked = jest.fn();
+      const config: ModalSurveyConfig = {
+        quarantineConfig: { period: 7 },
+        callbacks: { onQuarantineBlocked },
+      };
+
+      const survey = new ModalSurvey(mockUrlBuilder, config);
+      survey.show();
+
+      expect(onQuarantineBlocked).toHaveBeenCalled();
+      expect(onQuarantineBlocked).toHaveBeenCalledWith(expect.any(Number));
+    });
+
+    test('should not throw if callbacks are not provided', () => {
+      const config: ModalSurveyConfig = {};
+
+      const survey = new ModalSurvey(mockUrlBuilder, config);
+
+      expect(() => {
+        survey.show();
+        survey.close();
+        survey.destroy();
+      }).not.toThrow();
+    });
+
+    test('should handle multiple callbacks being called', () => {
+      const onShow = jest.fn();
+      const onClose = jest.fn();
+      const onDestroy = jest.fn();
+
+      const config: ModalSurveyConfig = {
+        showByDefault: false,
+        callbacks: { onShow, onClose, onDestroy },
+      };
+
+      const survey = new ModalSurvey(mockUrlBuilder, config);
+
+      // Constructor calls close() when showByDefault is false, so onClose called once already
+      expect(onClose).toHaveBeenCalledTimes(1);
+
+      localStorageMock.clear();
+      survey.show();
+      survey.close();
+      survey.show();
+      survey.close();
+      survey.destroy();
+
+      expect(onShow).toHaveBeenCalledTimes(2);
+      expect(onClose).toHaveBeenCalledTimes(3); // 1 from constructor + 2 explicit calls
+      expect(onDestroy).toHaveBeenCalledTimes(1);
+    });
+  });
 });

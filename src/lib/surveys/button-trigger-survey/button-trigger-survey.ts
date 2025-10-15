@@ -123,6 +123,11 @@ export class ButtonTriggerSurvey {
       this.containerHandle.classList.add(classNames.buttonVisible);
       this.containerHandle.classList.remove(classNames.buttonHidden);
       this.quarantineService.startQuarantine();
+      this.config.callbacks?.onShow?.();
+    } else {
+      // Placeholder for remainingDays - will be replaced in Phase 2B
+      const remainingDays = 7;
+      this.config.callbacks?.onQuarantineBlocked?.(remainingDays);
     }
   }
 
@@ -133,6 +138,7 @@ export class ButtonTriggerSurvey {
     const classNames = this.getClassNames();
     this.containerHandle.classList.remove(classNames.buttonVisible);
     this.containerHandle.classList.add(classNames.buttonHidden);
+    this.config.callbacks?.onHide?.();
   }
 
   /**
@@ -150,6 +156,8 @@ export class ButtonTriggerSurvey {
     if (this.containerHandle.parentElement) {
       this.containerHandle.parentElement.removeChild(this.containerHandle);
     }
+
+    this.config.callbacks?.onDestroy?.();
   }
 
   /**

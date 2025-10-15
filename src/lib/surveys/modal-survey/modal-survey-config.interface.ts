@@ -1,3 +1,4 @@
+import { SurveyCallbacks } from '../common/survey-callbacks.interface';
 import { SurveyQuarantineConfig } from '../common/survey-quarantine-config.interface';
 
 import { ClassNamesConfigType } from './class-names-config.type';
@@ -43,4 +44,8 @@ export interface ModalSurveyConfig {
    * @default true
    */
   translucentBackground?: boolean;
+  /**
+   * Lifecycle event callbacks
+   */
+  callbacks?: SurveyCallbacks;
 }

@@ -1,3 +1,4 @@
+import { SurveyCallbacks } from '../common/survey-callbacks.interface';
 import { SurveyQuarantineConfig } from '../common/survey-quarantine-config.interface';
 
 import { ButtonPosition } from './button-position.type';
@@ -114,4 +115,9 @@ export interface ButtonTriggerSurveyConfig {
    * Accessibility label for screen readers
    */
   ariaLabel?: string;
+
+  /**
+   * Lifecycle event callbacks
+   */
+  callbacks?: SurveyCallbacks;
 }

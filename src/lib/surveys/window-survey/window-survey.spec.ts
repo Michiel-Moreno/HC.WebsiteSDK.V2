@@ -437,4 +437,107 @@ describe('WindowSurvey', () => {
       expect(() => survey.destroy()).not.toThrow();
     });
   });
+
+  describe('H. Lifecycle Callbacks Tests', () => {
+    test('should call onShow when window is opened', () => {
+      const onShow = jest.fn();
+      const config: WindowSurveyConfig = {
+        callbacks: { onShow },
+      };
+
+      const survey = new WindowSurvey(mockUrlBuilder, config);
+      survey.open();
+
+      expect(onShow).toHaveBeenCalled();
+    });
+
+    test('should call onClose when window is closed', () => {
+      const onClose = jest.fn();
+      const config: WindowSurveyConfig = {
+        callbacks: { onClose },
+      };
+
+      const survey = new WindowSurvey(mockUrlBuilder, config);
+      survey.open();
+      survey.close();
+
+      expect(onClose).toHaveBeenCalled();
+    });
+
+    test('should call onDestroy when survey is destroyed', () => {
+      const onDestroy = jest.fn();
+      const config: WindowSurveyConfig = {
+        callbacks: { onDestroy },
+      };
+
+      const survey = new WindowSurvey(mockUrlBuilder, config);
+      survey.open();
+      survey.destroy();
+
+      expect(onDestroy).toHaveBeenCalled();
+    });
+
+    test('should call onError when popup is blocked', () => {
+      windowOpenSpy.mockReturnValue(null);
+
+      const onError = jest.fn();
+      const config: WindowSurveyConfig = {
+        callbacks: { onError },
+      };
+
+      const survey = new WindowSurvey(mockUrlBuilder, config);
+
+      expect(() => survey.open()).toThrow(CannotOpenWindowException);
+      expect(onError).toHaveBeenCalled();
+      expect(onError).toHaveBeenCalledWith(
+        expect.any(CannotOpenWindowException),
+      );
+    });
+
+    test('should call onQuarantineBlocked when blocked by quarantine', () => {
+      // Set quarantine
+      const quarantineKey = 'hcSDK.SurveyQuarantineStart:test-survey-id';
+      localStorageMock.store[quarantineKey] = Date.now().toString();
+
+      const onQuarantineBlocked = jest.fn();
+      const config: WindowSurveyConfig = {
+        quarantineConfig: { period: 7 },
+        callbacks: { onQuarantineBlocked },
+      };
+
+      const survey = new WindowSurvey(mockUrlBuilder, config);
+      survey.open();
+
+      expect(onQuarantineBlocked).toHaveBeenCalled();
+      expect(onQuarantineBlocked).toHaveBeenCalledWith(expect.any(Number));
+    });
+
+    test('should not throw if callbacks are not provided', () => {
+      const config: WindowSurveyConfig = {};
+
+      const survey = new WindowSurvey(mockUrlBuilder, config);
+
+      expect(() => {
+        survey.open();
+        survey.close();
+        survey.destroy();
+      }).not.toThrow();
+    });
+
+    test('should handle destroy calling both onClose and onDestroy', () => {
+      const onClose = jest.fn();
+      const onDestroy = jest.fn();
+      const config: WindowSurveyConfig = {
+        callbacks: { onClose, onDestroy },
+      };
+
+      const survey = new WindowSurvey(mockUrlBuilder, config);
+      survey.open();
+      survey.destroy();
+
+      // destroy() calls close() internally, so both should be called
+      expect(onClose).toHaveBeenCalled();
+      expect(onDestroy).toHaveBeenCalled();
+    });
+  });
 });

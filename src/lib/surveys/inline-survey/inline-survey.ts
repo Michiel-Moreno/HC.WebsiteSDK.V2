@@ -88,6 +88,11 @@ export class InlineSurvey {
     if (!this.quarantineService.isUnderQuarantine()) {
       this.iFrameHandle.style.display = '';
       this.quarantineService.startQuarantine();
+      this.inlineConfig.callbacks?.onShow?.();
+    } else {
+      // Placeholder for remainingDays - will be replaced in Phase 2B
+      const remainingDays = 7;
+      this.inlineConfig.callbacks?.onQuarantineBlocked?.(remainingDays);
     }
   }
 
@@ -96,6 +101,7 @@ export class InlineSurvey {
    */
   public hide(): void {
     this.iFrameHandle.style.display = 'none';
+    this.inlineConfig.callbacks?.onHide?.();
   }
 
   /**
@@ -112,6 +118,7 @@ export class InlineSurvey {
     if (this.iFrame.parentElement) {
       this.iFrame.parentElement.removeChild(this.iFrame);
     }
+    this.inlineConfig.callbacks?.onDestroy?.();
   }
 
   /**
@@ -143,6 +150,17 @@ export class InlineSurvey {
         iFrameFactory.applyClass(cl),
       );
     const iFrame = iFrameFactory.styledElement;
+
+    // Add event listeners for iframe load and error
+    iFrame.addEventListener('load', () => {
+      this.inlineConfig.callbacks?.onLoad?.(iFrame);
+    });
+
+    iFrame.addEventListener('error', () => {
+      const error = new Error('Failed to load survey iframe');
+      this.inlineConfig.callbacks?.onError?.(error);
+    });
+
     root.appendChild(iFrame);
     return iFrame;
   }

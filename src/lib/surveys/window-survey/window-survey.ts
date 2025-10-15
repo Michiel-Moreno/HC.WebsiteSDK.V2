@@ -88,8 +88,17 @@ export class WindowSurvey {
           this.urlFactory.getUrlWithParams(),
           '_blank',
         );
-      if (!this.windowHandle) throw new CannotOpenWindowException();
+      if (!this.windowHandle) {
+        const error = new CannotOpenWindowException();
+        this.windowConfig.callbacks?.onError?.(error);
+        throw error;
+      }
       this.quarantineService.startQuarantine();
+      this.windowConfig.callbacks?.onShow?.();
+    } else {
+      // Placeholder for remainingDays - will be replaced in Phase 2B
+      const remainingDays = 7;
+      this.windowConfig.callbacks?.onQuarantineBlocked?.(remainingDays);
     }
   }
 
@@ -98,6 +107,7 @@ export class WindowSurvey {
    */
   public close(): void {
     if (this.windowHandle) this.windowHandle.close();
+    this.windowConfig.callbacks?.onClose?.();
   }
 
   /**
@@ -108,5 +118,6 @@ export class WindowSurvey {
     this.close();
     // No DOM cleanup needed (separate window)
     // Quarantine data persists in localStorage (by design)
+    this.windowConfig.callbacks?.onDestroy?.();
   }
 }
