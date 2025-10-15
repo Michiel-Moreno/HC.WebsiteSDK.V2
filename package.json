@@ -36,7 +36,8 @@
     "release:prepare": "run-s reset-hard checkout-master test doc:html version",
     "release:push": "git push --follow-tags origin master --no-verify",
     "release:publish": "npm publish --access public --tag latest",
-    "release": "run-s release:*"
+    "release": "run-s release:*",
+    "prepare": "husky"
   },
   "engines": {
     "node": ">=20"
@@ -63,7 +64,7 @@
     "eslint-plugin-functional": "^3.0.2",
     "eslint-plugin-import": "2.32.0",
     "gh-pages": "^3.1.0",
-    "husky": "^4.3.0",
+    "husky": "^9.1.7",
     "jest": "^26.4.2",
     "lint-staged": "^10.4.0",
     "npm-run-all": "^4.1.5",
@@ -99,11 +100,5 @@
     "exclude": [
       "**/*.spec.js"
     ]
-  },
-  "husky": {
-    "hooks": {
-      "commit-msg": "commitlint -E HUSKY_GIT_PARAMS",
-      "pre-commit": "lint-staged"
-    }
   }
 }
