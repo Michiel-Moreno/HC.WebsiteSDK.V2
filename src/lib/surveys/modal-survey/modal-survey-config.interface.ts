@@ -48,4 +48,15 @@ export interface ModalSurveyConfig {
    * Lifecycle event callbacks
    */
   callbacks?: SurveyCallbacks;
+  /**
+   * ARIA label for the modal dialog
+   * Used by screen readers to announce the modal
+   * @default 'Survey dialog'
+   */
+  ariaLabel?: string;
+  /**
+   * ARIA description for the modal
+   * Provides additional context to screen readers
+   */
+  ariaDescription?: string;
 }

@@ -948,4 +948,94 @@ describe('ModalSurvey', () => {
       expect(onDestroy).toHaveBeenCalledTimes(1);
     });
   });
+
+  describe('M. Accessibility Tests', () => {
+    test('should have role="dialog" attribute', () => {
+      const config: ModalSurveyConfig = {};
+
+      const survey = new ModalSurvey(mockUrlBuilder, config);
+
+      expect(survey.modalContainer.getAttribute('role')).toBe('dialog');
+    });
+
+    test('should have aria-modal="true" attribute', () => {
+      const config: ModalSurveyConfig = {};
+
+      const survey = new ModalSurvey(mockUrlBuilder, config);
+
+      expect(survey.modalContainer.getAttribute('aria-modal')).toBe('true');
+    });
+
+    test('should have default aria-label', () => {
+      const config: ModalSurveyConfig = {};
+
+      const survey = new ModalSurvey(mockUrlBuilder, config);
+
+      expect(survey.modalContainer.getAttribute('aria-label')).toBe(
+        'Survey dialog',
+      );
+    });
+
+    test('should use custom aria-label when provided', () => {
+      const config: ModalSurveyConfig = {
+        ariaLabel: 'Customer feedback survey',
+      };
+
+      const survey = new ModalSurvey(mockUrlBuilder, config);
+
+      expect(survey.modalContainer.getAttribute('aria-label')).toBe(
+        'Customer feedback survey',
+      );
+    });
+
+    test('should set aria-description when provided', () => {
+      const config: ModalSurveyConfig = {
+        ariaDescription: 'Please take a moment to share your feedback',
+      };
+
+      const survey = new ModalSurvey(mockUrlBuilder, config);
+
+      expect(survey.modalContainer.getAttribute('aria-description')).toBe(
+        'Please take a moment to share your feedback',
+      );
+    });
+
+    test('should not set aria-description when not provided', () => {
+      const config: ModalSurveyConfig = {};
+
+      const survey = new ModalSurvey(mockUrlBuilder, config);
+
+      expect(survey.modalContainer.hasAttribute('aria-description')).toBe(
+        false,
+      );
+    });
+
+    test('should be focusable with tabindex="-1"', () => {
+      const config: ModalSurveyConfig = {};
+
+      const survey = new ModalSurvey(mockUrlBuilder, config);
+
+      expect(survey.modalContainer.getAttribute('tabindex')).toBe('-1');
+    });
+
+    test('should focus modal when shown', (done) => {
+      const config: ModalSurveyConfig = {
+        showByDefault: false,
+      };
+
+      const survey = new ModalSurvey(mockUrlBuilder, config);
+
+      // Mock focus method
+      const focusSpy = jest.spyOn(survey.modalContainer, 'focus');
+
+      localStorageMock.clear();
+      survey.show();
+
+      // Focus happens asynchronously
+      setTimeout(() => {
+        expect(focusSpy).toHaveBeenCalled();
+        done();
+      }, 10);
+    });
+  });
 });

@@ -132,6 +132,12 @@ export class ModalSurvey {
       const styleClasses = this.getClassNames();
       this.modalHandle.classList.add(styleClasses.modalVisible);
       this.quarantineService.startQuarantine();
+
+      // Focus modal after render for keyboard navigation and screen readers
+      setTimeout(() => {
+        this.modalHandle.focus();
+      }, 0);
+
       this.modalConfig.callbacks?.onShow?.();
     } else {
       const remainingDays = this.quarantineService.getRemainingDays();
@@ -375,6 +381,24 @@ export class ModalSurvey {
         modalStyle.modalTranslucentBackground,
       ).styledElement;
     modalRoot.appendChild(windowDiv);
+
+    // Add ARIA attributes for accessibility
+    modalRoot.setAttribute('role', 'dialog');
+    modalRoot.setAttribute('aria-modal', 'true');
+    modalRoot.setAttribute(
+      'aria-label',
+      this.modalConfig.ariaLabel || 'Survey dialog',
+    );
+
+    if (this.modalConfig.ariaDescription) {
+      modalRoot.setAttribute(
+        'aria-description',
+        this.modalConfig.ariaDescription,
+      );
+    }
+
+    // Make modal focusable for keyboard navigation
+    modalRoot.setAttribute('tabindex', '-1');
 
     // add behaviour
     if (trueByDefault(this.modalConfig.closeButton)) {
