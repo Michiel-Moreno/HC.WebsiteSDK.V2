@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.1.0] (2025-10-15)
+
+### Features
+* add ButtonTriggerSurvey with 4 style presets and 8 positions
+* add floating feedback button functionality for Pop-up and New tab surveys
+
+### Changes
+* update URL format - remove AskAnywhereCampaign segment from paths
+
+### Documentation
+* add comprehensive ButtonTriggerSurvey section to README
+
 ### [2.0.2](https://github.com/hellocustomer/HC.WebsiteSDK.V2/compare/2.0.1...2.0.2) (2024-03-13)
 
 ### [2.0.1](https://github.com/hellocustomer/HC.WebsiteSDK.V2/compare/1.3.0...2.0.1) (2024-03-13)

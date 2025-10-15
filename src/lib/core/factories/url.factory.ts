@@ -14,8 +14,6 @@ export class UrlFactory {
 
   private static readonly QUERY_PARAM_PREFIX = 'entry.';
 
-  //private static readonly TOUCHPOINT_TYPE = 'AskAnywhereCampaign';
-
   /**
    * Get survey identifier
    */
@@ -47,13 +45,6 @@ export class UrlFactory {
    * Get target url without query params
    */
   public getBaseUrlWithLanguage(): string {
-    //if (this.config.newTp) {
-      return `${this.config.baseUrl}/${this.config.language}/${this.config.tenantId}/${this.config.touchPointId}`;
-    /*} else {
-      if (this.config.language)
-        return `${this.config.baseUrl}/${this.config.language}/${UrlFactory.TOUCHPOINT_TYPE}/${this.config.tenantId}/${this.config.touchPointId}`;
-      else
-        return `${this.config.baseUrl}/${UrlFactory.TOUCHPOINT_TYPE}/${this.config.tenantId}/${this.config.touchPointId}`;
-    }*/
+    return `${this.config.baseUrl}/${this.config.language}/${this.config.tenantId}/${this.config.touchPointId}`;
   }
 }
