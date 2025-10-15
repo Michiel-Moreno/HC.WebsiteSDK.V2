@@ -130,8 +130,7 @@ export class ModalSurvey {
       this.quarantineService.startQuarantine();
       this.modalConfig.callbacks?.onShow?.();
     } else {
-      // Placeholder for remainingDays - will be replaced in Phase 2B
-      const remainingDays = 7;
+      const remainingDays = this.quarantineService.getRemainingDays();
       this.modalConfig.callbacks?.onQuarantineBlocked?.(remainingDays);
     }
   }

@@ -96,8 +96,7 @@ export class WindowSurvey {
       this.quarantineService.startQuarantine();
       this.windowConfig.callbacks?.onShow?.();
     } else {
-      // Placeholder for remainingDays - will be replaced in Phase 2B
-      const remainingDays = 7;
+      const remainingDays = this.quarantineService.getRemainingDays();
       this.windowConfig.callbacks?.onQuarantineBlocked?.(remainingDays);
     }
   }

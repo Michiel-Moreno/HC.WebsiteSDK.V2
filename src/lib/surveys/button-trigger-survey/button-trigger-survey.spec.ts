@@ -954,10 +954,11 @@ describe('ButtonTriggerSurvey', () => {
     });
 
     test('should call onQuarantineBlocked when blocked by quarantine', () => {
-      // Set quarantine
+      // Set quarantine to 2 days ago (5 days remaining for 7-day period)
       const quarantineKey =
         'hcSDK.SurveyQuarantineStart:button-trigger-bottom-right-Test';
-      localStorageMock.store[quarantineKey] = Date.now().toString();
+      const twoDaysAgo = Date.now() - 2 * 24 * 60 * 60 * 1000;
+      localStorageMock.store[quarantineKey] = twoDaysAgo.toString();
 
       const onQuarantineBlocked = jest.fn();
       const config: ButtonTriggerSurveyConfig = {
@@ -972,7 +973,7 @@ describe('ButtonTriggerSurvey', () => {
       survey.show();
 
       expect(onQuarantineBlocked).toHaveBeenCalled();
-      expect(onQuarantineBlocked).toHaveBeenCalledWith(expect.any(Number));
+      expect(onQuarantineBlocked).toHaveBeenCalledWith(5);
     });
 
     test('should not throw if callbacks are not provided', () => {

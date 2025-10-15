@@ -125,8 +125,7 @@ export class ButtonTriggerSurvey {
       this.quarantineService.startQuarantine();
       this.config.callbacks?.onShow?.();
     } else {
-      // Placeholder for remainingDays - will be replaced in Phase 2B
-      const remainingDays = 7;
+      const remainingDays = this.quarantineService.getRemainingDays();
       this.config.callbacks?.onQuarantineBlocked?.(remainingDays);
     }
   }

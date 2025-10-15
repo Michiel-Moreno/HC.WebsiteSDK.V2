@@ -90,8 +90,7 @@ export class InlineSurvey {
       this.quarantineService.startQuarantine();
       this.inlineConfig.callbacks?.onShow?.();
     } else {
-      // Placeholder for remainingDays - will be replaced in Phase 2B
-      const remainingDays = 7;
+      const remainingDays = this.quarantineService.getRemainingDays();
       this.inlineConfig.callbacks?.onQuarantineBlocked?.(remainingDays);
     }
   }
