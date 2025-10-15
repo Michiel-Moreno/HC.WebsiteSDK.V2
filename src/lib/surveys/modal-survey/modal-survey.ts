@@ -77,6 +77,11 @@ export class ModalSurvey {
   private readonly urlFactory: UrlFactory;
   private readonly validator: ModalSurveyConfigValidator;
   private readonly quarantineService: QuarantineService;
+  private eventListeners: Array<{
+    element: HTMLElement | Window;
+    event: string;
+    handler: EventListener;
+  }> = [];
 
   constructor(
     configBuilder: UrlBuilder,
@@ -130,6 +135,36 @@ export class ModalSurvey {
    */
   public reload(): void {
     this.iFrameHandle.src = this.urlFactory.getUrlWithParams();
+  }
+
+  /**
+   * Destroy modal and clean up all event listeners
+   * Removes modal from DOM and prevents memory leaks
+   */
+  public destroy(): void {
+    // Remove all event listeners
+    this.eventListeners.forEach(({ element, event, handler }) => {
+      element.removeEventListener(event, handler);
+    });
+    this.eventListeners = [];
+
+    // Remove from DOM
+    if (this.modalHandle.parentElement) {
+      this.modalHandle.parentElement.removeChild(this.modalHandle);
+    }
+  }
+
+  /**
+   * Add event listener and track it for cleanup
+   * @private
+   */
+  private addTrackedListener(
+    element: HTMLElement | Window,
+    event: string,
+    handler: EventListener,
+  ): void {
+    element.addEventListener(event, handler);
+    this.eventListeners.push({ element, event, handler });
   }
 
   private getModalStyle(): Required<ModalSurveyStyleConfig> {
@@ -315,16 +350,17 @@ export class ModalSurvey {
     // add behaviour
     if (trueByDefault(this.modalConfig.closeButton)) {
       windowBar.appendChild(closeButton);
-      closeButton.addEventListener('click', () => this.close());
+      this.addTrackedListener(closeButton, 'click', () => this.close());
     }
-    windowDiv.addEventListener('click', (e) => e.stopPropagation());
+    this.addTrackedListener(windowDiv, 'click', (e) => e.stopPropagation());
     if (trueByDefault(this.modalConfig.closeOnEscape)) {
-      window.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape' || event.key === 'Esc') this.close();
+      this.addTrackedListener(window, 'keydown', (event: Event) => {
+        const keyEvent = event as KeyboardEvent;
+        if (keyEvent.key === 'Escape' || keyEvent.key === 'Esc') this.close();
       });
     }
     if (trueByDefault(this.modalConfig.closeOnBackgroundClick))
-      modalRoot.addEventListener('click', () => this.close());
+      this.addTrackedListener(modalRoot, 'click', () => this.close());
     if (this.modalConfig.modalContainerSelector) {
       const root = document.querySelector(
         this.modalConfig.modalContainerSelector,

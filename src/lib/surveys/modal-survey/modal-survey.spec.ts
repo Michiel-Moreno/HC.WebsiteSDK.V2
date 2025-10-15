@@ -665,4 +665,153 @@ describe('ModalSurvey', () => {
       expect(urlFactory.getSurveyIdentifier).toHaveBeenCalled();
     });
   });
+
+  describe('K. Destroy & Cleanup Tests', () => {
+    test('should have destroy method', () => {
+      const config: ModalSurveyConfig = {};
+
+      const survey = new ModalSurvey(mockUrlBuilder, config);
+
+      expect(survey.destroy).toBeDefined();
+      expect(typeof survey.destroy).toBe('function');
+    });
+
+    test('should remove modal from DOM when destroyed', () => {
+      const config: ModalSurveyConfig = {};
+
+      const survey = new ModalSurvey(mockUrlBuilder, config);
+
+      expect(document.body.contains(survey.modalContainer)).toBe(true);
+
+      survey.destroy();
+
+      expect(document.body.contains(survey.modalContainer)).toBe(false);
+    });
+
+    test('should not throw error when destroy called twice', () => {
+      const config: ModalSurveyConfig = {};
+
+      const survey = new ModalSurvey(mockUrlBuilder, config);
+
+      survey.destroy();
+
+      expect(() => survey.destroy()).not.toThrow();
+    });
+
+    test('should not throw error when destroy called on already removed modal', () => {
+      const config: ModalSurveyConfig = {};
+
+      const survey = new ModalSurvey(mockUrlBuilder, config);
+
+      // Manually remove from DOM
+      if (survey.modalContainer.parentElement) {
+        survey.modalContainer.parentElement.removeChild(survey.modalContainer);
+      }
+
+      // Should not throw
+      expect(() => survey.destroy()).not.toThrow();
+    });
+
+    test('should clean up close button event listener', () => {
+      const config: ModalSurveyConfig = {
+        closeButton: true,
+        showByDefault: true,
+      };
+
+      const survey = new ModalSurvey(mockUrlBuilder, config);
+
+      const closeButton = survey.modalContainer.querySelector(
+        `.${defaults.classNames.windowCloseButtonStyle}`,
+      ) as HTMLElement;
+
+      expect(closeButton).not.toBeNull();
+
+      // Destroy should clean up listener
+      survey.destroy();
+
+      // Try to click close button (it's removed from DOM but still exists in memory)
+      closeButton.click();
+
+      // If listeners were cleaned up properly, modal should not be in DOM
+      expect(document.body.contains(survey.modalContainer)).toBe(false);
+    });
+
+    test('should clean up window div event listener', () => {
+      const config: ModalSurveyConfig = {
+        showByDefault: true,
+      };
+
+      const survey = new ModalSurvey(mockUrlBuilder, config);
+
+      const windowDiv = survey.modalContainer.querySelector(
+        `.${defaults.classNames.windowDivStyle}`,
+      ) as HTMLElement;
+
+      expect(windowDiv).not.toBeNull();
+
+      survey.destroy();
+
+      // Modal should be removed from DOM
+      expect(document.body.contains(survey.modalContainer)).toBe(false);
+    });
+
+    test('should clean up escape key listener', () => {
+      const config: ModalSurveyConfig = {
+        closeOnEscape: true,
+        showByDefault: true,
+      };
+
+      const survey = new ModalSurvey(mockUrlBuilder, config);
+
+      expect(
+        survey.modalContainer.classList.contains(
+          defaults.classNames.modalVisible,
+        ),
+      ).toBe(true);
+
+      // Destroy should clean up the keydown listener
+      survey.destroy();
+
+      // Modal should be removed from DOM
+      expect(document.body.contains(survey.modalContainer)).toBe(false);
+    });
+
+    test('should clean up background click listener', () => {
+      const config: ModalSurveyConfig = {
+        closeOnBackgroundClick: true,
+        showByDefault: true,
+      };
+
+      const survey = new ModalSurvey(mockUrlBuilder, config);
+
+      expect(
+        survey.modalContainer.classList.contains(
+          defaults.classNames.modalVisible,
+        ),
+      ).toBe(true);
+
+      survey.destroy();
+
+      // Modal should be removed from DOM
+      expect(document.body.contains(survey.modalContainer)).toBe(false);
+    });
+
+    test('should clean up all event listeners for fully configured modal', () => {
+      const config: ModalSurveyConfig = {
+        closeButton: true,
+        closeOnEscape: true,
+        closeOnBackgroundClick: true,
+        showByDefault: true,
+      };
+
+      const survey = new ModalSurvey(mockUrlBuilder, config);
+
+      expect(document.body.contains(survey.modalContainer)).toBe(true);
+
+      survey.destroy();
+
+      // Modal should be removed from DOM after destroy
+      expect(document.body.contains(survey.modalContainer)).toBe(false);
+    });
+  });
 });

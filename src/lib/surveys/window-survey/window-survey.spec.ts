@@ -396,4 +396,45 @@ describe('WindowSurvey', () => {
       expect(urlFactory.getSurveyIdentifier).toHaveBeenCalled();
     });
   });
+
+  describe('G. Destroy Method Tests', () => {
+    test('should have destroy method', () => {
+      const config: WindowSurveyConfig = {};
+
+      const survey = new WindowSurvey(mockUrlBuilder, config);
+
+      expect(survey.destroy).toBeDefined();
+      expect(typeof survey.destroy).toBe('function');
+    });
+
+    test('should close window when destroyed', () => {
+      const config: WindowSurveyConfig = {};
+
+      const survey = new WindowSurvey(mockUrlBuilder, config);
+      survey.open();
+
+      survey.destroy();
+
+      expect(mockWindow.close).toHaveBeenCalled();
+    });
+
+    test('should not throw error when destroy called on unopened survey', () => {
+      const config: WindowSurveyConfig = {};
+
+      const survey = new WindowSurvey(mockUrlBuilder, config);
+
+      expect(() => survey.destroy()).not.toThrow();
+    });
+
+    test('should not throw error when destroy called twice', () => {
+      const config: WindowSurveyConfig = {};
+
+      const survey = new WindowSurvey(mockUrlBuilder, config);
+      survey.open();
+
+      survey.destroy();
+
+      expect(() => survey.destroy()).not.toThrow();
+    });
+  });
 });

@@ -97,6 +97,14 @@ export interface ButtonTriggerSurveyConfig {
   quarantineConfig?: SurveyQuarantineConfig;
 
   /**
+   * Unique identifier for quarantine tracking
+   * If not provided, generated from position + text
+   * Ensures quarantine persists across page reloads
+   * @example 'feedback-button-main'
+   */
+  quarantineId?: string;
+
+  /**
    * z-index for button positioning
    * @default 9999
    */

@@ -527,6 +527,37 @@ describe('ButtonTriggerSurvey', () => {
       expect(containerStillInDOM).toBe(false);
     });
 
+    test('should remove click handler when destroyed', () => {
+      const onTriggerMock = jest.fn();
+      const survey = new ButtonTriggerSurvey({
+        onTrigger: onTriggerMock,
+      });
+
+      // Verify button works before destroy
+      survey.button.click();
+      expect(onTriggerMock).toHaveBeenCalledTimes(1);
+
+      // Destroy the survey
+      survey.destroy();
+
+      // Try to click button after destroy (button still exists in memory)
+      // The handler should be removed, so callback should not fire
+      survey.button.click();
+
+      // Should still be called only once (from before destroy)
+      expect(onTriggerMock).toHaveBeenCalledTimes(1);
+    });
+
+    test('should not throw error when destroy called twice', () => {
+      const survey = new ButtonTriggerSurvey({
+        onTrigger: noop,
+      });
+
+      survey.destroy();
+
+      expect(() => survey.destroy()).not.toThrow();
+    });
+
     test('should not show if under quarantine', () => {
       // First survey to set quarantine
       const survey1 = new ButtonTriggerSurvey({
@@ -645,6 +676,7 @@ describe('ButtonTriggerSurvey', () => {
         onTrigger: noop,
         quarantineConfig: { period: 7 },
         showByDefault: true,
+        text: 'Survey1',
       });
 
       // Verify quarantine was started
@@ -653,14 +685,15 @@ describe('ButtonTriggerSurvey', () => {
         survey1.container.classList.contains(defaults.classNames.buttonVisible),
       ).toBe(true);
 
-      // Create another survey with different quarantine config
+      // Create another survey with different text (different quarantine ID)
       const survey2 = new ButtonTriggerSurvey({
         onTrigger: noop,
         quarantineConfig: { period: 1 },
         showByDefault: true,
+        text: 'Survey2',
       });
 
-      // Both surveys should set their own quarantine
+      // Both surveys should set their own quarantine (different IDs due to different text)
       expect(localStorageMock.setItem).toHaveBeenCalledTimes(2);
       expect(
         survey2.container.classList.contains(defaults.classNames.buttonVisible),
@@ -693,7 +726,137 @@ describe('ButtonTriggerSurvey', () => {
     });
   });
 
-  describe('I. Accessibility Tests', () => {
+  describe('I. Quarantine ID Stability Tests', () => {
+    test('should use provided quarantine ID', () => {
+      const survey = new ButtonTriggerSurvey({
+        onTrigger: noop,
+        position: 'bottom-right',
+        quarantineId: 'custom-feedback-button',
+        quarantineConfig: { period: 7 },
+      });
+
+      expect(survey.container).toBeDefined();
+
+      // Check localStorage key uses custom ID
+      const calls = localStorageMock.setItem.mock.calls;
+      const quarantineCall = calls.find(
+        (call) =>
+          call[0] === 'hcSDK.SurveyQuarantineStart:custom-feedback-button',
+      );
+      expect(quarantineCall).toBeDefined();
+    });
+
+    test('should generate stable ID from position and text', () => {
+      const survey1 = new ButtonTriggerSurvey({
+        onTrigger: noop,
+        position: 'bottom-right',
+        text: 'Feedback',
+        quarantineConfig: { period: 7 },
+      });
+
+      expect(survey1.container).toBeDefined();
+
+      // Check that localStorage key is predictable
+      const calls = localStorageMock.setItem.mock.calls;
+      const quarantineCall = calls.find(
+        (call) =>
+          call[0] ===
+          'hcSDK.SurveyQuarantineStart:button-trigger-bottom-right-Feedback',
+      );
+      expect(quarantineCall).toBeDefined();
+    });
+
+    test('should generate stable ID with default text when no text provided', () => {
+      const survey = new ButtonTriggerSurvey({
+        onTrigger: noop,
+        position: 'bottom-right',
+        quarantineConfig: { period: 7 },
+      });
+
+      expect(survey.container).toBeDefined();
+
+      // Should use 'default' when no text provided
+      const calls = localStorageMock.setItem.mock.calls;
+      const quarantineCall = calls.find(
+        (call) =>
+          call[0] ===
+          'hcSDK.SurveyQuarantineStart:button-trigger-bottom-right-default',
+      );
+      expect(quarantineCall).toBeDefined();
+    });
+
+    test('should use different IDs for different positions', () => {
+      const survey1 = new ButtonTriggerSurvey({
+        onTrigger: noop,
+        position: 'bottom-right',
+        text: 'Feedback',
+        quarantineConfig: { period: 7 },
+      });
+
+      const survey2 = new ButtonTriggerSurvey({
+        onTrigger: noop,
+        position: 'top-left',
+        text: 'Feedback',
+        quarantineConfig: { period: 7 },
+      });
+
+      expect(survey1.container).toBeDefined();
+      expect(survey2.container).toBeDefined();
+
+      // Verify different localStorage keys
+      const calls = localStorageMock.setItem.mock.calls;
+      const key1 = calls.find(
+        (call) =>
+          call[0] ===
+          'hcSDK.SurveyQuarantineStart:button-trigger-bottom-right-Feedback',
+      );
+      const key2 = calls.find(
+        (call) =>
+          call[0] ===
+          'hcSDK.SurveyQuarantineStart:button-trigger-top-left-Feedback',
+      );
+
+      expect(key1).toBeDefined();
+      expect(key2).toBeDefined();
+    });
+
+    test('should use different IDs for different text values', () => {
+      const survey1 = new ButtonTriggerSurvey({
+        onTrigger: noop,
+        position: 'bottom-right',
+        text: 'Feedback',
+        quarantineConfig: { period: 7 },
+      });
+
+      const survey2 = new ButtonTriggerSurvey({
+        onTrigger: noop,
+        position: 'bottom-right',
+        text: 'Help',
+        quarantineConfig: { period: 7 },
+      });
+
+      expect(survey1.container).toBeDefined();
+      expect(survey2.container).toBeDefined();
+
+      // Verify different localStorage keys
+      const calls = localStorageMock.setItem.mock.calls;
+      const key1 = calls.find(
+        (call) =>
+          call[0] ===
+          'hcSDK.SurveyQuarantineStart:button-trigger-bottom-right-Feedback',
+      );
+      const key2 = calls.find(
+        (call) =>
+          call[0] ===
+          'hcSDK.SurveyQuarantineStart:button-trigger-bottom-right-Help',
+      );
+
+      expect(key1).toBeDefined();
+      expect(key2).toBeDefined();
+    });
+  });
+
+  describe('J. Accessibility Tests', () => {
     test('should set aria-label attribute', () => {
       const survey = new ButtonTriggerSurvey({
         onTrigger: noop,
@@ -723,7 +886,7 @@ describe('ButtonTriggerSurvey', () => {
     });
   });
 
-  describe('J. Property Getters Tests', () => {
+  describe('K. Property Getters Tests', () => {
     test('should expose button element via getter', () => {
       const survey = new ButtonTriggerSurvey({
         onTrigger: noop,

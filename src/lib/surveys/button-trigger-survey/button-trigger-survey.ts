@@ -56,6 +56,7 @@ export class ButtonTriggerSurvey {
   private readonly quarantineService: QuarantineService;
   private readonly position: ButtonPosition;
   private readonly stylePreset: ButtonStylePreset;
+  private clickHandler: EventListener | null = null;
 
   constructor(private config: ButtonTriggerSurveyConfig) {
     // Validate configuration
@@ -66,8 +67,12 @@ export class ButtonTriggerSurvey {
     this.position = config.position || 'bottom-right';
     this.stylePreset = config.stylePreset || 'pill-button';
 
-    // Generate unique identifier for quarantine
-    const quarantineId = `button-trigger-${this.position}-${Date.now()}`;
+    // Generate stable identifier for quarantine
+    // Uses config.quarantineId if provided, otherwise generates from position + text
+    // This ensures quarantine persists across page reloads
+    const quarantineId =
+      config.quarantineId ||
+      `button-trigger-${this.position}-${config.text || 'default'}`;
     this.quarantineService = new QuarantineService(
       quarantineId,
       config.quarantineConfig,
@@ -132,8 +137,16 @@ export class ButtonTriggerSurvey {
 
   /**
    * Destroy button and remove from DOM
+   * Cleans up event listeners to prevent memory leaks
    */
   public destroy(): void {
+    // Remove event listener
+    if (this.clickHandler && this.buttonHandle) {
+      this.buttonHandle.removeEventListener('click', this.clickHandler);
+      this.clickHandler = null;
+    }
+
+    // Remove from DOM
     if (this.containerHandle.parentElement) {
       this.containerHandle.parentElement.removeChild(this.containerHandle);
     }
@@ -267,10 +280,11 @@ export class ButtonTriggerSurvey {
       button.appendChild(textSpan);
     }
 
-    // Add click handler
-    button.addEventListener('click', () => {
+    // Add click handler and store reference for cleanup
+    this.clickHandler = () => {
       this.config.onTrigger();
-    });
+    };
+    button.addEventListener('click', this.clickHandler);
 
     // Append to container
     container.appendChild(button);

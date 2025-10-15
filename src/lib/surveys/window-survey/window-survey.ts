@@ -99,4 +99,14 @@ export class WindowSurvey {
   public close(): void {
     if (this.windowHandle) this.windowHandle.close();
   }
+
+  /**
+   * Destroy survey and clean up resources
+   * Closes window if still open
+   */
+  public destroy(): void {
+    this.close();
+    // No DOM cleanup needed (separate window)
+    // Quarantine data persists in localStorage (by design)
+  }
 }
