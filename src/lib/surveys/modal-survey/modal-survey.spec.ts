@@ -39,14 +39,14 @@ describe('ModalSurvey', () => {
     });
 
     // Create mock UrlBuilder
-    mockUrlBuilder = ({
+    mockUrlBuilder = {
       getUrlFactory: jest.fn().mockReturnValue({
         getUrlWithParams: jest
           .fn()
           .mockReturnValue('https://example.com/survey?entry.test=value'),
         getSurveyIdentifier: jest.fn().mockReturnValue('test-survey-id'),
       }),
-    } as unknown) as UrlBuilder;
+    } as unknown as UrlBuilder;
   });
 
   afterEach(() => {
@@ -81,25 +81,25 @@ describe('ModalSurvey', () => {
     });
 
     test('should validate closeButton as boolean', () => {
-      const config = ({
+      const config = {
         closeButton: 'true',
-      } as unknown) as ModalSurveyConfig;
+      } as unknown as ModalSurveyConfig;
 
       expect(() => new ModalSurvey(mockUrlBuilder, config)).toThrow();
     });
 
     test('should validate showByDefault as boolean', () => {
-      const config = ({
+      const config = {
         showByDefault: 'true',
-      } as unknown) as ModalSurveyConfig;
+      } as unknown as ModalSurveyConfig;
 
       expect(() => new ModalSurvey(mockUrlBuilder, config)).toThrow();
     });
 
     test('should validate ignoreDefaultStyles as boolean', () => {
-      const config = ({
+      const config = {
         ignoreDefaultStyles: 'false',
-      } as unknown) as ModalSurveyConfig;
+      } as unknown as ModalSurveyConfig;
 
       expect(() => new ModalSurvey(mockUrlBuilder, config)).toThrow();
     });
@@ -131,12 +131,12 @@ describe('ModalSurvey', () => {
 
       expect(
         survey.modalContainer.classList.contains(
-          defaults.classNames.rootDivStyle
-        )
+          defaults.classNames.rootDivStyle,
+        ),
       ).toBe(true);
 
       expect(
-        survey.iFrame.classList.contains(defaults.classNames.iFrameStyle)
+        survey.iFrame.classList.contains(defaults.classNames.iFrameStyle),
       ).toBe(true);
     });
 
@@ -146,7 +146,7 @@ describe('ModalSurvey', () => {
       const survey = new ModalSurvey(mockUrlBuilder, config);
 
       const windowDiv = survey.modalContainer.querySelector(
-        `.${defaults.classNames.windowDivStyle}`
+        `.${defaults.classNames.windowDivStyle}`,
       );
       expect(windowDiv).not.toBeNull();
     });
@@ -157,7 +157,7 @@ describe('ModalSurvey', () => {
       const survey = new ModalSurvey(mockUrlBuilder, config);
 
       const windowBar = survey.modalContainer.querySelector(
-        `.${defaults.classNames.windowBarDivStyle}`
+        `.${defaults.classNames.windowBarDivStyle}`,
       );
       expect(windowBar).not.toBeNull();
     });
@@ -170,7 +170,7 @@ describe('ModalSurvey', () => {
       const survey = new ModalSurvey(mockUrlBuilder, config);
 
       const closeButton = survey.modalContainer.querySelector(
-        `.${defaults.classNames.windowCloseButtonStyle}`
+        `.${defaults.classNames.windowCloseButtonStyle}`,
       );
       expect(closeButton).not.toBeNull();
     });
@@ -183,7 +183,7 @@ describe('ModalSurvey', () => {
       const survey = new ModalSurvey(mockUrlBuilder, config);
 
       const closeButton = survey.modalContainer.querySelector(
-        `.${defaults.classNames.windowCloseButtonStyle}`
+        `.${defaults.classNames.windowCloseButtonStyle}`,
       );
       expect(closeButton).toBeNull();
     });
@@ -194,7 +194,7 @@ describe('ModalSurvey', () => {
       const survey = new ModalSurvey(mockUrlBuilder, config);
 
       const footer = survey.modalContainer.querySelector(
-        `.${defaults.classNames.footerStyle}`
+        `.${defaults.classNames.footerStyle}`,
       );
       expect(footer).not.toBeNull();
     });
@@ -205,7 +205,7 @@ describe('ModalSurvey', () => {
       const survey = new ModalSurvey(mockUrlBuilder, config);
 
       const logo = survey.modalContainer.querySelector(
-        `.${defaults.classNames.footerLogoStyle}`
+        `.${defaults.classNames.footerLogoStyle}`,
       );
       expect(logo).not.toBeNull();
     });
@@ -238,7 +238,7 @@ describe('ModalSurvey', () => {
       };
 
       expect(() => new ModalSurvey(mockUrlBuilder, config)).toThrow(
-        InvalidQuerySelectorException
+        InvalidQuerySelectorException,
       );
     });
   });
@@ -253,8 +253,8 @@ describe('ModalSurvey', () => {
 
       expect(
         survey.modalContainer.classList.contains(
-          defaults.classNames.rootDivStyle
-        )
+          defaults.classNames.rootDivStyle,
+        ),
       ).toBe(true);
     });
 
@@ -268,8 +268,8 @@ describe('ModalSurvey', () => {
       // Should still have class names
       expect(
         survey.modalContainer.classList.contains(
-          defaults.classNames.rootDivStyle
-        )
+          defaults.classNames.rootDivStyle,
+        ),
       ).toBe(true);
     });
 
@@ -284,7 +284,7 @@ describe('ModalSurvey', () => {
       const survey = new ModalSurvey(mockUrlBuilder, config);
 
       expect(survey.modalContainer.classList.contains('custom-root')).toBe(
-        true
+        true,
       );
       expect(survey.iFrame.classList.contains('custom-iframe')).toBe(true);
     });
@@ -312,8 +312,8 @@ describe('ModalSurvey', () => {
 
       expect(
         survey.modalContainer.classList.contains(
-          defaults.classNames.modalTranslucentBackground
-        )
+          defaults.classNames.modalTranslucentBackground,
+        ),
       ).toBe(true);
     });
 
@@ -326,8 +326,8 @@ describe('ModalSurvey', () => {
 
       expect(
         survey.modalContainer.classList.contains(
-          defaults.classNames.modalTranslucentBackground
-        )
+          defaults.classNames.modalTranslucentBackground,
+        ),
       ).toBe(false);
     });
   });
@@ -347,8 +347,8 @@ describe('ModalSurvey', () => {
 
       expect(
         survey.modalContainer.classList.contains(
-          defaults.classNames.modalVisible
-        )
+          defaults.classNames.modalVisible,
+        ),
       ).toBe(true);
     });
 
@@ -363,8 +363,8 @@ describe('ModalSurvey', () => {
 
       expect(
         survey.modalContainer.classList.contains(
-          defaults.classNames.modalVisible
-        )
+          defaults.classNames.modalVisible,
+        ),
       ).toBe(false);
     });
 
@@ -376,7 +376,7 @@ describe('ModalSurvey', () => {
       // Update the mock to return a different URL
       const urlFactory = mockUrlBuilder.getUrlFactory();
       (urlFactory.getUrlWithParams as jest.Mock).mockReturnValue(
-        'https://example.com/new-survey'
+        'https://example.com/new-survey',
       );
 
       survey.reload();
@@ -390,7 +390,7 @@ describe('ModalSurvey', () => {
       const survey = new ModalSurvey(mockUrlBuilder, config);
 
       expect(survey.iFrame.src).toBe(
-        'https://example.com/survey?entry.test=value'
+        'https://example.com/survey?entry.test=value',
       );
     });
   });
@@ -405,7 +405,7 @@ describe('ModalSurvey', () => {
       const survey = new ModalSurvey(mockUrlBuilder, config);
 
       const closeButton = survey.modalContainer.querySelector(
-        `.${defaults.classNames.windowCloseButtonStyle}`
+        `.${defaults.classNames.windowCloseButtonStyle}`,
       ) as HTMLElement;
 
       expect(closeButton).not.toBeNull();
@@ -414,8 +414,8 @@ describe('ModalSurvey', () => {
 
       expect(
         survey.modalContainer.classList.contains(
-          defaults.classNames.modalVisible
-        )
+          defaults.classNames.modalVisible,
+        ),
       ).toBe(false);
     });
 
@@ -431,8 +431,8 @@ describe('ModalSurvey', () => {
 
       expect(
         survey.modalContainer.classList.contains(
-          defaults.classNames.modalVisible
-        )
+          defaults.classNames.modalVisible,
+        ),
       ).toBe(false);
     });
 
@@ -445,7 +445,7 @@ describe('ModalSurvey', () => {
       const survey = new ModalSurvey(mockUrlBuilder, config);
 
       const windowDiv = survey.modalContainer.querySelector(
-        `.${defaults.classNames.windowDivStyle}`
+        `.${defaults.classNames.windowDivStyle}`,
       ) as HTMLElement;
 
       expect(windowDiv).not.toBeNull();
@@ -455,8 +455,8 @@ describe('ModalSurvey', () => {
 
       expect(
         survey.modalContainer.classList.contains(
-          defaults.classNames.modalVisible
-        )
+          defaults.classNames.modalVisible,
+        ),
       ).toBe(true);
     });
 
@@ -487,8 +487,8 @@ describe('ModalSurvey', () => {
 
       expect(
         survey.modalContainer.classList.contains(
-          defaults.classNames.modalVisible
-        )
+          defaults.classNames.modalVisible,
+        ),
       ).toBe(false);
     });
 
@@ -508,7 +508,7 @@ describe('ModalSurvey', () => {
       expect(localStorageMock.setItem).toHaveBeenCalled();
       const setItemCalls = localStorageMock.setItem.mock.calls;
       const quarantineCall = setItemCalls.find((call) =>
-        call[0].includes('hcSDK.SurveyQuarantineStart')
+        call[0].includes('hcSDK.SurveyQuarantineStart'),
       );
       expect(quarantineCall).toBeDefined();
     });
@@ -539,8 +539,8 @@ describe('ModalSurvey', () => {
       // Should show because quarantine period (7 days) has passed
       expect(
         survey.modalContainer.classList.contains(
-          defaults.classNames.modalVisible
-        )
+          defaults.classNames.modalVisible,
+        ),
       ).toBe(true);
     });
   });
@@ -574,10 +574,10 @@ describe('ModalSurvey', () => {
       };
 
       expect(() => new ModalSurvey(mockUrlBuilder, config)).toThrow(
-        InvalidQuerySelectorException
+        InvalidQuerySelectorException,
       );
       expect(() => new ModalSurvey(mockUrlBuilder, config)).toThrow(
-        '[Hello Customer SDK] HTML element for #invalid-selector selector not found!'
+        '[Hello Customer SDK] HTML element for #invalid-selector selector not found!',
       );
     });
   });
@@ -592,8 +592,8 @@ describe('ModalSurvey', () => {
 
       expect(
         survey.modalContainer.classList.contains(
-          defaults.classNames.modalVisible
-        )
+          defaults.classNames.modalVisible,
+        ),
       ).toBe(false);
     });
 
@@ -606,8 +606,8 @@ describe('ModalSurvey', () => {
 
       expect(
         survey.modalContainer.classList.contains(
-          defaults.classNames.modalVisible
-        )
+          defaults.classNames.modalVisible,
+        ),
       ).toBe(true);
     });
 
@@ -618,8 +618,8 @@ describe('ModalSurvey', () => {
 
       expect(
         survey.modalContainer.classList.contains(
-          defaults.classNames.modalVisible
-        )
+          defaults.classNames.modalVisible,
+        ),
       ).toBe(false);
     });
   });

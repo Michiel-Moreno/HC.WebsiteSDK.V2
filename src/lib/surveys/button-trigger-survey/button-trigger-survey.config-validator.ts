@@ -8,16 +8,12 @@ import { ButtonTriggerSurveyConfig } from './button-trigger-survey-config.interf
  *
  * @category Validators
  */
-export class ButtonTriggerSurveyConfigValidator extends BaseConfigValidator<
-  ButtonTriggerSurveyConfig
-> {
+export class ButtonTriggerSurveyConfigValidator extends BaseConfigValidator<ButtonTriggerSurveyConfig> {
   public constructor() {
     super();
   }
 
-  protected defineValidationFunctions(): ConfigValidationFunctionType<
-    ButtonTriggerSurveyConfig
-  >[] {
+  protected defineValidationFunctions(): ConfigValidationFunctionType<ButtonTriggerSurveyConfig>[] {
     return [
       (config) =>
         config.onTrigger !== undefined && config.onTrigger !== null

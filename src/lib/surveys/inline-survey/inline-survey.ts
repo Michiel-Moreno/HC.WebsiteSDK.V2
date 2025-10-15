@@ -56,7 +56,7 @@ export class InlineSurvey {
 
   constructor(
     configBuilder: UrlBuilder,
-    private inlineConfig: InlineSurveyConfig
+    private inlineConfig: InlineSurveyConfig,
   ) {
     this.urlFactory = configBuilder.getUrlFactory();
     this.validator = new InlineSurveyConfigValidator();
@@ -64,7 +64,7 @@ export class InlineSurvey {
     this.iFrameHandle = this.createIframeElement();
     this.quarantineService = new QuarantineService(
       this.urlFactory.getSurveyIdentifier(),
-      inlineConfig.quarantineConfig
+      inlineConfig.quarantineConfig,
     );
     this.reload();
     if (this.quarantineService.isUnderQuarantine()) {
@@ -124,10 +124,10 @@ export class InlineSurvey {
     const root = document.querySelector(this.inlineConfig.elementSelector);
     if (!root)
       throw new InvalidQuerySelectorException(
-        `[Hello Customer SDK] HTML element for ${this.inlineConfig.elementSelector} selector not found!`
+        `[Hello Customer SDK] HTML element for ${this.inlineConfig.elementSelector} selector not found!`,
       );
     const iFrameFactory = new StyledElementFactory(
-      document.createElement('iframe')
+      document.createElement('iframe'),
     )
       .applyInlineConditionally(!!this.inlineConfig.fillContainer, {
         height: '100%',
@@ -135,12 +135,12 @@ export class InlineSurvey {
       })
       .applyInlineConditionally(
         !!this.inlineConfig.iFrameInlineStylesRules,
-        this.inlineConfig.iFrameInlineStylesRules
+        this.inlineConfig.iFrameInlineStylesRules,
       );
 
     if (this.inlineConfig.iFrameCssClasses)
       this.inlineConfig.iFrameCssClasses.forEach((cl) =>
-        iFrameFactory.applyClass(cl)
+        iFrameFactory.applyClass(cl),
       );
     const iFrame = iFrameFactory.styledElement;
     root.appendChild(iFrame);

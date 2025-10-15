@@ -28,7 +28,7 @@ export class UrlFactory {
     const flatParams = flattenObject(this.config.extra);
     const prefixedParams = prefixObjectKeys(
       flatParams,
-      UrlFactory.QUERY_PARAM_PREFIX
+      UrlFactory.QUERY_PARAM_PREFIX,
     );
     return attachQueryParams(this.getBaseUrlWithLanguage(), prefixedParams);
   }

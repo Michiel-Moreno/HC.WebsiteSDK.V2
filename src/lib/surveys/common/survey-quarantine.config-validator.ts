@@ -8,9 +8,7 @@ import { SurveyQuarantineConfig } from './survey-quarantine-config.interface';
  *
  * @category Validators
  */
-export class SurveyQuarantineConfigValidator extends BaseConfigValidator<
-  SurveyQuarantineConfig
-> {
+export class SurveyQuarantineConfigValidator extends BaseConfigValidator<SurveyQuarantineConfig> {
   public constructor() {
     super();
   }
@@ -18,9 +16,7 @@ export class SurveyQuarantineConfigValidator extends BaseConfigValidator<
   /**
    * Here validation functions for SurveyQuarantineConfig can be provided
    */
-  protected defineValidationFunctions(): ConfigValidationFunctionType<
-    SurveyQuarantineConfig
-  >[] {
+  protected defineValidationFunctions(): ConfigValidationFunctionType<SurveyQuarantineConfig>[] {
     return [
       (config) => {
         return (typeof config.period as unknown) === 'number' &&

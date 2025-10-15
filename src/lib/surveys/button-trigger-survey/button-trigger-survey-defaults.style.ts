@@ -76,109 +76,107 @@ export const positionStyles: Record<
  *
  * @category Button Trigger
  */
-export const stylePresets: Record<
-  ButtonStylePreset,
-  ButtonTriggerStyleConfig
-> = {
-  'pill-button': {
-    buttonStyle: {
-      padding: '12px 24px',
-      backgroundColor: '#003161',
-      color: '#ffffff',
-      border: 'none',
-      borderRadius: '25px',
-      cursor: 'pointer',
-      fontSize: '14px',
-      fontWeight: '600',
-      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-      display: 'flex',
-      alignItems: 'center',
-      gap: '8px',
-      transition: 'all 0.3s ease',
-      fontFamily: 'system-ui, -apple-system, sans-serif',
+export const stylePresets: Record<ButtonStylePreset, ButtonTriggerStyleConfig> =
+  {
+    'pill-button': {
+      buttonStyle: {
+        padding: '12px 24px',
+        backgroundColor: '#003161',
+        color: '#ffffff',
+        border: 'none',
+        borderRadius: '25px',
+        cursor: 'pointer',
+        fontSize: '14px',
+        fontWeight: '600',
+        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+        transition: 'all 0.3s ease',
+        fontFamily: 'system-ui, -apple-system, sans-serif',
+      },
+      buttonHoverStyle: {
+        backgroundColor: '#004a8f',
+        boxShadow: '0 6px 16px rgba(0, 0, 0, 0.2)',
+        transform: 'translateY(-2px)',
+      },
+      buttonTextStyle: {
+        margin: '0',
+        padding: '0',
+      },
+      buttonIconStyle: {
+        width: '20px',
+        height: '20px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      },
     },
-    buttonHoverStyle: {
-      backgroundColor: '#004a8f',
-      boxShadow: '0 6px 16px rgba(0, 0, 0, 0.2)',
-      transform: 'translateY(-2px)',
+    'circle-button': {
+      buttonStyle: {
+        width: '56px',
+        height: '56px',
+        backgroundColor: '#003161',
+        color: '#ffffff',
+        border: 'none',
+        borderRadius: '50%',
+        cursor: 'pointer',
+        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        transition: 'all 0.3s ease',
+      },
+      buttonHoverStyle: {
+        backgroundColor: '#004a8f',
+        boxShadow: '0 6px 16px rgba(0, 0, 0, 0.2)',
+        transform: 'scale(1.1)',
+      },
+      buttonIconStyle: {
+        width: '24px',
+        height: '24px',
+      },
     },
-    buttonTextStyle: {
-      margin: '0',
-      padding: '0',
+    'side-tab': {
+      buttonStyle: {
+        padding: '16px 12px',
+        backgroundColor: '#003161',
+        color: '#ffffff',
+        border: 'none',
+        borderRadius: '8px 0 0 8px',
+        cursor: 'pointer',
+        fontSize: '14px',
+        fontWeight: '600',
+        boxShadow: '-4px 0 12px rgba(0, 0, 0, 0.15)',
+        writingMode: 'vertical-rl',
+        textOrientation: 'mixed',
+        transition: 'all 0.3s ease',
+        fontFamily: 'system-ui, -apple-system, sans-serif',
+      },
+      buttonHoverStyle: {
+        backgroundColor: '#004a8f',
+        transform: 'translateX(-4px)',
+      },
     },
-    buttonIconStyle: {
-      width: '20px',
-      height: '20px',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
+    banner: {
+      buttonStyle: {
+        width: '100%',
+        padding: '12px 24px',
+        backgroundColor: '#003161',
+        color: '#ffffff',
+        border: 'none',
+        cursor: 'pointer',
+        fontSize: '14px',
+        fontWeight: '600',
+        textAlign: 'center',
+        transition: 'all 0.3s ease',
+        fontFamily: 'system-ui, -apple-system, sans-serif',
+      },
+      buttonHoverStyle: {
+        backgroundColor: '#004a8f',
+      },
     },
-  },
-  'circle-button': {
-    buttonStyle: {
-      width: '56px',
-      height: '56px',
-      backgroundColor: '#003161',
-      color: '#ffffff',
-      border: 'none',
-      borderRadius: '50%',
-      cursor: 'pointer',
-      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      transition: 'all 0.3s ease',
-    },
-    buttonHoverStyle: {
-      backgroundColor: '#004a8f',
-      boxShadow: '0 6px 16px rgba(0, 0, 0, 0.2)',
-      transform: 'scale(1.1)',
-    },
-    buttonIconStyle: {
-      width: '24px',
-      height: '24px',
-    },
-  },
-  'side-tab': {
-    buttonStyle: {
-      padding: '16px 12px',
-      backgroundColor: '#003161',
-      color: '#ffffff',
-      border: 'none',
-      borderRadius: '8px 0 0 8px',
-      cursor: 'pointer',
-      fontSize: '14px',
-      fontWeight: '600',
-      boxShadow: '-4px 0 12px rgba(0, 0, 0, 0.15)',
-      writingMode: 'vertical-rl',
-      textOrientation: 'mixed',
-      transition: 'all 0.3s ease',
-      fontFamily: 'system-ui, -apple-system, sans-serif',
-    },
-    buttonHoverStyle: {
-      backgroundColor: '#004a8f',
-      transform: 'translateX(-4px)',
-    },
-  },
-  banner: {
-    buttonStyle: {
-      width: '100%',
-      padding: '12px 24px',
-      backgroundColor: '#003161',
-      color: '#ffffff',
-      border: 'none',
-      cursor: 'pointer',
-      fontSize: '14px',
-      fontWeight: '600',
-      textAlign: 'center',
-      transition: 'all 0.3s ease',
-      fontFamily: 'system-ui, -apple-system, sans-serif',
-    },
-    buttonHoverStyle: {
-      backgroundColor: '#004a8f',
-    },
-  },
-};
+  };
 
 /**
  * Animation styles

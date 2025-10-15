@@ -38,14 +38,14 @@ describe('InlineSurvey', () => {
     });
 
     // Create mock UrlBuilder
-    mockUrlBuilder = ({
+    mockUrlBuilder = {
       getUrlFactory: jest.fn().mockReturnValue({
         getUrlWithParams: jest
           .fn()
           .mockReturnValue('https://example.com/survey?entry.test=value'),
         getSurveyIdentifier: jest.fn().mockReturnValue('test-survey-id'),
       }),
-    } as unknown) as UrlBuilder;
+    } as unknown as UrlBuilder;
   });
 
   afterEach(() => {
@@ -75,7 +75,7 @@ describe('InlineSurvey', () => {
       };
 
       expect(() => new InlineSurvey(mockUrlBuilder, config)).toThrow(
-        InvalidQuerySelectorException
+        InvalidQuerySelectorException,
       );
     });
 
@@ -95,10 +95,10 @@ describe('InlineSurvey', () => {
       container.id = 'survey-container';
       document.body.appendChild(container);
 
-      const config = ({
+      const config = {
         elementSelector: '#survey-container',
         iFrameCssClasses: 'not-an-array',
-      } as unknown) as InlineSurveyConfig;
+      } as unknown as InlineSurveyConfig;
 
       expect(() => new InlineSurvey(mockUrlBuilder, config)).toThrow();
     });
@@ -200,7 +200,7 @@ describe('InlineSurvey', () => {
       const survey = new InlineSurvey(mockUrlBuilder, config);
 
       expect(survey.iFrame.src).toBe(
-        'https://example.com/survey?entry.test=value'
+        'https://example.com/survey?entry.test=value',
       );
     });
   });
@@ -256,7 +256,7 @@ describe('InlineSurvey', () => {
       // Update the mock to return a different URL
       const urlFactory = mockUrlBuilder.getUrlFactory();
       (urlFactory.getUrlWithParams as jest.Mock).mockReturnValue(
-        'https://example.com/new-survey'
+        'https://example.com/new-survey',
       );
 
       survey.reload();
@@ -336,7 +336,7 @@ describe('InlineSurvey', () => {
       expect(localStorageMock.setItem).toHaveBeenCalled();
       const setItemCalls = localStorageMock.setItem.mock.calls;
       const quarantineCall = setItemCalls.find((call) =>
-        call[0].includes('hcSDK.SurveyQuarantineStart')
+        call[0].includes('hcSDK.SurveyQuarantineStart'),
       );
       expect(quarantineCall).toBeDefined();
     });

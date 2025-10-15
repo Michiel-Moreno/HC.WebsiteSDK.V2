@@ -9,9 +9,7 @@ import { InlineSurveyConfig } from './inline-survey-config.interface';
  *
  * @category Validators
  */
-export class InlineSurveyConfigValidator extends BaseConfigValidator<
-  InlineSurveyConfig
-> {
+export class InlineSurveyConfigValidator extends BaseConfigValidator<InlineSurveyConfig> {
   public constructor() {
     super();
   }
@@ -19,9 +17,7 @@ export class InlineSurveyConfigValidator extends BaseConfigValidator<
   /**
    * Here validation functions for InlineSurveyConfig can be provided
    */
-  protected defineValidationFunctions(): ConfigValidationFunctionType<
-    InlineSurveyConfig
-  >[] {
+  protected defineValidationFunctions(): ConfigValidationFunctionType<InlineSurveyConfig>[] {
     return [
       (config) =>
         config.elementSelector
@@ -45,7 +41,7 @@ export class InlineSurveyConfigValidator extends BaseConfigValidator<
       (config) =>
         !config.iFrameCssClasses ||
         config.iFrameCssClasses.every(
-          (cl) => (typeof cl as unknown) === 'string'
+          (cl) => (typeof cl as unknown) === 'string',
         )
           ? null
           : {
@@ -69,7 +65,7 @@ export class InlineSurveyConfigValidator extends BaseConfigValidator<
       (config) => {
         return config.quarantineConfig
           ? new SurveyQuarantineConfigValidator().validate(
-              config.quarantineConfig
+              config.quarantineConfig,
             )
           : null;
       },

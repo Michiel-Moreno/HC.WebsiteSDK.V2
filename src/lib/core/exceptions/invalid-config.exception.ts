@@ -6,7 +6,10 @@ import { BaseException } from './base.exception';
  * @category Exceptions
  */
 export class InvalidConfigException extends BaseException {
-  constructor(message: string, public errors: unknown) {
+  constructor(
+    message: string,
+    public errors: unknown,
+  ) {
     super(message);
   }
 }

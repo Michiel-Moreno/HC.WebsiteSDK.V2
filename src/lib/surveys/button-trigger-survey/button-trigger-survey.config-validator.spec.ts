@@ -82,18 +82,18 @@ describe('ButtonTriggerSurveyConfigValidator', () => {
     });
 
     test('should fail when onTrigger is null', () => {
-      const config = ({
+      const config = {
         onTrigger: null,
-      } as unknown) as ButtonTriggerSurveyConfig;
+      } as unknown as ButtonTriggerSurveyConfig;
 
       const errors = validator.validate(config);
       expect(errors.onTriggerRequired).toBeDefined();
     });
 
     test('should fail when onTrigger is a string', () => {
-      const config = ({
+      const config = {
         onTrigger: 'not a function',
-      } as unknown) as ButtonTriggerSurveyConfig;
+      } as unknown as ButtonTriggerSurveyConfig;
 
       const errors = validator.validate(config);
       expect(errors.onTriggerIsFunction).toBeDefined();
@@ -101,36 +101,36 @@ describe('ButtonTriggerSurveyConfigValidator', () => {
     });
 
     test('should fail when onTrigger is a number', () => {
-      const config = ({
+      const config = {
         onTrigger: 123,
-      } as unknown) as ButtonTriggerSurveyConfig;
+      } as unknown as ButtonTriggerSurveyConfig;
 
       const errors = validator.validate(config);
       expect(errors.onTriggerIsFunction).toBeDefined();
     });
 
     test('should fail when onTrigger is an object', () => {
-      const config = ({
+      const config = {
         onTrigger: { foo: 'bar' },
-      } as unknown) as ButtonTriggerSurveyConfig;
+      } as unknown as ButtonTriggerSurveyConfig;
 
       const errors = validator.validate(config);
       expect(errors.onTriggerIsFunction).toBeDefined();
     });
 
     test('should fail when onTrigger is an array', () => {
-      const config = ({
+      const config = {
         onTrigger: [1, 2, 3],
-      } as unknown) as ButtonTriggerSurveyConfig;
+      } as unknown as ButtonTriggerSurveyConfig;
 
       const errors = validator.validate(config);
       expect(errors.onTriggerIsFunction).toBeDefined();
     });
 
     test('should fail when onTrigger is a boolean', () => {
-      const config = ({
+      const config = {
         onTrigger: true,
-      } as unknown) as ButtonTriggerSurveyConfig;
+      } as unknown as ButtonTriggerSurveyConfig;
 
       const errors = validator.validate(config);
       expect(errors.onTriggerIsFunction).toBeDefined();
@@ -139,12 +139,12 @@ describe('ButtonTriggerSurveyConfigValidator', () => {
 
   describe('Validation with optional fields', () => {
     test('should pass validation regardless of other fields if onTrigger is valid', () => {
-      const config = ({
+      const config = {
         onTrigger: noop,
         position: 'invalid-position',
         stylePreset: 'invalid-preset',
         text: 12345,
-      } as unknown) as ButtonTriggerSurveyConfig;
+      } as unknown as ButtonTriggerSurveyConfig;
 
       // Validator only checks onTrigger - other fields are validated at runtime
       const errors = validator.validate(config);

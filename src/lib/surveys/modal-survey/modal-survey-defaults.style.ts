@@ -6,16 +6,15 @@ import { ModalSurveyStyleConfig } from './modal-survey-style-config.interface';
  *
  * @category Modal style
  */
-export const logoStyle:
-  | Partial<CSSStyleDeclaration>
-  | Record<string, string> = {
-  height: '26px',
-  userSelect: 'none',
-  userDrag: 'none',
-  '-moz-user-select': 'none',
-  '-webkit-user-drag': 'none',
-  'webkit-user-select': 'none',
-} as Partial<CSSStyleDeclaration>;
+export const logoStyle: Partial<CSSStyleDeclaration> | Record<string, string> =
+  {
+    height: '26px',
+    userSelect: 'none',
+    userDrag: 'none',
+    '-moz-user-select': 'none',
+    '-webkit-user-drag': 'none',
+    'webkit-user-select': 'none',
+  } as Partial<CSSStyleDeclaration>;
 
 /**
  * Default footer appearance

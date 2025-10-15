@@ -70,7 +70,7 @@ export class ButtonTriggerSurvey {
     const quarantineId = `button-trigger-${this.position}-${Date.now()}`;
     this.quarantineService = new QuarantineService(
       quarantineId,
-      config.quarantineConfig
+      config.quarantineConfig,
     );
 
     // Create button DOM
@@ -167,17 +167,17 @@ export class ButtonTriggerSurvey {
     if (trueByDefault(this.config.enableAnimation)) {
       StyledElementFactory.appendCssClassToHeader(
         defaults.animationStyles.visible,
-        classNames.buttonVisible
+        classNames.buttonVisible,
       );
       StyledElementFactory.appendCssClassToHeader(
         defaults.animationStyles.hidden,
-        classNames.buttonHidden
+        classNames.buttonHidden,
       );
     }
 
     // Add media queries
     Object.entries(defaults.medias).forEach(([media, rules]) =>
-      StyledElementFactory.addMediaRule(media, rules)
+      StyledElementFactory.addMediaRule(media, rules),
     );
 
     // Add hover styles
@@ -185,7 +185,7 @@ export class ButtonTriggerSurvey {
     if (presetStyles.buttonHoverStyle) {
       StyledElementFactory.appendCssClassToHeader(
         presetStyles.buttonHoverStyle,
-        `${classNames.button}:hover`
+        `${classNames.button}:hover`,
       );
     }
   }
@@ -214,22 +214,22 @@ export class ButtonTriggerSurvey {
 
     // Create container
     const container = new StyledElementFactory(
-      document.createElement('div')
+      document.createElement('div'),
     ).applyClass(classNames.buttonContainer, containerStyle).styledElement;
 
     // Create button
     const button = new StyledElementFactory(
-      document.createElement('button')
+      document.createElement('button'),
     ).applyClass(
       classNames.button,
-      this.config.ignoreDefaultStyles ? {} : buttonStyle
+      this.config.ignoreDefaultStyles ? {} : buttonStyle,
     ).styledElement;
 
     // Set accessibility
     button.setAttribute('type', 'button');
     button.setAttribute(
       'aria-label',
-      this.config.ariaLabel || this.config.text || 'Open feedback'
+      this.config.ariaLabel || this.config.text || 'Open feedback',
     );
 
     // Add icon if provided
@@ -280,7 +280,7 @@ export class ButtonTriggerSurvey {
       const root = document.querySelector(this.config.containerSelector);
       if (!root) {
         throw new InvalidQuerySelectorException(
-          `[Hello Customer SDK] HTML element for ${this.config.containerSelector} selector not found!`
+          `[Hello Customer SDK] HTML element for ${this.config.containerSelector} selector not found!`,
         );
       }
       root.appendChild(container);

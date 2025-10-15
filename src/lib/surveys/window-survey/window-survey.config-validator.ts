@@ -9,16 +9,12 @@ import { WindowSurveyConfig } from './window-survey-config.interface';
  *
  * @category Validators
  */
-export class WindowSurveyConfigValidator extends BaseConfigValidator<
-  WindowSurveyConfig
-> {
+export class WindowSurveyConfigValidator extends BaseConfigValidator<WindowSurveyConfig> {
   public constructor() {
     super();
   }
 
-  protected defineValidationFunctions(): ConfigValidationFunctionType<
-    WindowSurveyConfig
-  >[] {
+  protected defineValidationFunctions(): ConfigValidationFunctionType<WindowSurveyConfig>[] {
     return [
       (config) =>
         config.openOnCreation == undefined ||
@@ -45,7 +41,7 @@ export class WindowSurveyConfigValidator extends BaseConfigValidator<
       (config) => {
         return config.quarantineConfig
           ? new SurveyQuarantineConfigValidator().validate(
-              config.quarantineConfig
+              config.quarantineConfig,
             )
           : null;
       },

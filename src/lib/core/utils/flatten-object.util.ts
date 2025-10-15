@@ -2,7 +2,7 @@
  * @ignore
  */
 export function flattenObject<T>(
-  inputObject: T
+  inputObject: T,
 ): Record<string, string | number | boolean> {
   if (!inputObject || typeof inputObject !== 'object') return {};
   return Object.entries(inputObject).reduce((result, current) => {
@@ -12,11 +12,10 @@ export function flattenObject<T>(
       partialResult = Object.entries(flattenObject(value)).reduce(
         (total, current) => ({
           ...total,
-          [key +
-          (current[0].startsWith('[') ? '' : '.') +
-          current[0]]: current[1],
+          [key + (current[0].startsWith('[') ? '' : '.') + current[0]]:
+            current[1],
         }),
-        {}
+        {},
       );
     else partialResult = { [key]: value };
 

@@ -56,13 +56,13 @@ export class WindowSurvey {
 
   constructor(
     configBuilder: UrlBuilder,
-    private windowConfig: WindowSurveyConfig
+    private windowConfig: WindowSurveyConfig,
   ) {
     this.urlFactory = configBuilder.getUrlFactory();
     this.validator = new WindowSurveyConfigValidator();
     this.quarantineService = new QuarantineService(
       this.urlFactory.getSurveyIdentifier(),
-      windowConfig.quarantineConfig
+      windowConfig.quarantineConfig,
     );
     this.validator.validateAndThrowOnErrors(windowConfig);
     if (this.windowConfig.openOnCreation) this.open();
@@ -81,12 +81,12 @@ export class WindowSurvey {
         this.windowHandle = window.open(
           this.urlFactory.getUrlWithParams(),
           '_blank',
-          'toolbar=0,location=0,menubar=0,height=800,width=700'
+          'toolbar=0,location=0,menubar=0,height=800,width=700',
         );
       else
         this.windowHandle = window.open(
           this.urlFactory.getUrlWithParams(),
-          '_blank'
+          '_blank',
         );
       if (!this.windowHandle) throw new CannotOpenWindowException();
       this.quarantineService.startQuarantine();

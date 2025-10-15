@@ -23,7 +23,7 @@ describe('UrlFactory', () => {
 
   test('urlFactory.getBaseUrlWithLanguage', () => {
     expect(urlFactory.getBaseUrlWithLanguage()).toEqual(
-      'https://hello.com/EN/xxxxx/zzzzzzzz'
+      'https://hello.com/EN/xxxxx/zzzzzzzz',
     );
   });
 
@@ -33,7 +33,7 @@ describe('UrlFactory', () => {
 
   test('urlFactory.getUrlWithParams', () => {
     expect(urlFactory.getUrlWithParams()).toBe(
-      'https://hello.com/EN/xxxxx/zzzzzzzz?entry.score=10&entry.respondent.lastname=xxx&entry.metadata[test]=123'
+      'https://hello.com/EN/xxxxx/zzzzzzzz?entry.score=10&entry.respondent.lastname=xxx&entry.metadata[test]=123',
     );
   });
 });

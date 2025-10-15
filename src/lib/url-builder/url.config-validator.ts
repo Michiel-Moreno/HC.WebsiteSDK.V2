@@ -15,9 +15,7 @@ export class UrlConfigValidator extends BaseConfigValidator<SurveyConfig> {
   /**
    * Here validation functions for common SurveyConfig can be provided
    */
-  protected defineValidationFunctions(): ConfigValidationFunctionType<
-    SurveyConfig
-  >[] {
+  protected defineValidationFunctions(): ConfigValidationFunctionType<SurveyConfig>[] {
     return [
       (config) => {
         return config.baseUrl
@@ -35,7 +33,7 @@ export class UrlConfigValidator extends BaseConfigValidator<SurveyConfig> {
       },
       (config) => {
         return /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&//=]*)/.test(
-          config.baseUrl
+          config.baseUrl,
         )
           ? null
           : {

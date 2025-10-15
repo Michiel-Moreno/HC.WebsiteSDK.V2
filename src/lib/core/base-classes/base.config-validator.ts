@@ -33,11 +33,9 @@ export abstract class BaseConfigValidator<T> {
         ...total,
         ...current(config),
       }),
-      {}
+      {},
     );
   }
 
-  protected abstract defineValidationFunctions(): ConfigValidationFunctionType<
-    T
-  >[];
+  protected abstract defineValidationFunctions(): ConfigValidationFunctionType<T>[];
 }

@@ -37,23 +37,23 @@ describe('WindowSurvey', () => {
     });
 
     // Mock window.open
-    mockWindow = ({
+    mockWindow = {
       close: jest.fn(),
-    } as Partial<Window>) as Window;
+    } as Partial<Window> as Window;
 
     windowOpenSpy = jest
       .spyOn(window, 'open')
       .mockReturnValue(mockWindow as Window | null);
 
     // Create mock UrlBuilder
-    mockUrlBuilder = ({
+    mockUrlBuilder = {
       getUrlFactory: jest.fn().mockReturnValue({
         getUrlWithParams: jest
           .fn()
           .mockReturnValue('https://example.com/survey?entry.test=value'),
         getSurveyIdentifier: jest.fn().mockReturnValue('test-survey-id'),
       }),
-    } as unknown) as UrlBuilder;
+    } as unknown as UrlBuilder;
   });
 
   afterEach(() => {
@@ -109,17 +109,17 @@ describe('WindowSurvey', () => {
     });
 
     test('should validate openOnCreation as boolean', () => {
-      const config = ({
+      const config = {
         openOnCreation: 'true',
-      } as unknown) as WindowSurveyConfig;
+      } as unknown as WindowSurveyConfig;
 
       expect(() => new WindowSurvey(mockUrlBuilder, config)).toThrow();
     });
 
     test('should validate openNewWindow as boolean', () => {
-      const config = ({
+      const config = {
         openNewWindow: 'true',
-      } as unknown) as WindowSurveyConfig;
+      } as unknown as WindowSurveyConfig;
 
       expect(() => new WindowSurvey(mockUrlBuilder, config)).toThrow();
     });
@@ -134,7 +134,7 @@ describe('WindowSurvey', () => {
 
       expect(windowOpenSpy).toHaveBeenCalledWith(
         'https://example.com/survey?entry.test=value',
-        '_blank'
+        '_blank',
       );
     });
 
@@ -148,7 +148,7 @@ describe('WindowSurvey', () => {
 
       expect(windowOpenSpy).toHaveBeenCalledWith(
         'https://example.com/survey?entry.test=value',
-        '_blank'
+        '_blank',
       );
     });
 
@@ -163,7 +163,7 @@ describe('WindowSurvey', () => {
       expect(windowOpenSpy).toHaveBeenCalledWith(
         'https://example.com/survey?entry.test=value',
         '_blank',
-        'toolbar=0,location=0,menubar=0,height=800,width=700'
+        'toolbar=0,location=0,menubar=0,height=800,width=700',
       );
     });
 
@@ -219,7 +219,7 @@ describe('WindowSurvey', () => {
     });
 
     test('should throw CannotOpenWindowException when window.open returns undefined', () => {
-      windowOpenSpy.mockReturnValue((undefined as unknown) as Window | null);
+      windowOpenSpy.mockReturnValue(undefined as unknown as Window | null);
 
       const config: WindowSurveyConfig = {};
 
@@ -236,7 +236,7 @@ describe('WindowSurvey', () => {
       const survey = new WindowSurvey(mockUrlBuilder, config);
 
       expect(() => survey.open()).toThrow(
-        '[Hello Customer SDK] Cannot open window - check Your browser!'
+        '[Hello Customer SDK] Cannot open window - check Your browser!',
       );
     });
   });
@@ -301,7 +301,7 @@ describe('WindowSurvey', () => {
       expect(localStorageMock.setItem).toHaveBeenCalled();
       const setItemCalls = localStorageMock.setItem.mock.calls;
       const quarantineCall = setItemCalls.find((call) =>
-        call[0].includes('hcSDK.SurveyQuarantineStart')
+        call[0].includes('hcSDK.SurveyQuarantineStart'),
       );
       expect(quarantineCall).toBeDefined();
     });

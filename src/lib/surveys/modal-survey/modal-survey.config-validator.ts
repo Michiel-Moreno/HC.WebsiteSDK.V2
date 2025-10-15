@@ -9,16 +9,12 @@ import { ModalSurveyConfig } from './modal-survey-config.interface';
  *
  * @category Validators
  */
-export class ModalSurveyConfigValidator extends BaseConfigValidator<
-  ModalSurveyConfig
-> {
+export class ModalSurveyConfigValidator extends BaseConfigValidator<ModalSurveyConfig> {
   public constructor() {
     super();
   }
 
-  protected defineValidationFunctions(): ConfigValidationFunctionType<
-    ModalSurveyConfig
-  >[] {
+  protected defineValidationFunctions(): ConfigValidationFunctionType<ModalSurveyConfig>[] {
     return [
       (config) =>
         config.ignoreDefaultStyles == undefined ||
@@ -75,7 +71,7 @@ export class ModalSurveyConfigValidator extends BaseConfigValidator<
       (config) =>
         config.classNames == undefined ||
         Object.entries(config.classNames).every(
-          (el) => (typeof el[1] as unknown) == 'string'
+          (el) => (typeof el[1] as unknown) == 'string',
         )
           ? null
           : {
@@ -91,7 +87,7 @@ export class ModalSurveyConfigValidator extends BaseConfigValidator<
       (config) =>
         config.modalStyle == undefined ||
         Object.entries(config.modalStyle).every(
-          (el) => (typeof el[1] as unknown) == 'object'
+          (el) => (typeof el[1] as unknown) == 'object',
         )
           ? null
           : {
@@ -116,7 +112,7 @@ export class ModalSurveyConfigValidator extends BaseConfigValidator<
       (config) => {
         return config.quarantineConfig
           ? new SurveyQuarantineConfigValidator().validate(
-              config.quarantineConfig
+              config.quarantineConfig,
             )
           : null;
       },

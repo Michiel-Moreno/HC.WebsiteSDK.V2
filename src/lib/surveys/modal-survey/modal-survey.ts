@@ -80,14 +80,14 @@ export class ModalSurvey {
 
   constructor(
     configBuilder: UrlBuilder,
-    private modalConfig: ModalSurveyConfig
+    private modalConfig: ModalSurveyConfig,
   ) {
     this.urlFactory = configBuilder.getUrlFactory();
     this.validator = new ModalSurveyConfigValidator();
     this.validator.validateAndThrowOnErrors(modalConfig);
     this.quarantineService = new QuarantineService(
       this.urlFactory.getSurveyIdentifier(),
-      modalConfig.quarantineConfig
+      modalConfig.quarantineConfig,
     );
     const [root, frame] = this.createModal();
     this.iFrameHandle = frame;
@@ -233,7 +233,7 @@ export class ModalSurvey {
     const styleClasses = this.getClassNames();
     StyledElementFactory.appendCssClassToHeader(
       modalStyle.modalVisible,
-      styleClasses.modalVisible
+      styleClasses.modalVisible,
     );
     Object.entries(modalDefaultStyles.medias).forEach(([media, rules]) =>
       StyledElementFactory.addMediaRule(
@@ -244,9 +244,9 @@ export class ModalSurvey {
             [styleClasses[current[0] as keyof ModalSurveyStyleConfig]]:
               current[1],
           }),
-          {}
-        )
-      )
+          {},
+        ),
+      ),
     );
   }
 
@@ -259,38 +259,46 @@ export class ModalSurvey {
     const modalStyle = this.getModalStyle();
     const styleClasses = this.getClassNames();
     const iFrame = new StyledElementFactory(
-      document.createElement('iframe')
-    ).applyClass(styleClasses.iFrameStyle, modalStyle.iFrameStyle)
-      .styledElement;
+      document.createElement('iframe'),
+    ).applyClass(
+      styleClasses.iFrameStyle,
+      modalStyle.iFrameStyle,
+    ).styledElement;
 
     const footer = new StyledElementFactory(
-      document.createElement('div')
-    ).applyClass(styleClasses.footerStyle, modalStyle.footerStyle)
-      .styledElement;
+      document.createElement('div'),
+    ).applyClass(
+      styleClasses.footerStyle,
+      modalStyle.footerStyle,
+    ).styledElement;
     footer.appendChild(
       modalSurveyLogoFactory(
         styleClasses.footerLogoStyle,
-        modalStyle.footerLogoStyle
-      )
+        modalStyle.footerLogoStyle,
+      ),
     );
 
     const closeButton = new StyledElementFactory(
-      document.createElement('div')
+      document.createElement('div'),
     ).applyClass(
       styleClasses.windowCloseButtonStyle,
-      modalStyle.windowCloseButtonStyle
+      modalStyle.windowCloseButtonStyle,
     ).styledElement;
     closeButton.appendChild(closeIconSvgElementFactory('#eeeeee'));
 
     const windowBar = new StyledElementFactory(
-      document.createElement('div')
-    ).applyClass(styleClasses.windowBarDivStyle, modalStyle.windowBarDivStyle)
-      .styledElement;
+      document.createElement('div'),
+    ).applyClass(
+      styleClasses.windowBarDivStyle,
+      modalStyle.windowBarDivStyle,
+    ).styledElement;
 
     const windowDiv = new StyledElementFactory(
-      document.createElement('div')
-    ).applyClass(styleClasses.windowDivStyle, modalStyle.windowDivStyle)
-      .styledElement;
+      document.createElement('div'),
+    ).applyClass(
+      styleClasses.windowDivStyle,
+      modalStyle.windowDivStyle,
+    ).styledElement;
     windowDiv.appendChild(windowBar);
     windowDiv.appendChild(iFrame);
     windowDiv.appendChild(footer);
@@ -300,7 +308,7 @@ export class ModalSurvey {
       .applyClassConditionally(
         trueByDefault(this.modalConfig.translucentBackground),
         styleClasses.modalTranslucentBackground,
-        modalStyle.modalTranslucentBackground
+        modalStyle.modalTranslucentBackground,
       ).styledElement;
     modalRoot.appendChild(windowDiv);
 
@@ -319,11 +327,11 @@ export class ModalSurvey {
       modalRoot.addEventListener('click', () => this.close());
     if (this.modalConfig.modalContainerSelector) {
       const root = document.querySelector(
-        this.modalConfig.modalContainerSelector
+        this.modalConfig.modalContainerSelector,
       );
       if (!root)
         throw new InvalidQuerySelectorException(
-          `[Hello Customer SDK] HTML element for ${this.modalConfig.modalContainerSelector} selector not found!`
+          `[Hello Customer SDK] HTML element for ${this.modalConfig.modalContainerSelector} selector not found!`,
         );
       root.appendChild(modalRoot);
     } else document.body.appendChild(modalRoot);

@@ -90,7 +90,7 @@ describe('ButtonTriggerSurvey', () => {
       new ButtonTriggerSurvey(config);
 
       const container = document.body.querySelector(
-        '.hello-customer-button-trigger'
+        '.hello-customer-button-trigger',
       );
       expect(container).not.toBeNull();
       expect(container?.parentElement).toBe(document.body);
@@ -109,7 +109,7 @@ describe('ButtonTriggerSurvey', () => {
       new ButtonTriggerSurvey(config);
 
       const container = customContainer.querySelector(
-        '.hello-customer-button-trigger'
+        '.hello-customer-button-trigger',
       );
       expect(container).not.toBeNull();
       expect(container?.parentElement).toBe(customContainer);
@@ -122,7 +122,7 @@ describe('ButtonTriggerSurvey', () => {
       };
 
       expect(() => new ButtonTriggerSurvey(config)).toThrow(
-        InvalidQuerySelectorException
+        InvalidQuerySelectorException,
       );
     });
 
@@ -135,7 +135,9 @@ describe('ButtonTriggerSurvey', () => {
 
       // Check that the container has the default class
       expect(
-        survey.container.classList.contains(defaults.classNames.buttonContainer)
+        survey.container.classList.contains(
+          defaults.classNames.buttonContainer,
+        ),
       ).toBe(true);
     });
 
@@ -149,7 +151,7 @@ describe('ButtonTriggerSurvey', () => {
 
       // Check that the button has the default class
       expect(survey.button.classList.contains(defaults.classNames.button)).toBe(
-        true
+        true,
       );
     });
   });
@@ -162,7 +164,9 @@ describe('ButtonTriggerSurvey', () => {
       });
 
       expect(
-        survey.container.classList.contains(defaults.classNames.buttonContainer)
+        survey.container.classList.contains(
+          defaults.classNames.buttonContainer,
+        ),
       ).toBe(true);
     });
 
@@ -173,7 +177,9 @@ describe('ButtonTriggerSurvey', () => {
       });
 
       expect(
-        survey.container.classList.contains(defaults.classNames.buttonContainer)
+        survey.container.classList.contains(
+          defaults.classNames.buttonContainer,
+        ),
       ).toBe(true);
     });
 
@@ -184,7 +190,9 @@ describe('ButtonTriggerSurvey', () => {
       });
 
       expect(
-        survey.container.classList.contains(defaults.classNames.buttonContainer)
+        survey.container.classList.contains(
+          defaults.classNames.buttonContainer,
+        ),
       ).toBe(true);
     });
 
@@ -195,7 +203,9 @@ describe('ButtonTriggerSurvey', () => {
       });
 
       expect(
-        survey.container.classList.contains(defaults.classNames.buttonContainer)
+        survey.container.classList.contains(
+          defaults.classNames.buttonContainer,
+        ),
       ).toBe(true);
     });
 
@@ -206,7 +216,9 @@ describe('ButtonTriggerSurvey', () => {
       });
 
       expect(
-        survey.container.classList.contains(defaults.classNames.buttonContainer)
+        survey.container.classList.contains(
+          defaults.classNames.buttonContainer,
+        ),
       ).toBe(true);
     });
 
@@ -217,7 +229,9 @@ describe('ButtonTriggerSurvey', () => {
       });
 
       expect(
-        survey.container.classList.contains(defaults.classNames.buttonContainer)
+        survey.container.classList.contains(
+          defaults.classNames.buttonContainer,
+        ),
       ).toBe(true);
     });
 
@@ -228,7 +242,9 @@ describe('ButtonTriggerSurvey', () => {
       });
 
       expect(
-        survey.container.classList.contains(defaults.classNames.buttonContainer)
+        survey.container.classList.contains(
+          defaults.classNames.buttonContainer,
+        ),
       ).toBe(true);
     });
 
@@ -239,7 +255,9 @@ describe('ButtonTriggerSurvey', () => {
       });
 
       expect(
-        survey.container.classList.contains(defaults.classNames.buttonContainer)
+        survey.container.classList.contains(
+          defaults.classNames.buttonContainer,
+        ),
       ).toBe(true);
     });
   });
@@ -252,7 +270,7 @@ describe('ButtonTriggerSurvey', () => {
       });
 
       expect(survey.button.classList.contains(defaults.classNames.button)).toBe(
-        true
+        true,
       );
     });
 
@@ -263,7 +281,7 @@ describe('ButtonTriggerSurvey', () => {
       });
 
       expect(survey.button.classList.contains(defaults.classNames.button)).toBe(
-        true
+        true,
       );
     });
 
@@ -274,7 +292,7 @@ describe('ButtonTriggerSurvey', () => {
       });
 
       expect(survey.button.classList.contains(defaults.classNames.button)).toBe(
-        true
+        true,
       );
     });
 
@@ -285,7 +303,7 @@ describe('ButtonTriggerSurvey', () => {
       });
 
       expect(survey.button.classList.contains(defaults.classNames.button)).toBe(
-        true
+        true,
       );
     });
   });
@@ -298,17 +316,17 @@ describe('ButtonTriggerSurvey', () => {
       });
 
       const textElement = survey.button.querySelector(
-        '.hello-customer-button-trigger__text'
+        '.hello-customer-button-trigger__text',
       );
       expect(textElement).not.toBeNull();
       expect(textElement?.textContent).toBe('Give Feedback');
     });
 
     test('should render icon when provided as HTMLElement', () => {
-      const icon = (document.createElementNS(
+      const icon = document.createElementNS(
         'http://www.w3.org/2000/svg',
-        'svg'
-      ) as unknown) as HTMLElement;
+        'svg',
+      ) as unknown as HTMLElement;
       icon.innerHTML = '<path d="M10 10"></path>';
 
       const survey = new ButtonTriggerSurvey({
@@ -317,7 +335,7 @@ describe('ButtonTriggerSurvey', () => {
       });
 
       const iconElement = survey.button.querySelector(
-        '.hello-customer-button-trigger__icon'
+        '.hello-customer-button-trigger__icon',
       );
       expect(iconElement).not.toBeNull();
       expect(iconElement?.querySelector('svg')).not.toBeNull();
@@ -330,7 +348,7 @@ describe('ButtonTriggerSurvey', () => {
       });
 
       const iconElement = survey.button.querySelector(
-        '.hello-customer-button-trigger__icon'
+        '.hello-customer-button-trigger__icon',
       );
       expect(iconElement).not.toBeNull();
       expect(iconElement?.innerHTML).toContain('svg');
@@ -344,10 +362,10 @@ describe('ButtonTriggerSurvey', () => {
       });
 
       const textElement = survey.button.querySelector(
-        '.hello-customer-button-trigger__text'
+        '.hello-customer-button-trigger__text',
       );
       const iconElement = survey.button.querySelector(
-        '.hello-customer-button-trigger__icon'
+        '.hello-customer-button-trigger__icon',
       );
 
       expect(textElement).not.toBeNull();
@@ -363,7 +381,7 @@ describe('ButtonTriggerSurvey', () => {
       });
 
       const textElement = survey.button.querySelector(
-        '.hello-customer-button-trigger__text'
+        '.hello-customer-button-trigger__text',
       );
       expect(textElement).toBeNull();
     });
@@ -383,7 +401,7 @@ describe('ButtonTriggerSurvey', () => {
 
       // Button should have the default class with custom styles merged
       expect(survey.button.classList.contains(defaults.classNames.button)).toBe(
-        true
+        true,
       );
     });
 
@@ -400,7 +418,7 @@ describe('ButtonTriggerSurvey', () => {
 
       // Button should have the default class with merged styles
       expect(survey.button.classList.contains(defaults.classNames.button)).toBe(
-        true
+        true,
       );
     });
 
@@ -412,7 +430,7 @@ describe('ButtonTriggerSurvey', () => {
 
       // Button should still have the class name
       expect(survey.button.classList.contains(defaults.classNames.button)).toBe(
-        true
+        true,
       );
     });
 
@@ -442,10 +460,10 @@ describe('ButtonTriggerSurvey', () => {
       });
 
       expect(
-        survey.container.classList.contains(defaults.classNames.buttonVisible)
+        survey.container.classList.contains(defaults.classNames.buttonVisible),
       ).toBe(true);
       expect(
-        survey.container.classList.contains(defaults.classNames.buttonHidden)
+        survey.container.classList.contains(defaults.classNames.buttonHidden),
       ).toBe(false);
     });
 
@@ -456,10 +474,10 @@ describe('ButtonTriggerSurvey', () => {
       });
 
       expect(
-        survey.container.classList.contains(defaults.classNames.buttonVisible)
+        survey.container.classList.contains(defaults.classNames.buttonVisible),
       ).toBe(false);
       expect(
-        survey.container.classList.contains(defaults.classNames.buttonHidden)
+        survey.container.classList.contains(defaults.classNames.buttonHidden),
       ).toBe(true);
     });
 
@@ -472,10 +490,10 @@ describe('ButtonTriggerSurvey', () => {
       survey.show();
 
       expect(
-        survey.container.classList.contains(defaults.classNames.buttonVisible)
+        survey.container.classList.contains(defaults.classNames.buttonVisible),
       ).toBe(true);
       expect(
-        survey.container.classList.contains(defaults.classNames.buttonHidden)
+        survey.container.classList.contains(defaults.classNames.buttonHidden),
       ).toBe(false);
     });
 
@@ -488,10 +506,10 @@ describe('ButtonTriggerSurvey', () => {
       survey.hide();
 
       expect(
-        survey.container.classList.contains(defaults.classNames.buttonVisible)
+        survey.container.classList.contains(defaults.classNames.buttonVisible),
       ).toBe(false);
       expect(
-        survey.container.classList.contains(defaults.classNames.buttonHidden)
+        survey.container.classList.contains(defaults.classNames.buttonHidden),
       ).toBe(true);
     });
 
@@ -518,7 +536,7 @@ describe('ButtonTriggerSurvey', () => {
 
       // Should be visible initially
       expect(
-        survey1.container.classList.contains(defaults.classNames.buttonVisible)
+        survey1.container.classList.contains(defaults.classNames.buttonVisible),
       ).toBe(true);
 
       // Manually set quarantine in localStorage
@@ -535,7 +553,7 @@ describe('ButtonTriggerSurvey', () => {
 
       // Second survey should be hidden due to quarantine
       expect(
-        survey2.container.classList.contains(defaults.classNames.buttonVisible)
+        survey2.container.classList.contains(defaults.classNames.buttonVisible),
       ).toBe(false);
     });
   });
@@ -591,7 +609,7 @@ describe('ButtonTriggerSurvey', () => {
       expect(localStorageMock.setItem).toHaveBeenCalled();
       const setItemCalls = localStorageMock.setItem.mock.calls;
       const quarantineCall = setItemCalls.find((call) =>
-        call[0].includes('hcSDK.SurveyQuarantineStart')
+        call[0].includes('hcSDK.SurveyQuarantineStart'),
       );
       expect(quarantineCall).toBeDefined();
     });
@@ -606,7 +624,7 @@ describe('ButtonTriggerSurvey', () => {
 
       // First survey should be visible and quarantine should be set
       expect(
-        survey1.container.classList.contains(defaults.classNames.buttonVisible)
+        survey1.container.classList.contains(defaults.classNames.buttonVisible),
       ).toBe(true);
       expect(localStorageMock.setItem).toHaveBeenCalled();
 
@@ -632,7 +650,7 @@ describe('ButtonTriggerSurvey', () => {
       // Verify quarantine was started
       expect(localStorageMock.setItem).toHaveBeenCalled();
       expect(
-        survey1.container.classList.contains(defaults.classNames.buttonVisible)
+        survey1.container.classList.contains(defaults.classNames.buttonVisible),
       ).toBe(true);
 
       // Create another survey with different quarantine config
@@ -645,7 +663,7 @@ describe('ButtonTriggerSurvey', () => {
       // Both surveys should set their own quarantine
       expect(localStorageMock.setItem).toHaveBeenCalledTimes(2);
       expect(
-        survey2.container.classList.contains(defaults.classNames.buttonVisible)
+        survey2.container.classList.contains(defaults.classNames.buttonVisible),
       ).toBe(true);
     });
 
@@ -683,7 +701,7 @@ describe('ButtonTriggerSurvey', () => {
       });
 
       expect(survey.button.getAttribute('aria-label')).toBe(
-        'Open feedback form'
+        'Open feedback form',
       );
     });
 
@@ -725,7 +743,7 @@ describe('ButtonTriggerSurvey', () => {
       expect(container).toBeDefined();
       expect(container.tagName).toBe('DIV');
       expect(
-        container.classList.contains('hello-customer-button-trigger')
+        container.classList.contains('hello-customer-button-trigger'),
       ).toBe(true);
     });
   });

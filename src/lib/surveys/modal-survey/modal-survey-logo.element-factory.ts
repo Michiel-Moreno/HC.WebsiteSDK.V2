@@ -2,7 +2,7 @@ import { StyledElementFactory } from '../../core/factories/styled-element.factor
 
 export function modalSurveyLogoFactory(
   logoClass: string,
-  logoStyle: Partial<CSSStyleDeclaration>
+  logoStyle: Partial<CSSStyleDeclaration>,
 ): HTMLDivElement {
   const data = `
       <svg xmlns="http://www.w3.org/2000/svg" width="187.764" height="25.134" viewBox="0 0 187.764 25.134">
@@ -15,10 +15,12 @@ export function modalSurveyLogoFactory(
       </g>
       </svg>
   `;
-  const element = new DOMParser().parseFromString(data, 'application/xml')
-    .documentElement;
+  const element = new DOMParser().parseFromString(
+    data,
+    'application/xml',
+  ).documentElement;
   const container = new StyledElementFactory(
-    document.createElement('div')
+    document.createElement('div'),
   ).applyClass(logoClass, logoStyle).styledElement;
   container.appendChild(element);
   return container;

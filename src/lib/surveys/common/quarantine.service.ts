@@ -6,7 +6,7 @@ export class QuarantineService {
 
   constructor(
     private surveyIdentifier: string,
-    private quarantineConfig?: SurveyQuarantineConfig
+    private quarantineConfig?: SurveyQuarantineConfig,
   ) {}
 
   isUnderQuarantine(): boolean {
@@ -37,14 +37,14 @@ export class QuarantineService {
 
   private getQuarantineStartData(): string | null {
     return localStorage.getItem(
-      `${QuarantineService.quarantineStartKey}:${this.surveyIdentifier}`
+      `${QuarantineService.quarantineStartKey}:${this.surveyIdentifier}`,
     );
   }
 
   private setQuarantineStartData(data: string): void {
     localStorage.setItem(
       `${QuarantineService.quarantineStartKey}:${this.surveyIdentifier}`,
-      data
+      data,
     );
   }
 }

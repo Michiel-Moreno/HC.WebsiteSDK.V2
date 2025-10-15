@@ -30,7 +30,7 @@ export class StyledElementFactory<T extends HTMLElement> {
 
   public attachInlineRule(
     ruleName: keyof CSSStyleDeclaration,
-    ruleValue: CSSStyleDeclaration[keyof CSSStyleDeclaration]
+    ruleValue: CSSStyleDeclaration[keyof CSSStyleDeclaration],
   ): StyledElementFactory<T> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (this.elementClone.style as Record<string, any>)[
@@ -47,7 +47,7 @@ export class StyledElementFactory<T extends HTMLElement> {
    */
   public applyInlineConditionally(
     condition: boolean,
-    style?: Partial<CSSStyleDeclaration>
+    style?: Partial<CSSStyleDeclaration>,
   ): StyledElementFactory<T> {
     return condition && style ? this.applyInlineStyle(style) : this;
   }
@@ -62,7 +62,7 @@ export class StyledElementFactory<T extends HTMLElement> {
   public applyClassConditionally(
     condition: boolean,
     name: string,
-    style?: Partial<CSSStyleDeclaration>
+    style?: Partial<CSSStyleDeclaration>,
   ): StyledElementFactory<T> {
     return condition ? this.applyClass(name, style) : this;
   }
@@ -73,12 +73,12 @@ export class StyledElementFactory<T extends HTMLElement> {
    * @param style
    */
   public applyInlineStyle(
-    style: Partial<CSSStyleDeclaration>
+    style: Partial<CSSStyleDeclaration>,
   ): StyledElementFactory<T> {
     Object.entries(style).forEach(([key, rule]) => {
       this.attachInlineRule(
         key as keyof CSSStyleDeclaration,
-        rule as CSSStyleDeclaration[keyof CSSStyleDeclaration]
+        rule as CSSStyleDeclaration[keyof CSSStyleDeclaration],
       );
     });
     return this;
@@ -93,7 +93,7 @@ export class StyledElementFactory<T extends HTMLElement> {
    */
   public applyClass(
     className: string,
-    style?: Partial<CSSStyleDeclaration>
+    style?: Partial<CSSStyleDeclaration>,
   ): StyledElementFactory<T> {
     this.attachCssClass(className);
     if (style) StyledElementFactory.appendCssClassToHeader(style, className);
@@ -110,7 +110,7 @@ export class StyledElementFactory<T extends HTMLElement> {
    */
   public static appendCssClassToHeader(
     style: Partial<CSSStyleDeclaration>,
-    name: string
+    name: string,
   ): void {
     if (Object.keys(style).length < 1) return;
     const element = StyledElementFactory.getStyleElement();
@@ -125,7 +125,7 @@ export class StyledElementFactory<T extends HTMLElement> {
    */
   public static addMediaRule(
     media: string,
-    rules: Record<string, Partial<CSSStyleDeclaration>>
+    rules: Record<string, Partial<CSSStyleDeclaration>>,
   ) {
     if (Object.keys(rules).length < 1) return;
     const element = StyledElementFactory.getStyleElement();
@@ -136,7 +136,7 @@ export class StyledElementFactory<T extends HTMLElement> {
 
   private static getStyleElement(): HTMLStyleElement {
     let element = document.querySelector(
-      `[${StyledElementFactory.STYLES_ATTRIBUTE}]`
+      `[${StyledElementFactory.STYLES_ATTRIBUTE}]`,
     ) as HTMLStyleElement;
     if (!element) {
       element = document.createElement('style');
@@ -148,7 +148,7 @@ export class StyledElementFactory<T extends HTMLElement> {
 
   private static parseStyleToClass(
     name: string,
-    style: Partial<CSSStyleDeclaration>
+    style: Partial<CSSStyleDeclaration>,
   ): string {
     return `.${name}{${Object.entries(style)
       .map((rule) => [camelToKebabCase(rule[0]), rule[1]])
