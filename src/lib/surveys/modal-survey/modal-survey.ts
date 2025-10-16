@@ -82,6 +82,12 @@ export class ModalSurvey extends BaseSurvey<ModalSurveyConfig> {
   private readonly computedClassNames: Required<ClassNamesConfigType>;
   private messageHandler: ((data: unknown) => void) | null = null;
   private messageEventListener: ((event: MessageEvent) => void) | null = null;
+  private lastFocusedElement: HTMLElement | null = null;
+  private focusTrapActive = false;
+  private focusTrapHandler: ((e: KeyboardEvent) => void) | null = null;
+  private focusTrapHandlerCast: EventListener | null = null;
+  private focusTrapActivationTimeout: ReturnType<typeof setTimeout> | null =
+    null;
 
   constructor(
     configBuilder: UrlBuilder,
@@ -116,6 +122,23 @@ export class ModalSurvey extends BaseSurvey<ModalSurveyConfig> {
   public close(): void {
     const styleClasses = this.getClassNames();
     this.modalHandle.classList.remove(styleClasses.modalVisible);
+
+    this.deactivateFocusTrap();
+
+    // Restore focus to element that opened modal
+    if (this.lastFocusedElement) {
+      // Use setTimeout to ensure modal is hidden first
+      setTimeout(() => {
+        if (
+          this.lastFocusedElement &&
+          typeof this.lastFocusedElement.focus === 'function'
+        ) {
+          this.lastFocusedElement.focus();
+        }
+        this.lastFocusedElement = null;
+      }, 0);
+    }
+
     this.modalConfig.callbacks?.onClose?.();
   }
 
@@ -132,13 +155,18 @@ export class ModalSurvey extends BaseSurvey<ModalSurveyConfig> {
    */
   public show(): void {
     if (!this.quarantineService.isUnderQuarantine()) {
+      // Store currently focused element for restoration
+      this.lastFocusedElement = document.activeElement as HTMLElement;
+
       const styleClasses = this.getClassNames();
       this.modalHandle.classList.add(styleClasses.modalVisible);
       this.quarantineService.startQuarantine();
 
-      // Focus modal after render for keyboard navigation and screen readers
-      setTimeout(() => {
+      // Focus modal and activate trap after render
+      this.focusTrapActivationTimeout = setTimeout(() => {
         this.modalHandle.focus();
+        this.activateFocusTrap();
+        this.focusTrapActivationTimeout = null;
       }, 0);
 
       this.modalConfig.callbacks?.onShow?.();
@@ -261,6 +289,9 @@ export class ModalSurvey extends BaseSurvey<ModalSurveyConfig> {
    * Removes modal from DOM and prevents memory leaks
    */
   public destroy(): void {
+    // Deactivate focus trap
+    this.deactivateFocusTrap();
+
     // Clean up message listeners if active
     if (this.messageEventListener) {
       window.removeEventListener('message', this.messageEventListener);
@@ -279,7 +310,125 @@ export class ModalSurvey extends BaseSurvey<ModalSurveyConfig> {
       this.modalHandle.parentElement.removeChild(this.modalHandle);
     }
 
+    // No need to restore focus if destroying
+    this.lastFocusedElement = null;
+
     this.modalConfig.callbacks?.onDestroy?.();
+  }
+
+  /**
+   * Activate focus trap
+   * Ensures Tab/Shift+Tab cycles within modal
+   * @private
+   */
+  private activateFocusTrap(): void {
+    this.focusTrapActive = true;
+
+    // Get all focusable elements in modal
+    const focusableSelector = [
+      'button:not([disabled])',
+      '[href]',
+      'input:not([disabled])',
+      'select:not([disabled])',
+      'textarea:not([disabled])',
+      '[tabindex]:not([tabindex="-1"])',
+      'iframe',
+    ].join(', ');
+
+    const focusableElements = Array.from(
+      this.modalHandle.querySelectorAll<HTMLElement>(focusableSelector),
+    );
+
+    if (focusableElements.length === 0) {
+      // No focusable elements, just keep focus on modal itself
+      return;
+    }
+
+    const firstElement = focusableElements[0];
+    const lastElement = focusableElements[focusableElements.length - 1];
+
+    // Create handler that traps ALL Tab events
+    this.focusTrapHandler = (e: KeyboardEvent) => {
+      if (!this.focusTrapActive || e.key !== 'Tab') return;
+
+      // Get currently focused element
+      const activeElement = document.activeElement;
+
+      // Check if focus is inside modal
+      const isFocusInsideModal =
+        this.modalHandle === activeElement ||
+        this.modalHandle.contains(activeElement);
+
+      if (!isFocusInsideModal) {
+        // Focus escaped somehow - bring it back
+        e.preventDefault();
+        firstElement.focus();
+        return;
+      }
+
+      if (e.shiftKey) {
+        // Shift+Tab: Going backwards
+        if (
+          activeElement === firstElement ||
+          activeElement === this.modalHandle
+        ) {
+          e.preventDefault();
+          lastElement.focus();
+        }
+      } else {
+        // Tab: Going forwards
+        if (
+          activeElement === lastElement ||
+          activeElement === this.modalHandle
+        ) {
+          e.preventDefault();
+          firstElement.focus();
+        }
+      }
+    };
+
+    // Add listener to document to catch all Tab events globally
+    // Store the cast version so we can remove it later
+    this.focusTrapHandlerCast = this.focusTrapHandler as EventListener;
+    this.addTrackedListener(
+      document as unknown as Window,
+      'keydown',
+      this.focusTrapHandlerCast,
+    );
+  }
+
+  /**
+   * Deactivate focus trap
+   * @private
+   */
+  private deactivateFocusTrap(): void {
+    this.focusTrapActive = false;
+
+    // Clear pending focus trap activation if it hasn't fired yet
+    if (this.focusTrapActivationTimeout !== null) {
+      clearTimeout(this.focusTrapActivationTimeout);
+      this.focusTrapActivationTimeout = null;
+    }
+
+    // Immediately remove the focus trap listener
+    if (this.focusTrapHandlerCast) {
+      // Remove directly from document
+      document.removeEventListener('keydown', this.focusTrapHandlerCast);
+
+      // Also remove from tracked listeners
+      const index = this.eventListeners.findIndex(
+        (listener) =>
+          listener.handler === this.focusTrapHandlerCast &&
+          listener.event === 'keydown',
+      );
+
+      if (index !== -1) {
+        this.eventListeners.splice(index, 1);
+      }
+
+      this.focusTrapHandler = null;
+      this.focusTrapHandlerCast = null;
+    }
   }
 
   /**

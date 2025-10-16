@@ -13,8 +13,12 @@ describe('ModalSurvey', () => {
     clear: jest.Mock;
     store: Record<string, string>;
   };
+  let createdModals: ModalSurvey[] = [];
 
   beforeEach(() => {
+    // Reset modal tracking
+    createdModals = [];
+
     // Clean up DOM
     document.body.innerHTML = '';
 
@@ -54,6 +58,16 @@ describe('ModalSurvey', () => {
   });
 
   afterEach(() => {
+    // Destroy all tracked modals to prevent event listener accumulation
+    createdModals.forEach((modal) => {
+      try {
+        modal.destroy();
+      } catch (e) {
+        // Ignore errors if already destroyed
+      }
+    });
+    createdModals = [];
+
     document.body.innerHTML = '';
     localStorageMock.clear();
   });
@@ -63,6 +77,8 @@ describe('ModalSurvey', () => {
       const config: ModalSurveyConfig = {};
 
       const survey = new ModalSurvey(mockUrlBuilder, config);
+
+      createdModals.push(survey);
 
       expect(survey).toBeDefined();
       expect(survey.iFrame).toBeDefined();
@@ -80,6 +96,8 @@ describe('ModalSurvey', () => {
       };
 
       const survey = new ModalSurvey(mockUrlBuilder, config);
+
+      createdModals.push(survey);
 
       expect(survey).toBeDefined();
     });
@@ -115,6 +133,8 @@ describe('ModalSurvey', () => {
 
       const survey = new ModalSurvey(mockUrlBuilder, config);
 
+      createdModals.push(survey);
+
       expect(survey.modalContainer).toBeDefined();
       expect(survey.modalContainer.tagName).toBe('DIV');
     });
@@ -124,6 +144,8 @@ describe('ModalSurvey', () => {
 
       const survey = new ModalSurvey(mockUrlBuilder, config);
 
+      createdModals.push(survey);
+
       expect(survey.iFrame).toBeDefined();
       expect(survey.iFrame.tagName).toBe('IFRAME');
     });
@@ -132,6 +154,8 @@ describe('ModalSurvey', () => {
       const config: ModalSurveyConfig = {};
 
       const survey = new ModalSurvey(mockUrlBuilder, config);
+
+      createdModals.push(survey);
 
       expect(
         survey.modalContainer.classList.contains(
@@ -149,6 +173,8 @@ describe('ModalSurvey', () => {
 
       const survey = new ModalSurvey(mockUrlBuilder, config);
 
+      createdModals.push(survey);
+
       const windowDiv = survey.modalContainer.querySelector(
         `.${defaults.classNames.windowDivStyle}`,
       );
@@ -159,6 +185,8 @@ describe('ModalSurvey', () => {
       const config: ModalSurveyConfig = {};
 
       const survey = new ModalSurvey(mockUrlBuilder, config);
+
+      createdModals.push(survey);
 
       const windowBar = survey.modalContainer.querySelector(
         `.${defaults.classNames.windowBarDivStyle}`,
@@ -173,6 +201,8 @@ describe('ModalSurvey', () => {
 
       const survey = new ModalSurvey(mockUrlBuilder, config);
 
+      createdModals.push(survey);
+
       const closeButton = survey.modalContainer.querySelector(
         `.${defaults.classNames.windowCloseButtonStyle}`,
       );
@@ -186,6 +216,8 @@ describe('ModalSurvey', () => {
 
       const survey = new ModalSurvey(mockUrlBuilder, config);
 
+      createdModals.push(survey);
+
       const closeButton = survey.modalContainer.querySelector(
         `.${defaults.classNames.windowCloseButtonStyle}`,
       );
@@ -196,6 +228,8 @@ describe('ModalSurvey', () => {
       const config: ModalSurveyConfig = {};
 
       const survey = new ModalSurvey(mockUrlBuilder, config);
+
+      createdModals.push(survey);
 
       const footer = survey.modalContainer.querySelector(
         `.${defaults.classNames.footerStyle}`,
@@ -208,6 +242,8 @@ describe('ModalSurvey', () => {
 
       const survey = new ModalSurvey(mockUrlBuilder, config);
 
+      createdModals.push(survey);
+
       const logo = survey.modalContainer.querySelector(
         `.${defaults.classNames.footerLogoStyle}`,
       );
@@ -218,6 +254,8 @@ describe('ModalSurvey', () => {
       const config: ModalSurveyConfig = {};
 
       const survey = new ModalSurvey(mockUrlBuilder, config);
+
+      createdModals.push(survey);
 
       expect(document.body.contains(survey.modalContainer)).toBe(true);
     });
@@ -232,6 +270,8 @@ describe('ModalSurvey', () => {
       };
 
       const survey = new ModalSurvey(mockUrlBuilder, config);
+
+      createdModals.push(survey);
 
       expect(customContainer.contains(survey.modalContainer)).toBe(true);
     });
@@ -255,6 +295,8 @@ describe('ModalSurvey', () => {
 
       const survey = new ModalSurvey(mockUrlBuilder, config);
 
+      createdModals.push(survey);
+
       expect(
         survey.modalContainer.classList.contains(
           defaults.classNames.rootDivStyle,
@@ -268,6 +310,8 @@ describe('ModalSurvey', () => {
       };
 
       const survey = new ModalSurvey(mockUrlBuilder, config);
+
+      createdModals.push(survey);
 
       // Should still have class names
       expect(
@@ -287,6 +331,8 @@ describe('ModalSurvey', () => {
 
       const survey = new ModalSurvey(mockUrlBuilder, config);
 
+      createdModals.push(survey);
+
       expect(survey.modalContainer.classList.contains('custom-root')).toBe(
         true,
       );
@@ -304,6 +350,8 @@ describe('ModalSurvey', () => {
 
       const survey = new ModalSurvey(mockUrlBuilder, config);
 
+      createdModals.push(survey);
+
       expect(survey.modalContainer).toBeDefined();
     });
 
@@ -313,6 +361,8 @@ describe('ModalSurvey', () => {
       };
 
       const survey = new ModalSurvey(mockUrlBuilder, config);
+
+      createdModals.push(survey);
 
       expect(
         survey.modalContainer.classList.contains(
@@ -327,6 +377,8 @@ describe('ModalSurvey', () => {
       };
 
       const survey = new ModalSurvey(mockUrlBuilder, config);
+
+      createdModals.push(survey);
 
       expect(
         survey.modalContainer.classList.contains(
@@ -343,6 +395,8 @@ describe('ModalSurvey', () => {
       };
 
       const survey = new ModalSurvey(mockUrlBuilder, config);
+
+      createdModals.push(survey);
 
       // Clear localStorage to avoid quarantine
       localStorageMock.clear();
@@ -363,6 +417,8 @@ describe('ModalSurvey', () => {
 
       const survey = new ModalSurvey(mockUrlBuilder, config);
 
+      createdModals.push(survey);
+
       survey.close();
 
       expect(
@@ -376,6 +432,8 @@ describe('ModalSurvey', () => {
       const config: ModalSurveyConfig = {};
 
       const survey = new ModalSurvey(mockUrlBuilder, config);
+
+      createdModals.push(survey);
 
       // Update the mock to return a different URL
       const urlFactory = mockUrlBuilder.getUrlFactory();
@@ -393,6 +451,8 @@ describe('ModalSurvey', () => {
 
       const survey = new ModalSurvey(mockUrlBuilder, config);
 
+      createdModals.push(survey);
+
       expect(survey.iFrame.src).toBe(
         'https://example.com/survey?entry.test=value',
       );
@@ -407,6 +467,8 @@ describe('ModalSurvey', () => {
       };
 
       const survey = new ModalSurvey(mockUrlBuilder, config);
+
+      createdModals.push(survey);
 
       const closeButton = survey.modalContainer.querySelector(
         `.${defaults.classNames.windowCloseButtonStyle}`,
@@ -431,6 +493,8 @@ describe('ModalSurvey', () => {
 
       const survey = new ModalSurvey(mockUrlBuilder, config);
 
+      createdModals.push(survey);
+
       survey.modalContainer.click();
 
       expect(
@@ -447,6 +511,8 @@ describe('ModalSurvey', () => {
       };
 
       const survey = new ModalSurvey(mockUrlBuilder, config);
+
+      createdModals.push(survey);
 
       const windowDiv = survey.modalContainer.querySelector(
         `.${defaults.classNames.windowDivStyle}`,
@@ -471,6 +537,8 @@ describe('ModalSurvey', () => {
 
       const survey = new ModalSurvey(mockUrlBuilder, config);
 
+      createdModals.push(survey);
+
       expect(survey.modalContainer).toBeDefined();
     });
   });
@@ -486,6 +554,8 @@ describe('ModalSurvey', () => {
       };
 
       const survey = new ModalSurvey(mockUrlBuilder, config);
+
+      createdModals.push(survey);
 
       survey.show();
 
@@ -503,6 +573,8 @@ describe('ModalSurvey', () => {
       };
 
       const survey = new ModalSurvey(mockUrlBuilder, config);
+
+      createdModals.push(survey);
 
       // Clear localStorage
       localStorageMock.clear();
@@ -522,6 +594,8 @@ describe('ModalSurvey', () => {
 
       const survey = new ModalSurvey(mockUrlBuilder, config);
 
+      createdModals.push(survey);
+
       survey.show();
       expect(survey.modalContainer).toBeDefined();
     });
@@ -537,6 +611,8 @@ describe('ModalSurvey', () => {
       };
 
       const survey = new ModalSurvey(mockUrlBuilder, config);
+
+      createdModals.push(survey);
 
       survey.show();
 
@@ -555,6 +631,8 @@ describe('ModalSurvey', () => {
 
       const survey = new ModalSurvey(mockUrlBuilder, config);
 
+      createdModals.push(survey);
+
       expect(survey.modalContainer.parentElement).toBe(document.body);
     });
 
@@ -568,6 +646,8 @@ describe('ModalSurvey', () => {
       };
 
       const survey = new ModalSurvey(mockUrlBuilder, config);
+
+      createdModals.push(survey);
 
       expect(survey.modalContainer.parentElement).toBe(customContainer);
     });
@@ -594,6 +674,8 @@ describe('ModalSurvey', () => {
 
       const survey = new ModalSurvey(mockUrlBuilder, config);
 
+      createdModals.push(survey);
+
       expect(
         survey.modalContainer.classList.contains(
           defaults.classNames.modalVisible,
@@ -608,6 +690,8 @@ describe('ModalSurvey', () => {
 
       const survey = new ModalSurvey(mockUrlBuilder, config);
 
+      createdModals.push(survey);
+
       expect(
         survey.modalContainer.classList.contains(
           defaults.classNames.modalVisible,
@@ -619,6 +703,8 @@ describe('ModalSurvey', () => {
       const config: ModalSurveyConfig = {};
 
       const survey = new ModalSurvey(mockUrlBuilder, config);
+
+      createdModals.push(survey);
 
       expect(
         survey.modalContainer.classList.contains(
@@ -634,6 +720,8 @@ describe('ModalSurvey', () => {
 
       const survey = new ModalSurvey(mockUrlBuilder, config);
 
+      createdModals.push(survey);
+
       expect(survey.modalContainer).toBeDefined();
       expect(survey.modalContainer.tagName).toBe('DIV');
     });
@@ -642,6 +730,8 @@ describe('ModalSurvey', () => {
       const config: ModalSurveyConfig = {};
 
       const survey = new ModalSurvey(mockUrlBuilder, config);
+
+      createdModals.push(survey);
 
       expect(survey.iFrame).toBeDefined();
       expect(survey.iFrame.tagName).toBe('IFRAME');
@@ -652,7 +742,8 @@ describe('ModalSurvey', () => {
     test('should get URL from urlFactory on creation', () => {
       const config: ModalSurveyConfig = {};
 
-      new ModalSurvey(mockUrlBuilder, config);
+      const survey = new ModalSurvey(mockUrlBuilder, config);
+      createdModals.push(survey);
 
       const urlFactory = mockUrlBuilder.getUrlFactory();
       expect(urlFactory.getUrlWithParams).toHaveBeenCalled();
@@ -663,7 +754,8 @@ describe('ModalSurvey', () => {
         quarantineConfig: { period: 7 },
       };
 
-      new ModalSurvey(mockUrlBuilder, config);
+      const survey = new ModalSurvey(mockUrlBuilder, config);
+      createdModals.push(survey);
 
       const urlFactory = mockUrlBuilder.getUrlFactory();
       expect(urlFactory.getSurveyIdentifier).toHaveBeenCalled();
@@ -676,6 +768,8 @@ describe('ModalSurvey', () => {
 
       const survey = new ModalSurvey(mockUrlBuilder, config);
 
+      createdModals.push(survey);
+
       expect(survey.destroy).toBeDefined();
       expect(typeof survey.destroy).toBe('function');
     });
@@ -684,6 +778,8 @@ describe('ModalSurvey', () => {
       const config: ModalSurveyConfig = {};
 
       const survey = new ModalSurvey(mockUrlBuilder, config);
+
+      createdModals.push(survey);
 
       expect(document.body.contains(survey.modalContainer)).toBe(true);
 
@@ -697,6 +793,8 @@ describe('ModalSurvey', () => {
 
       const survey = new ModalSurvey(mockUrlBuilder, config);
 
+      createdModals.push(survey);
+
       survey.destroy();
 
       expect(() => survey.destroy()).not.toThrow();
@@ -706,6 +804,8 @@ describe('ModalSurvey', () => {
       const config: ModalSurveyConfig = {};
 
       const survey = new ModalSurvey(mockUrlBuilder, config);
+
+      createdModals.push(survey);
 
       // Manually remove from DOM
       if (survey.modalContainer.parentElement) {
@@ -723,6 +823,8 @@ describe('ModalSurvey', () => {
       };
 
       const survey = new ModalSurvey(mockUrlBuilder, config);
+
+      createdModals.push(survey);
 
       const closeButton = survey.modalContainer.querySelector(
         `.${defaults.classNames.windowCloseButtonStyle}`,
@@ -747,6 +849,8 @@ describe('ModalSurvey', () => {
 
       const survey = new ModalSurvey(mockUrlBuilder, config);
 
+      createdModals.push(survey);
+
       const windowDiv = survey.modalContainer.querySelector(
         `.${defaults.classNames.windowDivStyle}`,
       ) as HTMLElement;
@@ -766,6 +870,8 @@ describe('ModalSurvey', () => {
       };
 
       const survey = new ModalSurvey(mockUrlBuilder, config);
+
+      createdModals.push(survey);
 
       expect(
         survey.modalContainer.classList.contains(
@@ -787,6 +893,8 @@ describe('ModalSurvey', () => {
       };
 
       const survey = new ModalSurvey(mockUrlBuilder, config);
+
+      createdModals.push(survey);
 
       expect(
         survey.modalContainer.classList.contains(
@@ -810,6 +918,8 @@ describe('ModalSurvey', () => {
 
       const survey = new ModalSurvey(mockUrlBuilder, config);
 
+      createdModals.push(survey);
+
       expect(document.body.contains(survey.modalContainer)).toBe(true);
 
       survey.destroy();
@@ -829,6 +939,8 @@ describe('ModalSurvey', () => {
 
       const survey = new ModalSurvey(mockUrlBuilder, config);
 
+      createdModals.push(survey);
+
       localStorageMock.clear();
       survey.show();
 
@@ -843,6 +955,8 @@ describe('ModalSurvey', () => {
       };
 
       const survey = new ModalSurvey(mockUrlBuilder, config);
+
+      createdModals.push(survey);
       survey.close();
 
       expect(onClose).toHaveBeenCalled();
@@ -855,6 +969,8 @@ describe('ModalSurvey', () => {
       };
 
       const survey = new ModalSurvey(mockUrlBuilder, config);
+
+      createdModals.push(survey);
       survey.destroy();
 
       expect(onDestroy).toHaveBeenCalled();
@@ -873,6 +989,8 @@ describe('ModalSurvey', () => {
 
       const survey = new ModalSurvey(mockUrlBuilder, config);
 
+      createdModals.push(survey);
+
       // Trigger load event
       const loadEvent = new Event('load');
       survey.iFrame.dispatchEvent(loadEvent);
@@ -885,6 +1003,8 @@ describe('ModalSurvey', () => {
       };
 
       const survey = new ModalSurvey(mockUrlBuilder, config);
+
+      createdModals.push(survey);
 
       // Trigger error event
       const errorEvent = new Event('error');
@@ -907,6 +1027,8 @@ describe('ModalSurvey', () => {
       };
 
       const survey = new ModalSurvey(mockUrlBuilder, config);
+
+      createdModals.push(survey);
       survey.show();
 
       expect(onQuarantineBlocked).toHaveBeenCalled();
@@ -917,6 +1039,8 @@ describe('ModalSurvey', () => {
       const config: ModalSurveyConfig = {};
 
       const survey = new ModalSurvey(mockUrlBuilder, config);
+
+      createdModals.push(survey);
 
       expect(() => {
         survey.show();
@@ -936,6 +1060,8 @@ describe('ModalSurvey', () => {
       };
 
       const survey = new ModalSurvey(mockUrlBuilder, config);
+
+      createdModals.push(survey);
 
       // Constructor calls close() when showByDefault is false, so onClose called once already
       expect(onClose).toHaveBeenCalledTimes(1);
@@ -959,6 +1085,8 @@ describe('ModalSurvey', () => {
 
       const survey = new ModalSurvey(mockUrlBuilder, config);
 
+      createdModals.push(survey);
+
       expect(survey.modalContainer.getAttribute('role')).toBe('dialog');
     });
 
@@ -967,6 +1095,8 @@ describe('ModalSurvey', () => {
 
       const survey = new ModalSurvey(mockUrlBuilder, config);
 
+      createdModals.push(survey);
+
       expect(survey.modalContainer.getAttribute('aria-modal')).toBe('true');
     });
 
@@ -974,6 +1104,8 @@ describe('ModalSurvey', () => {
       const config: ModalSurveyConfig = {};
 
       const survey = new ModalSurvey(mockUrlBuilder, config);
+
+      createdModals.push(survey);
 
       expect(survey.modalContainer.getAttribute('aria-label')).toBe(
         'Survey dialog',
@@ -987,6 +1119,8 @@ describe('ModalSurvey', () => {
 
       const survey = new ModalSurvey(mockUrlBuilder, config);
 
+      createdModals.push(survey);
+
       expect(survey.modalContainer.getAttribute('aria-label')).toBe(
         'Customer feedback survey',
       );
@@ -999,6 +1133,8 @@ describe('ModalSurvey', () => {
 
       const survey = new ModalSurvey(mockUrlBuilder, config);
 
+      createdModals.push(survey);
+
       expect(survey.modalContainer.getAttribute('aria-description')).toBe(
         'Please take a moment to share your feedback',
       );
@@ -1008,6 +1144,8 @@ describe('ModalSurvey', () => {
       const config: ModalSurveyConfig = {};
 
       const survey = new ModalSurvey(mockUrlBuilder, config);
+
+      createdModals.push(survey);
 
       expect(survey.modalContainer.hasAttribute('aria-description')).toBe(
         false,
@@ -1019,6 +1157,8 @@ describe('ModalSurvey', () => {
 
       const survey = new ModalSurvey(mockUrlBuilder, config);
 
+      createdModals.push(survey);
+
       expect(survey.modalContainer.getAttribute('tabindex')).toBe('-1');
     });
 
@@ -1028,6 +1168,8 @@ describe('ModalSurvey', () => {
       };
 
       const survey = new ModalSurvey(mockUrlBuilder, config);
+
+      createdModals.push(survey);
 
       // Mock focus method
       const focusSpy = jest.spyOn(survey.modalContainer, 'focus');
@@ -1048,6 +1190,8 @@ describe('ModalSurvey', () => {
       const config: ModalSurveyConfig = {};
 
       const survey = new ModalSurvey(mockUrlBuilder, config);
+
+      createdModals.push(survey);
       const urlFactory = mockUrlBuilder.getUrlFactory();
 
       // Mock patchConfig
@@ -1066,6 +1210,8 @@ describe('ModalSurvey', () => {
       const config: ModalSurveyConfig = {};
 
       const survey = new ModalSurvey(mockUrlBuilder, config);
+
+      createdModals.push(survey);
       const urlFactory = mockUrlBuilder.getUrlFactory();
 
       const newUrl =
@@ -1084,6 +1230,8 @@ describe('ModalSurvey', () => {
       const config: ModalSurveyConfig = {};
 
       const survey = new ModalSurvey(mockUrlBuilder, config);
+
+      createdModals.push(survey);
       const urlFactory = mockUrlBuilder.getUrlFactory();
 
       const patchConfigSpy = jest.spyOn(urlFactory, 'patchConfig');
@@ -1107,6 +1255,8 @@ describe('ModalSurvey', () => {
       const config: ModalSurveyConfig = {};
 
       const survey = new ModalSurvey(mockUrlBuilder, config);
+
+      createdModals.push(survey);
       const urlFactory = mockUrlBuilder.getUrlFactory();
 
       const patchConfigSpy = jest.spyOn(urlFactory, 'patchConfig');
@@ -1128,6 +1278,8 @@ describe('ModalSurvey', () => {
       const config: ModalSurveyConfig = {};
 
       const survey = new ModalSurvey(mockUrlBuilder, config);
+
+      createdModals.push(survey);
       const urlFactory = mockUrlBuilder.getUrlFactory();
 
       const patchConfigSpy = jest.spyOn(urlFactory, 'patchConfig');
@@ -1155,6 +1307,8 @@ describe('ModalSurvey', () => {
         const config: ModalSurveyConfig = {};
 
         const survey = new ModalSurvey(mockUrlBuilder, config);
+
+        createdModals.push(survey);
         const postMessageSpy = jest.fn();
 
         // Mock contentWindow
@@ -1176,6 +1330,8 @@ describe('ModalSurvey', () => {
         const config: ModalSurveyConfig = {};
 
         const survey = new ModalSurvey(mockUrlBuilder, config);
+
+        createdModals.push(survey);
         const postMessageSpy = jest.fn();
 
         Object.defineProperty(survey.iFrame, 'contentWindow', {
@@ -1197,6 +1353,8 @@ describe('ModalSurvey', () => {
 
         const survey = new ModalSurvey(mockUrlBuilder, config);
 
+        createdModals.push(survey);
+
         Object.defineProperty(survey.iFrame, 'contentWindow', {
           value: null,
           writable: true,
@@ -1214,6 +1372,8 @@ describe('ModalSurvey', () => {
         const config: ModalSurveyConfig = {};
 
         const survey = new ModalSurvey(mockUrlBuilder, config);
+
+        createdModals.push(survey);
         const callback = jest.fn();
 
         survey.onMessage(callback);
@@ -1232,6 +1392,8 @@ describe('ModalSurvey', () => {
         const config: ModalSurveyConfig = {};
 
         const survey = new ModalSurvey(mockUrlBuilder, config);
+
+        createdModals.push(survey);
         const callback = jest.fn();
         const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
 
@@ -1256,6 +1418,8 @@ describe('ModalSurvey', () => {
         const config: ModalSurveyConfig = {};
 
         const survey = new ModalSurvey(mockUrlBuilder, config);
+
+        createdModals.push(survey);
         const callback = jest.fn();
 
         const cleanup = survey.onMessage(callback);
@@ -1275,6 +1439,8 @@ describe('ModalSurvey', () => {
         const config: ModalSurveyConfig = {};
 
         const survey = new ModalSurvey(mockUrlBuilder, config);
+
+        createdModals.push(survey);
         const callback = jest.fn();
 
         survey.onMessage(callback);
@@ -1294,6 +1460,8 @@ describe('ModalSurvey', () => {
         const config: ModalSurveyConfig = {};
 
         const survey = new ModalSurvey(mockUrlBuilder, config);
+
+        createdModals.push(survey);
         const callback = jest.fn();
 
         survey.onMessage(callback);
@@ -1315,6 +1483,206 @@ describe('ModalSurvey', () => {
         expect(callback).toHaveBeenNthCalledWith(1, { type: 'message1' });
         expect(callback).toHaveBeenNthCalledWith(2, { type: 'message2' });
       });
+    });
+  });
+
+  describe('P. Focus Trap Tests', () => {
+    test('should store last focused element on show', (done) => {
+      const button = document.createElement('button');
+      button.id = 'trigger-button';
+      document.body.appendChild(button);
+      button.focus();
+
+      const modal = new ModalSurvey(mockUrlBuilder, { showByDefault: false });
+
+      createdModals.push(modal);
+
+      localStorageMock.clear();
+      modal.show();
+
+      // Modal should be focused after show
+      setTimeout(() => {
+        expect(document.activeElement).toBe(modal.modalContainer);
+        done();
+      }, 10);
+    });
+
+    test('should trap Tab within modal', (done) => {
+      const config: ModalSurveyConfig = {
+        showByDefault: true,
+        closeButton: true,
+      };
+
+      const modal = new ModalSurvey(mockUrlBuilder, config);
+
+      createdModals.push(modal);
+
+      // Wait for focus trap to be activated
+      setTimeout(() => {
+        // Get focusable elements (match implementation selector)
+        const focusable = modal.modalContainer.querySelectorAll(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"]), iframe',
+        );
+        const first = focusable[0] as HTMLElement;
+        const last = focusable[focusable.length - 1] as HTMLElement;
+
+        // Ensure we have focusable elements
+        expect(focusable.length).toBeGreaterThan(0);
+
+        // Focus last element
+        if (last && typeof last.focus === 'function') {
+          last.focus();
+          expect(document.activeElement).toBe(last);
+
+          // Simulate Tab key
+          const tabEvent = new KeyboardEvent('keydown', {
+            key: 'Tab',
+            bubbles: true,
+            cancelable: true,
+          });
+          modal.modalContainer.dispatchEvent(tabEvent);
+
+          // Should wrap to first
+          setTimeout(() => {
+            expect(document.activeElement).toBe(first);
+            done();
+          }, 10);
+        } else {
+          done.fail('Last element is not focusable');
+        }
+      }, 10);
+    });
+
+    test('should trap Shift+Tab within modal', (done) => {
+      const config: ModalSurveyConfig = {
+        showByDefault: true,
+        closeButton: true,
+      };
+
+      const modal = new ModalSurvey(mockUrlBuilder, config);
+
+      createdModals.push(modal);
+
+      // Wait for focus trap to be activated
+      setTimeout(() => {
+        const focusable = modal.modalContainer.querySelectorAll(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"]), iframe',
+        );
+        const last = focusable[focusable.length - 1] as HTMLElement;
+
+        // Ensure we have focusable elements
+        expect(focusable.length).toBeGreaterThan(0);
+
+        // Focus modal itself
+        modal.modalContainer.focus();
+        expect(document.activeElement).toBe(modal.modalContainer);
+
+        // Simulate Shift+Tab
+        const shiftTabEvent = new KeyboardEvent('keydown', {
+          key: 'Tab',
+          shiftKey: true,
+          bubbles: true,
+          cancelable: true,
+        });
+        modal.modalContainer.dispatchEvent(shiftTabEvent);
+
+        // Should wrap to last
+        setTimeout(() => {
+          if (last && typeof last.focus === 'function') {
+            expect(document.activeElement).toBe(last);
+            done();
+          } else {
+            done.fail('Last element is not focusable');
+          }
+        }, 10);
+      }, 10);
+    });
+
+    test('should restore focus on close', (done) => {
+      const button = document.createElement('button');
+      button.id = 'trigger-button';
+      document.body.appendChild(button);
+      button.focus();
+
+      const modal = new ModalSurvey(mockUrlBuilder, { showByDefault: false });
+
+      createdModals.push(modal);
+
+      localStorageMock.clear();
+      modal.show();
+
+      // Wait for modal to be shown
+      setTimeout(() => {
+        expect(document.activeElement).toBe(modal.modalContainer);
+
+        modal.close();
+
+        // Focus restoration uses setTimeout
+        setTimeout(() => {
+          expect(document.activeElement).toBe(button);
+          done();
+        }, 10);
+      }, 10);
+    });
+
+    test('should not restore focus on destroy', (done) => {
+      const button = document.createElement('button');
+      button.id = 'trigger-button';
+      document.body.appendChild(button);
+      button.focus();
+
+      const modal = new ModalSurvey(mockUrlBuilder, { showByDefault: true });
+
+      createdModals.push(modal);
+
+      // Wait for modal to be focused
+      setTimeout(() => {
+        // Modal should be focused
+        expect(document.activeElement).toBe(modal.modalContainer);
+
+        modal.destroy();
+
+        // Focus should not be restored to button (remains on body or modal container)
+        // After destroy, modal is removed so focus goes to body
+        expect(document.body.contains(modal.modalContainer)).toBe(false);
+        done();
+      }, 10);
+    });
+
+    test('should deactivate focus trap when modal closes', (done) => {
+      const config: ModalSurveyConfig = {
+        showByDefault: true,
+        closeButton: true,
+      };
+
+      const modal = new ModalSurvey(mockUrlBuilder, config);
+
+      createdModals.push(modal);
+      createdModals.push(modal); // Track for cleanup
+
+      // Wait for focus trap to be activated
+      setTimeout(() => {
+        // Close the modal
+        modal.close();
+
+        // Wait for deactivation to complete
+        setTimeout(() => {
+          // Try to trigger Tab event after closing - should not trap
+          const tabEvent = new KeyboardEvent('keydown', {
+            key: 'Tab',
+            bubbles: true,
+            cancelable: true,
+          });
+
+          // Event should not be prevented since trap is deactivated
+          const preventDefaultSpy = jest.spyOn(tabEvent, 'preventDefault');
+          document.dispatchEvent(tabEvent);
+
+          expect(preventDefaultSpy).not.toHaveBeenCalled();
+
+          done();
+        }, 10);
+      }, 10);
     });
   });
 });
