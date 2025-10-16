@@ -45,6 +45,9 @@ describe('InlineSurvey', () => {
           .mockReturnValue('https://example.com/survey?entry.test=value'),
         getSurveyIdentifier: jest.fn().mockReturnValue('test-survey-id'),
         patchConfig: jest.fn(),
+        getBaseUrlWithLanguage: jest
+          .fn()
+          .mockReturnValue('https://example.com/EN/tenant-id/touchpoint-id'),
       }),
     } as unknown as UrlBuilder;
   });
@@ -755,6 +758,223 @@ describe('InlineSurvey', () => {
       });
       expect(patchConfigSpy).toHaveBeenNthCalledWith(3, {
         extra: { step: '3' },
+      });
+    });
+  });
+
+  describe('H. PostMessage Communication Tests', () => {
+    describe('sendMessage', () => {
+      test('should send message to iframe', () => {
+        const container = document.createElement('div');
+        container.id = 'survey-container';
+        document.body.appendChild(container);
+
+        const config: InlineSurveyConfig = {
+          elementSelector: '#survey-container',
+        };
+
+        const survey = new InlineSurvey(mockUrlBuilder, config);
+        const postMessageSpy = jest.fn();
+
+        // Mock contentWindow
+        Object.defineProperty(survey.iFrame, 'contentWindow', {
+          value: { postMessage: postMessageSpy },
+          writable: true,
+          configurable: true,
+        });
+
+        survey.sendMessage({ type: 'test' });
+
+        expect(postMessageSpy).toHaveBeenCalledWith(
+          { type: 'test' },
+          'https://example.com/EN/tenant-id/touchpoint-id',
+        );
+      });
+
+      test('should send message with custom target origin', () => {
+        const container = document.createElement('div');
+        container.id = 'survey-container';
+        document.body.appendChild(container);
+
+        const config: InlineSurveyConfig = {
+          elementSelector: '#survey-container',
+        };
+
+        const survey = new InlineSurvey(mockUrlBuilder, config);
+        const postMessageSpy = jest.fn();
+
+        Object.defineProperty(survey.iFrame, 'contentWindow', {
+          value: { postMessage: postMessageSpy },
+          writable: true,
+          configurable: true,
+        });
+
+        survey.sendMessage({ type: 'test' }, 'https://custom.com');
+
+        expect(postMessageSpy).toHaveBeenCalledWith(
+          { type: 'test' },
+          'https://custom.com',
+        );
+      });
+
+      test('should throw if iframe not ready', () => {
+        const container = document.createElement('div');
+        container.id = 'survey-container';
+        document.body.appendChild(container);
+
+        const config: InlineSurveyConfig = {
+          elementSelector: '#survey-container',
+        };
+
+        const survey = new InlineSurvey(mockUrlBuilder, config);
+
+        Object.defineProperty(survey.iFrame, 'contentWindow', {
+          value: null,
+          writable: true,
+          configurable: true,
+        });
+
+        expect(() => survey.sendMessage({ type: 'test' })).toThrow(
+          'Iframe not ready',
+        );
+      });
+    });
+
+    describe('onMessage', () => {
+      test('should receive messages from iframe', () => {
+        const container = document.createElement('div');
+        container.id = 'survey-container';
+        document.body.appendChild(container);
+
+        const config: InlineSurveyConfig = {
+          elementSelector: '#survey-container',
+        };
+
+        const survey = new InlineSurvey(mockUrlBuilder, config);
+        const callback = jest.fn();
+
+        survey.onMessage(callback);
+
+        // Simulate message from iframe
+        const event = new MessageEvent('message', {
+          data: { type: 'survey_completed' },
+          origin: 'https://example.com',
+        });
+        window.dispatchEvent(event);
+
+        expect(callback).toHaveBeenCalledWith({ type: 'survey_completed' });
+      });
+
+      test('should reject messages from wrong origin', () => {
+        const container = document.createElement('div');
+        container.id = 'survey-container';
+        document.body.appendChild(container);
+
+        const config: InlineSurveyConfig = {
+          elementSelector: '#survey-container',
+        };
+
+        const survey = new InlineSurvey(mockUrlBuilder, config);
+        const callback = jest.fn();
+        const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
+
+        survey.onMessage(callback);
+
+        // Message from wrong origin
+        const event = new MessageEvent('message', {
+          data: { type: 'malicious' },
+          origin: 'https://evil.com',
+        });
+        window.dispatchEvent(event);
+
+        expect(callback).not.toHaveBeenCalled();
+        expect(consoleWarnSpy).toHaveBeenCalledWith(
+          expect.stringContaining('unexpected origin'),
+        );
+
+        consoleWarnSpy.mockRestore();
+      });
+
+      test('should clean up listeners when cleanup function called', () => {
+        const container = document.createElement('div');
+        container.id = 'survey-container';
+        document.body.appendChild(container);
+
+        const config: InlineSurveyConfig = {
+          elementSelector: '#survey-container',
+        };
+
+        const survey = new InlineSurvey(mockUrlBuilder, config);
+        const callback = jest.fn();
+
+        const cleanup = survey.onMessage(callback);
+        cleanup();
+
+        // Message after cleanup
+        const event = new MessageEvent('message', {
+          data: { type: 'test' },
+          origin: 'https://example.com',
+        });
+        window.dispatchEvent(event);
+
+        expect(callback).not.toHaveBeenCalled();
+      });
+
+      test('should clean up listeners on destroy', () => {
+        const container = document.createElement('div');
+        container.id = 'survey-container';
+        document.body.appendChild(container);
+
+        const config: InlineSurveyConfig = {
+          elementSelector: '#survey-container',
+        };
+
+        const survey = new InlineSurvey(mockUrlBuilder, config);
+        const callback = jest.fn();
+
+        survey.onMessage(callback);
+        survey.destroy();
+
+        // Message after destroy
+        const event = new MessageEvent('message', {
+          data: { type: 'test' },
+          origin: 'https://example.com',
+        });
+        window.dispatchEvent(event);
+
+        expect(callback).not.toHaveBeenCalled();
+      });
+
+      test('should handle multiple messages', () => {
+        const container = document.createElement('div');
+        container.id = 'survey-container';
+        document.body.appendChild(container);
+
+        const config: InlineSurveyConfig = {
+          elementSelector: '#survey-container',
+        };
+
+        const survey = new InlineSurvey(mockUrlBuilder, config);
+        const callback = jest.fn();
+
+        survey.onMessage(callback);
+
+        // Send multiple messages
+        const event1 = new MessageEvent('message', {
+          data: { type: 'message1' },
+          origin: 'https://example.com',
+        });
+        const event2 = new MessageEvent('message', {
+          data: { type: 'message2' },
+          origin: 'https://example.com',
+        });
+
+        window.dispatchEvent(event1);
+        window.dispatchEvent(event2);
+
+        expect(callback).toHaveBeenCalledTimes(2);
+        expect(callback).toHaveBeenNthCalledWith(1, { type: 'message1' });
+        expect(callback).toHaveBeenNthCalledWith(2, { type: 'message2' });
       });
     });
   });

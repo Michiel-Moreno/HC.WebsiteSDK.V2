@@ -49,6 +49,8 @@ import { InlineSurveyConfigValidator } from './inline-survey.config-validator';
  */
 export class InlineSurvey extends BaseSurvey<InlineSurveyConfig> {
   private readonly iFrameHandle: HTMLIFrameElement;
+  private messageHandler: ((data: unknown) => void) | null = null;
+  private messageEventListener: ((event: MessageEvent) => void) | null = null;
 
   constructor(
     configBuilder: UrlBuilder,
@@ -132,9 +134,94 @@ export class InlineSurvey extends BaseSurvey<InlineSurveyConfig> {
   }
 
   /**
+   * Send message to survey iframe
+   *
+   * @param data - Data to send (must be JSON-serializable)
+   * @param targetOrigin - Target origin for security (default: baseUrl)
+   * @throws {Error} If iframe is not ready
+   *
+   * @example
+   * ```typescript
+   * survey.sendMessage({
+   *   type: 'prefill',
+   *   data: { email: 'user@example.com' }
+   * });
+   * ```
+   */
+  public sendMessage(data: unknown, targetOrigin?: string): void {
+    if (!this.iFrameHandle.contentWindow) {
+      throw new Error(
+        '[Hello Customer SDK] Iframe not ready for postMessage communication',
+      );
+    }
+
+    const origin = targetOrigin || this.urlFactory!.getBaseUrlWithLanguage();
+    this.iFrameHandle.contentWindow.postMessage(data, origin);
+  }
+
+  /**
+   * Listen for messages from survey iframe
+   * Automatically verifies message origin for security
+   *
+   * @param callback - Function to call when message received
+   * @returns Cleanup function to stop listening
+   *
+   * @example
+   * ```typescript
+   * const cleanup = survey.onMessage((data) => {
+   *   if (data.type === 'survey_completed') {
+   *     console.log('Survey completed!');
+   *   }
+   * });
+   *
+   * // Later, clean up
+   * cleanup();
+   * ```
+   */
+  public onMessage(callback: (data: unknown) => void): () => void {
+    this.messageHandler = callback;
+
+    const handler = (event: MessageEvent) => {
+      // Verify origin for security
+      const expectedOrigin = new URL(this.urlFactory!.getBaseUrlWithLanguage())
+        .origin;
+
+      if (event.origin !== expectedOrigin) {
+        console.warn(
+          `[Hello Customer SDK] Rejected postMessage from unexpected origin: ${event.origin}`,
+        );
+        return;
+      }
+
+      if (this.messageHandler) {
+        this.messageHandler(event.data);
+      }
+    };
+
+    this.messageEventListener = handler;
+    window.addEventListener('message', handler);
+
+    // Return cleanup function
+    return () => {
+      if (this.messageEventListener) {
+        window.removeEventListener('message', this.messageEventListener);
+        this.messageEventListener = null;
+      }
+      this.messageHandler = null;
+    };
+  }
+
+  /**
    * Destroy survey iframe
    */
   public destroy(): void {
+    // Clean up message listeners if active
+    if (this.messageEventListener) {
+      window.removeEventListener('message', this.messageEventListener);
+      this.messageEventListener = null;
+    }
+    this.messageHandler = null;
+
     if (this.iFrame.parentElement) {
       this.iFrame.parentElement.removeChild(this.iFrame);
     }
