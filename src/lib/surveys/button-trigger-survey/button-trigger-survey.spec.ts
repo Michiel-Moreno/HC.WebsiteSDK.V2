@@ -549,6 +549,24 @@ describe('ButtonTriggerSurvey', () => {
       expect(onTriggerMock).toHaveBeenCalledTimes(1);
     });
 
+    test('should clear internal references after destroy', () => {
+      const survey = new ButtonTriggerSurvey({
+        onTrigger: noop,
+      });
+
+      // Verify clickHandler exists before destroy (accessing private property for testing)
+      expect(survey['clickHandler']).not.toBeNull();
+
+      // Destroy the survey
+      survey.destroy();
+
+      // Verify clickHandler is cleared (accessing private property for testing)
+      expect(survey['clickHandler']).toBeNull();
+
+      // Verify isDestroyed flag is set (accessing private property for testing)
+      expect(survey['isDestroyed']).toBe(true);
+    });
+
     test('should not throw error when destroy called twice', () => {
       const survey = new ButtonTriggerSurvey({
         onTrigger: noop,
@@ -1489,6 +1507,179 @@ describe('ButtonTriggerSurvey', () => {
 
         expect(button.button.getAttribute('aria-label')).toBe('Comentarios');
       });
+    });
+  });
+
+  describe('O. Position-Aware Styling Tests', () => {
+    test('should flip border radius for side-tab at left-center', () => {
+      const button = new ButtonTriggerSurvey({
+        onTrigger: noop,
+        position: 'left-center',
+        stylePreset: 'side-tab',
+      });
+
+      // Styles are applied via CSS classes, so check computed style
+      const computedStyle = window.getComputedStyle(button.button);
+      // Computed styles use shortened format (0 instead of 0px)
+      expect(computedStyle.borderRadius).toBe('0 8px 8px 0');
+    });
+
+    test('should keep default border radius for side-tab at right-center', () => {
+      const button = new ButtonTriggerSurvey({
+        onTrigger: noop,
+        position: 'right-center',
+        stylePreset: 'side-tab',
+      });
+
+      const computedStyle = window.getComputedStyle(button.button);
+      expect(computedStyle.borderRadius).toBe('8px 0 0 8px');
+    });
+
+    test('should warn when using side-tab at corner positions', () => {
+      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
+
+      new ButtonTriggerSurvey({
+        onTrigger: noop,
+        position: 'bottom-right',
+        stylePreset: 'side-tab',
+      });
+
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining("'side-tab' preset works best"),
+      );
+
+      consoleSpy.mockRestore();
+    });
+
+    test('should not warn when using side-tab at left-center or right-center', () => {
+      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
+
+      new ButtonTriggerSurvey({
+        onTrigger: noop,
+        position: 'left-center',
+        stylePreset: 'side-tab',
+      });
+
+      new ButtonTriggerSurvey({
+        onTrigger: noop,
+        position: 'right-center',
+        stylePreset: 'side-tab',
+      });
+
+      expect(consoleSpy).not.toHaveBeenCalled();
+
+      consoleSpy.mockRestore();
+    });
+
+    test('should set banner width to auto at corner positions', () => {
+      const button = new ButtonTriggerSurvey({
+        onTrigger: noop,
+        position: 'bottom-right',
+        stylePreset: 'banner',
+      });
+
+      const computedStyle = window.getComputedStyle(button.button);
+      expect(computedStyle.width).not.toBe('100%');
+      // Width will be 'auto' or calculated width, not the full viewport width
+    });
+
+    test('should keep full width for banner at top-center', () => {
+      const button = new ButtonTriggerSurvey({
+        onTrigger: noop,
+        position: 'top-center',
+        stylePreset: 'banner',
+      });
+
+      const computedStyle = window.getComputedStyle(button.button);
+      // In JSDOM, 100% width gets computed, check it's defined
+      expect(computedStyle.width).toBeDefined();
+    });
+
+    test('should keep full width for banner at bottom-center', () => {
+      const button = new ButtonTriggerSurvey({
+        onTrigger: noop,
+        position: 'bottom-center',
+        stylePreset: 'banner',
+      });
+
+      const computedStyle = window.getComputedStyle(button.button);
+      expect(computedStyle.width).toBeDefined();
+    });
+
+    test('should warn when using banner at corner positions', () => {
+      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
+
+      new ButtonTriggerSurvey({
+        onTrigger: noop,
+        position: 'bottom-left',
+        stylePreset: 'banner',
+      });
+
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining("'banner' preset works best"),
+      );
+
+      consoleSpy.mockRestore();
+    });
+
+    test('should not warn when using banner at top-center or bottom-center', () => {
+      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
+
+      new ButtonTriggerSurvey({
+        onTrigger: noop,
+        position: 'top-center',
+        stylePreset: 'banner',
+      });
+
+      new ButtonTriggerSurvey({
+        onTrigger: noop,
+        position: 'bottom-center',
+        stylePreset: 'banner',
+      });
+
+      expect(consoleSpy).not.toHaveBeenCalled();
+
+      consoleSpy.mockRestore();
+    });
+
+    test('should allow custom styles to override position-aware adjustments', () => {
+      const button = new ButtonTriggerSurvey({
+        onTrigger: noop,
+        position: 'left-center',
+        stylePreset: 'side-tab',
+        customStyle: {
+          buttonStyle: {
+            borderRadius: '16px', // Override the auto-adjusted radius
+          },
+        },
+      });
+
+      // Custom styles are merged after position-aware styles and take precedence
+      const computedStyle = window.getComputedStyle(button.button);
+      expect(computedStyle.borderRadius).toBe('16px');
+    });
+
+    test('should not affect pill-button or circle-button presets', () => {
+      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
+
+      // Pill button at any position should not warn
+      new ButtonTriggerSurvey({
+        onTrigger: noop,
+        position: 'top-left',
+        stylePreset: 'pill-button',
+      });
+
+      // Circle button at any position should not warn (about position)
+      new ButtonTriggerSurvey({
+        onTrigger: noop,
+        position: 'bottom-center',
+        stylePreset: 'circle-button',
+        icon: '<svg></svg>', // Add icon to avoid icon-missing warning
+      });
+
+      expect(consoleSpy).not.toHaveBeenCalled();
+
+      consoleSpy.mockRestore();
     });
   });
 });

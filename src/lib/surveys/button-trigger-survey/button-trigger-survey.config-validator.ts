@@ -22,7 +22,7 @@ export class ButtonTriggerSurveyConfigValidator extends BaseConfigValidator<Butt
               onTriggerRequired: 'onTrigger callback is required',
             },
       (config) =>
-        (typeof config.onTrigger as unknown) === 'function'
+        typeof config.onTrigger === 'function'
           ? null
           : {
               onTriggerIsFunction: 'onTrigger must be a function',

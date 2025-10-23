@@ -58,6 +58,15 @@ export class ButtonTriggerSurvey extends BaseSurvey<ButtonTriggerSurveyConfig> {
   private clickHandler: EventListener | null = null;
   private buttonText: string;
   private ariaLabel: string;
+  private isDestroyed: boolean = false;
+  private readonly classNames: {
+    buttonContainer: string;
+    button: string;
+    buttonIcon: string;
+    buttonText: string;
+    buttonVisible: string;
+    buttonHidden: string;
+  };
 
   constructor(config: ButtonTriggerSurveyConfig) {
     // Set defaults before calling super
@@ -80,6 +89,20 @@ export class ButtonTriggerSurvey extends BaseSurvey<ButtonTriggerSurveyConfig> {
     // Determine button text and ARIA label based on config
     this.buttonText = this.determineButtonText();
     this.ariaLabel = this.determineAriaLabel();
+
+    // Cache class names (computed once to avoid repeated object allocations)
+    this.classNames = {
+      buttonContainer:
+        this.config.classNames?.buttonContainer ||
+        defaults.classNames.buttonContainer,
+      button: this.config.classNames?.button || defaults.classNames.button,
+      buttonIcon:
+        this.config.classNames?.buttonIcon || defaults.classNames.buttonIcon,
+      buttonText:
+        this.config.classNames?.buttonText || defaults.classNames.buttonText,
+      buttonVisible: defaults.classNames.buttonVisible,
+      buttonHidden: defaults.classNames.buttonHidden,
+    };
 
     // Create button DOM
     const [container, button] = this.createButton();
@@ -122,9 +145,8 @@ export class ButtonTriggerSurvey extends BaseSurvey<ButtonTriggerSurveyConfig> {
    */
   public show(): void {
     if (!this.quarantineService.isUnderQuarantine()) {
-      const classNames = this.getClassNames();
-      this.containerHandle.classList.add(classNames.buttonVisible);
-      this.containerHandle.classList.remove(classNames.buttonHidden);
+      this.containerHandle.classList.add(this.classNames.buttonVisible);
+      this.containerHandle.classList.remove(this.classNames.buttonHidden);
       this.quarantineService.startQuarantine();
       this.config.callbacks?.onShow?.();
     } else {
@@ -137,17 +159,21 @@ export class ButtonTriggerSurvey extends BaseSurvey<ButtonTriggerSurveyConfig> {
    * Hide button
    */
   public hide(): void {
-    const classNames = this.getClassNames();
-    this.containerHandle.classList.remove(classNames.buttonVisible);
-    this.containerHandle.classList.add(classNames.buttonHidden);
+    this.containerHandle.classList.remove(this.classNames.buttonVisible);
+    this.containerHandle.classList.add(this.classNames.buttonHidden);
     this.config.callbacks?.onHide?.();
   }
 
   /**
    * Destroy button and remove from DOM
-   * Cleans up event listeners to prevent memory leaks
+   * Cleans up event listeners and internal references to prevent memory leaks
    */
   public destroy(): void {
+    // Prevent double-destroy
+    if (this.isDestroyed) {
+      return;
+    }
+
     // Remove event listener
     if (this.clickHandler && this.buttonHandle) {
       this.buttonHandle.removeEventListener('click', this.clickHandler);
@@ -155,10 +181,18 @@ export class ButtonTriggerSurvey extends BaseSurvey<ButtonTriggerSurveyConfig> {
     }
 
     // Remove from DOM
-    if (this.containerHandle.parentElement) {
+    if (this.containerHandle && this.containerHandle.parentElement) {
       this.containerHandle.parentElement.removeChild(this.containerHandle);
     }
 
+    // Clear internal references to allow garbage collection
+    // Note: buttonHandle and containerHandle are readonly, so we can't set them to null
+    // but setting clickHandler to null above already breaks the main reference chain
+
+    // Mark as destroyed
+    this.isDestroyed = true;
+
+    // Call destroy callback
     this.config.callbacks?.onDestroy?.();
   }
 
@@ -178,7 +212,8 @@ export class ButtonTriggerSurvey extends BaseSurvey<ButtonTriggerSurveyConfig> {
     // Only update if using automatic translation (no explicit text provided)
     if (this.config.text) {
       console.warn(
-        '[Hello Customer SDK] Cannot update language: Custom text is set',
+        '[Hello Customer SDK] Cannot update language: Custom text is set. ' +
+          'To enable dynamic language switching, remove the "text" config option and use "language" instead.',
       );
       return;
     }
@@ -191,7 +226,7 @@ export class ButtonTriggerSurvey extends BaseSurvey<ButtonTriggerSurveyConfig> {
 
     // Update DOM
     const textElement = this.buttonHandle.querySelector(
-      `.${this.getClassNames().buttonText}`,
+      `.${this.classNames.buttonText}`,
     );
     if (textElement) {
       textElement.textContent = this.buttonText;
@@ -253,38 +288,73 @@ export class ButtonTriggerSurvey extends BaseSurvey<ButtonTriggerSurveyConfig> {
   }
 
   /**
-   * Get class names (default or custom)
+   * Get position-aware button styles
+   * Automatically adjusts preset styles based on position to handle odd combinations
+   * @private
    */
-  private getClassNames() {
-    return {
-      buttonContainer:
-        this.config.classNames?.buttonContainer ||
-        defaults.classNames.buttonContainer,
-      button: this.config.classNames?.button || defaults.classNames.button,
-      buttonIcon:
-        this.config.classNames?.buttonIcon || defaults.classNames.buttonIcon,
-      buttonText:
-        this.config.classNames?.buttonText || defaults.classNames.buttonText,
-      buttonVisible: defaults.classNames.buttonVisible,
-      buttonHidden: defaults.classNames.buttonHidden,
-    };
+  private getPositionAwareButtonStyle(): Partial<CSSStyleDeclaration> {
+    const presetStyles = defaults.stylePresets[this.stylePreset];
+    const adjustedStyle = { ...presetStyles.buttonStyle };
+
+    // Side tab adjustments
+    if (this.stylePreset === 'side-tab') {
+      if (this.position === 'left-center') {
+        // Flip border radius and shadow for left side
+        adjustedStyle.borderRadius = '0 8px 8px 0';
+        adjustedStyle.boxShadow = '4px 0 12px rgba(0, 0, 0, 0.15)';
+      }
+
+      // Warn for incompatible positions
+      const cornerPositions: ButtonPosition[] = [
+        'top-left',
+        'top-right',
+        'bottom-left',
+        'bottom-right',
+        'top-center',
+        'bottom-center',
+      ];
+      if (cornerPositions.includes(this.position)) {
+        console.warn(
+          `[Hello Customer SDK] 'side-tab' preset works best at 'left-center' or 'right-center'. ` +
+            `Current position: '${this.position}'. ` +
+            `Recommended: Change to { position: 'left-center' } or { stylePreset: 'pill-button' }`,
+        );
+      }
+    }
+
+    // Banner adjustments
+    if (this.stylePreset === 'banner') {
+      const centerPositions: ButtonPosition[] = ['top-center', 'bottom-center'];
+      if (!centerPositions.includes(this.position)) {
+        // Remove full width for non-center positions
+        delete adjustedStyle.width;
+        adjustedStyle.width = 'auto';
+        adjustedStyle.padding = '12px 24px'; // Keep padding
+
+        console.warn(
+          `[Hello Customer SDK] 'banner' preset works best at 'top-center' or 'bottom-center'. ` +
+            `Current position: '${this.position}'. ` +
+            `Recommended: Change to { position: 'top-center' } or { stylePreset: 'pill-button' }`,
+        );
+      }
+    }
+
+    return adjustedStyle;
   }
 
   /**
    * Initialize default styles
    */
   private initStyles(): void {
-    const classNames = this.getClassNames();
-
     // Add animation styles
     if (trueByDefault(this.config.enableAnimation)) {
       StyledElementFactory.appendCssClassToHeader(
         defaults.animationStyles.visible,
-        classNames.buttonVisible,
+        this.classNames.buttonVisible,
       );
       StyledElementFactory.appendCssClassToHeader(
         defaults.animationStyles.hidden,
-        classNames.buttonHidden,
+        this.classNames.buttonHidden,
       );
     }
 
@@ -298,7 +368,7 @@ export class ButtonTriggerSurvey extends BaseSurvey<ButtonTriggerSurveyConfig> {
     if (presetStyles.buttonHoverStyle) {
       StyledElementFactory.appendCssClassToHeader(
         presetStyles.buttonHoverStyle,
-        `${classNames.button}:hover`,
+        `${this.classNames.button}:hover`,
       );
     }
   }
@@ -307,8 +377,6 @@ export class ButtonTriggerSurvey extends BaseSurvey<ButtonTriggerSurveyConfig> {
    * Create button DOM structure
    */
   private createButton(): [HTMLDivElement, HTMLButtonElement] {
-    const classNames = this.getClassNames();
-
     // Get styles
     const positionStyle = defaults.positionStyles[this.position];
     const presetStyles = defaults.stylePresets[this.stylePreset];
@@ -320,27 +388,36 @@ export class ButtonTriggerSurvey extends BaseSurvey<ButtonTriggerSurveyConfig> {
       ...(this.config.zIndex && { zIndex: this.config.zIndex.toString() }),
     };
 
+    // Use position-aware button style that automatically adjusts for odd combinations
     const buttonStyle = {
-      ...presetStyles.buttonStyle,
+      ...this.getPositionAwareButtonStyle(),
       ...this.config.customStyle?.buttonStyle,
     };
 
     // Create container
     const container = new StyledElementFactory(
       document.createElement('div'),
-    ).applyClass(classNames.buttonContainer, containerStyle).styledElement;
+    ).applyClass(this.classNames.buttonContainer, containerStyle).styledElement;
 
     // Create button
     const button = new StyledElementFactory(
       document.createElement('button'),
     ).applyClass(
-      classNames.button,
+      this.classNames.button,
       this.config.ignoreDefaultStyles ? {} : buttonStyle,
     ).styledElement;
 
     // Set accessibility
     button.setAttribute('type', 'button');
     button.setAttribute('aria-label', this.ariaLabel);
+
+    // Warn if circle-button preset is used without an icon
+    if (this.stylePreset === 'circle-button' && !this.config.icon) {
+      console.warn(
+        '[Hello Customer SDK] circle-button preset works best with an icon. ' +
+          'Consider adding an icon or using a different preset like pill-button.',
+      );
+    }
 
     // Apply RTL styling if needed
     if (isRTL(this.config.language)) {
@@ -351,7 +428,7 @@ export class ButtonTriggerSurvey extends BaseSurvey<ButtonTriggerSurveyConfig> {
     // Add icon if provided
     if (this.config.icon) {
       const iconContainer = document.createElement('span');
-      iconContainer.className = classNames.buttonIcon;
+      iconContainer.className = this.classNames.buttonIcon;
 
       // Apply icon styles if not ignoring defaults
       if (!this.config.ignoreDefaultStyles && presetStyles.buttonIconStyle) {
@@ -376,7 +453,7 @@ export class ButtonTriggerSurvey extends BaseSurvey<ButtonTriggerSurveyConfig> {
     // Add text (hidden for circle button, but kept for accessibility)
     if (this.buttonText && this.stylePreset !== 'circle-button') {
       const textSpan = document.createElement('span');
-      textSpan.className = classNames.buttonText;
+      textSpan.className = this.classNames.buttonText;
       textSpan.textContent = this.buttonText;
 
       // Apply text styles if not ignoring defaults
