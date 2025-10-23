@@ -110,6 +110,9 @@ export class InlineSurvey extends BaseSurvey<InlineSurveyConfig> {
     // Clean up message listeners if active
     this.cleanupMessageHandlers();
 
+    // Clean up all tracked event listeners
+    this.cleanupEventListeners();
+
     if (this.iFrame.parentElement) {
       this.iFrame.parentElement.removeChild(this.iFrame);
     }
@@ -146,12 +149,12 @@ export class InlineSurvey extends BaseSurvey<InlineSurveyConfig> {
       );
     const iFrame = iFrameFactory.styledElement;
 
-    // Add event listeners for iframe load and error
-    iFrame.addEventListener('load', () => {
+    // Add tracked event listeners for iframe load and error
+    this.addTrackedListener(iFrame, 'load', () => {
       this.inlineConfig.callbacks?.onLoad?.(iFrame);
     });
 
-    iFrame.addEventListener('error', () => {
+    this.addTrackedListener(iFrame, 'error', () => {
       const error = new Error('Failed to load survey iframe');
       this.inlineConfig.callbacks?.onError?.(error);
     });

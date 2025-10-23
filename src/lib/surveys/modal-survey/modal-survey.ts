@@ -72,11 +72,6 @@ import { closeIconSvgElementFactory } from './modal-survey.svg-factory';
  */
 export class ModalSurvey extends BaseSurvey<ModalSurveyConfig> {
   private readonly modalHandle: HTMLDivElement;
-  private eventListeners: Array<{
-    element: HTMLElement | Window;
-    event: string;
-    handler: EventListener;
-  }> = [];
   private readonly computedStyles: Required<ModalSurveyStyleConfig>;
   private readonly computedClassNames: Required<ClassNamesConfigType>;
   private lastFocusedElement: HTMLElement | null = null;
@@ -191,11 +186,8 @@ export class ModalSurvey extends BaseSurvey<ModalSurveyConfig> {
     // Clean up message listeners if active
     this.cleanupMessageHandlers();
 
-    // Remove all event listeners
-    this.eventListeners.forEach(({ element, event, handler }) => {
-      element.removeEventListener(event, handler);
-    });
-    this.eventListeners = [];
+    // Remove all tracked event listeners
+    this.cleanupEventListeners();
 
     // Remove from DOM
     if (this.modalHandle.parentElement) {
@@ -307,7 +299,7 @@ export class ModalSurvey extends BaseSurvey<ModalSurveyConfig> {
       // Remove directly from document
       document.removeEventListener('keydown', this.focusTrapHandlerCast);
 
-      // Also remove from tracked listeners
+      // Also remove from tracked listeners (using inherited eventListeners from BaseSurvey)
       const index = this.eventListeners.findIndex(
         (listener) =>
           listener.handler === this.focusTrapHandlerCast &&
@@ -321,19 +313,6 @@ export class ModalSurvey extends BaseSurvey<ModalSurveyConfig> {
       this.focusTrapHandler = null;
       this.focusTrapHandlerCast = null;
     }
-  }
-
-  /**
-   * Add event listener and track it for cleanup
-   * @private
-   */
-  private addTrackedListener(
-    element: HTMLElement | Window,
-    event: string,
-    handler: EventListener,
-  ): void {
-    element.addEventListener(event, handler);
-    this.eventListeners.push({ element, event, handler });
   }
 
   private computeModalStyle(): Required<ModalSurveyStyleConfig> {

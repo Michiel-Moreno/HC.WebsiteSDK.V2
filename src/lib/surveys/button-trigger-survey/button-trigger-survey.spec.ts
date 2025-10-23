@@ -559,14 +559,14 @@ describe('ButtonTriggerSurvey', () => {
         onTrigger: noop,
       });
 
-      // Verify clickHandler exists before destroy (accessing private property for testing)
-      expect(survey['clickHandler']).not.toBeNull();
+      // Verify event listeners are tracked before destroy (accessing protected property for testing)
+      expect(survey['eventListeners'].length).toBeGreaterThan(0);
 
       // Destroy the survey
       survey.destroy();
 
-      // Verify clickHandler is cleared (accessing private property for testing)
-      expect(survey['clickHandler']).toBeNull();
+      // Verify event listeners are cleared (accessing protected property for testing)
+      expect(survey['eventListeners'].length).toBe(0);
 
       // Verify isDestroyed flag is set (accessing private property for testing)
       expect(survey['isDestroyed']).toBe(true);

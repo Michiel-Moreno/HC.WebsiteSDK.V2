@@ -55,7 +55,6 @@ export class ButtonTriggerSurvey extends BaseSurvey<ButtonTriggerSurveyConfig> {
   private readonly containerHandle: HTMLDivElement;
   private readonly position: ButtonPosition;
   private readonly stylePreset: ButtonStylePreset;
-  private clickHandler: EventListener | null = null;
   private buttonText: string;
   private ariaLabel: string;
   private isDestroyed: boolean = false;
@@ -174,20 +173,13 @@ export class ButtonTriggerSurvey extends BaseSurvey<ButtonTriggerSurveyConfig> {
       return;
     }
 
-    // Remove event listener
-    if (this.clickHandler && this.buttonHandle) {
-      this.buttonHandle.removeEventListener('click', this.clickHandler);
-      this.clickHandler = null;
-    }
+    // Remove all tracked event listeners
+    this.cleanupEventListeners();
 
     // Remove from DOM
     if (this.containerHandle && this.containerHandle.parentElement) {
       this.containerHandle.parentElement.removeChild(this.containerHandle);
     }
-
-    // Clear internal references to allow garbage collection
-    // Note: buttonHandle and containerHandle are readonly, so we can't set them to null
-    // but setting clickHandler to null above already breaks the main reference chain
 
     // Mark as destroyed
     this.isDestroyed = true;
@@ -468,11 +460,11 @@ export class ButtonTriggerSurvey extends BaseSurvey<ButtonTriggerSurveyConfig> {
       button.appendChild(textSpan);
     }
 
-    // Add click handler and store reference for cleanup
-    this.clickHandler = () => {
+    // Add click handler using tracked listener for automatic cleanup
+    const clickHandler = () => {
       this.config.onTrigger();
     };
-    button.addEventListener('click', this.clickHandler);
+    this.addTrackedListener(button, 'click', clickHandler);
 
     // Append to container
     container.appendChild(button);

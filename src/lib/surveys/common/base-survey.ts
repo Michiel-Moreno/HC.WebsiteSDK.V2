@@ -24,6 +24,11 @@ export abstract class BaseSurvey<TConfig extends BaseSurveyConfig> {
   protected iFrameHandle?: HTMLIFrameElement;
   private messageHandler: ((data: unknown) => void) | null = null;
   private messageEventListener: ((event: MessageEvent) => void) | null = null;
+  protected eventListeners: Array<{
+    element: HTMLElement | Window | Document;
+    event: string;
+    handler: EventListener;
+  }> = [];
 
   /**
    * Creates a new survey instance
@@ -298,5 +303,41 @@ export abstract class BaseSurvey<TConfig extends BaseSurveyConfig> {
       this.messageEventListener = null;
     }
     this.messageHandler = null;
+  }
+
+  /**
+   * Add event listener and track it for cleanup
+   * All tracked listeners will be automatically removed when cleanupEventListeners() is called
+   *
+   * @param element - Element to attach listener to (HTMLElement, Window, or Document)
+   * @param event - Event name (e.g., 'click', 'keydown')
+   * @param handler - Event handler function
+   * @protected
+   *
+   * @example
+   * ```typescript
+   * this.addTrackedListener(button, 'click', () => this.handleClick());
+   * this.addTrackedListener(window, 'keydown', (e) => this.handleKeyDown(e));
+   * ```
+   */
+  protected addTrackedListener(
+    element: HTMLElement | Window | Document,
+    event: string,
+    handler: EventListener,
+  ): void {
+    element.addEventListener(event, handler);
+    this.eventListeners.push({ element, event, handler });
+  }
+
+  /**
+   * Clean up all tracked event listeners
+   * Should be called by child classes in their destroy() method
+   * @protected
+   */
+  protected cleanupEventListeners(): void {
+    this.eventListeners.forEach(({ element, event, handler }) => {
+      element.removeEventListener(event, handler);
+    });
+    this.eventListeners = [];
   }
 }
