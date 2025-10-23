@@ -21,6 +21,9 @@ export abstract class BaseSurvey<TConfig extends BaseSurveyConfig> {
   protected readonly urlFactory?: UrlFactory;
   protected readonly quarantineService: QuarantineService;
   protected readonly validator: BaseConfigValidator<TConfig>;
+  protected iFrameHandle?: HTMLIFrameElement;
+  private messageHandler: ((data: unknown) => void) | null = null;
+  private messageEventListener: ((event: MessageEvent) => void) | null = null;
 
   /**
    * Creates a new survey instance
@@ -159,5 +162,141 @@ export abstract class BaseSurvey<TConfig extends BaseSurveyConfig> {
       return;
     }
     this.urlFactory.patchConfig(patch);
+  }
+
+  /**
+   * Send message to survey iframe
+   * Only available for iframe-based surveys (Modal, Inline)
+   *
+   * @param data - Data to send (must be JSON-serializable)
+   * @param targetOrigin - Target origin for security (default: baseUrl)
+   * @throws {Error} If survey doesn't have iframe or iframe not ready
+   *
+   * @example
+   * ```typescript
+   * survey.sendMessage({
+   *   type: 'prefill',
+   *   data: { email: 'user@example.com' }
+   * });
+   * ```
+   */
+  public sendMessage(data: unknown, targetOrigin?: string): void {
+    if (!this.iFrameHandle) {
+      throw new Error(
+        '[Hello Customer SDK] This survey type does not support sendMessage (no iframe)',
+      );
+    }
+
+    if (!this.iFrameHandle.contentWindow) {
+      throw new Error(
+        '[Hello Customer SDK] Iframe not ready for postMessage communication',
+      );
+    }
+
+    const origin = targetOrigin || this.urlFactory!.getBaseUrlWithLanguage();
+    this.iFrameHandle.contentWindow.postMessage(data, origin);
+  }
+
+  /**
+   * Listen for messages from survey iframe
+   * Only available for iframe-based surveys (Modal, Inline)
+   * Automatically verifies message origin for security
+   *
+   * @param callback - Function to call when message received
+   * @returns Cleanup function to stop listening
+   *
+   * @example
+   * ```typescript
+   * const cleanup = survey.onMessage((data) => {
+   *   if (data.type === 'survey_completed') {
+   *     console.log('Survey completed!');
+   *   }
+   * });
+   *
+   * // Later, clean up
+   * cleanup();
+   * ```
+   */
+  public onMessage(callback: (data: unknown) => void): () => void {
+    if (!this.iFrameHandle) {
+      throw new Error(
+        '[Hello Customer SDK] This survey type does not support onMessage (no iframe)',
+      );
+    }
+
+    this.messageHandler = callback;
+
+    const handler = (event: MessageEvent) => {
+      // Verify origin for security
+      const expectedOrigin = new URL(this.urlFactory!.getBaseUrlWithLanguage())
+        .origin;
+
+      if (event.origin !== expectedOrigin) {
+        console.warn(
+          `[Hello Customer SDK] Rejected postMessage from unexpected origin: ${event.origin}`,
+        );
+        return;
+      }
+
+      if (this.messageHandler) {
+        this.messageHandler(event.data);
+      }
+    };
+
+    this.messageEventListener = handler;
+    window.addEventListener('message', handler);
+
+    // Return cleanup function
+    return () => {
+      if (this.messageEventListener) {
+        window.removeEventListener('message', this.messageEventListener);
+        this.messageEventListener = null;
+      }
+      this.messageHandler = null;
+    };
+  }
+
+  /**
+   * Update survey configuration and reload iframe automatically
+   * Only available for iframe-based surveys (Modal, Inline)
+   * Convenience method that combines updateUrlConfig() and reload()
+   *
+   * @param patch - Partial config to merge with existing
+   *
+   * @example
+   * ```typescript
+   * // Update metadata when user logs in
+   * survey.updateAndReload({
+   *   extra: {
+   *     respondent: { id: user.id, email: user.email }
+   *   }
+   * });
+   * ```
+   */
+  public updateAndReload(patch: Record<string, unknown>): void {
+    this.updateUrlConfig(patch);
+
+    // Call reload() if it exists (ModalSurvey and InlineSurvey have it)
+    const self = this as { reload?: () => void };
+    if (typeof self.reload === 'function') {
+      self.reload();
+    } else {
+      console.warn(
+        '[Hello Customer SDK] updateAndReload not supported for this survey type (no reload method)',
+      );
+    }
+  }
+
+  /**
+   * Clean up PostMessage listeners
+   * Should be called by child classes in their destroy() method
+   * @protected
+   */
+  protected cleanupMessageHandlers(): void {
+    if (this.messageEventListener) {
+      window.removeEventListener('message', this.messageEventListener);
+      this.messageEventListener = null;
+    }
+    this.messageHandler = null;
   }
 }

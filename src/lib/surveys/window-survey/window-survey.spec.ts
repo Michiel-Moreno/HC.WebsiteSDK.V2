@@ -581,16 +581,22 @@ describe('WindowSurvey', () => {
       expect(windowOpenSpy).toHaveBeenCalledWith(newUrl, '_blank');
     });
 
-    test('should not have updateAndReload method', () => {
+    test('should have updateAndReload but warn when called (no reload method)', () => {
       const config: WindowSurveyConfig = {
         openOnCreation: false,
       };
 
       const survey = new WindowSurvey(mockUrlBuilder, config);
+      const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
 
-      // WindowSurvey should not have updateAndReload because popups can't be reloaded
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      expect((survey as any).updateAndReload).toBeUndefined();
+      // updateAndReload exists but logs warning for WindowSurvey (no reload method)
+      survey.updateAndReload({ extra: { test: 'value' } });
+
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        '[Hello Customer SDK] updateAndReload not supported for this survey type (no reload method)',
+      );
+
+      consoleWarnSpy.mockRestore();
     });
 
     test('should work with multiple sequential config updates', () => {

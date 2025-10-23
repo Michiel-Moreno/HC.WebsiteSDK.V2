@@ -71,7 +71,6 @@ import { closeIconSvgElementFactory } from './modal-survey.svg-factory';
  * @category Surveys
  */
 export class ModalSurvey extends BaseSurvey<ModalSurveyConfig> {
-  private readonly iFrameHandle: HTMLIFrameElement;
   private readonly modalHandle: HTMLDivElement;
   private eventListeners: Array<{
     element: HTMLElement | Window;
@@ -80,8 +79,6 @@ export class ModalSurvey extends BaseSurvey<ModalSurveyConfig> {
   }> = [];
   private readonly computedStyles: Required<ModalSurveyStyleConfig>;
   private readonly computedClassNames: Required<ClassNamesConfigType>;
-  private messageHandler: ((data: unknown) => void) | null = null;
-  private messageEventListener: ((event: MessageEvent) => void) | null = null;
   private lastFocusedElement: HTMLElement | null = null;
   private focusTrapActive = false;
   private focusTrapHandler: ((e: KeyboardEvent) => void) | null = null;
@@ -113,7 +110,7 @@ export class ModalSurvey extends BaseSurvey<ModalSurveyConfig> {
   }
 
   public get iFrame(): HTMLIFrameElement {
-    return this.iFrameHandle;
+    return this.iFrameHandle!;
   }
 
   /**
@@ -180,108 +177,7 @@ export class ModalSurvey extends BaseSurvey<ModalSurveyConfig> {
    * Reload iframe content using url from attached url factory object
    */
   public reload(): void {
-    this.iFrameHandle.src = this.urlFactory!.getUrlWithParams();
-  }
-
-  /**
-   * Update survey configuration and reload iframe automatically
-   * Convenience method that combines updateUrlConfig() and reload()
-   *
-   * @param patch - Partial config to merge with existing
-   *
-   * @example
-   * ```typescript
-   * // Update metadata when user selects option
-   * selectElement.addEventListener('change', (e) => {
-   *   modalSurvey.updateAndReload({
-   *     extra: {
-   *       selectedOption: e.target.value
-   *     }
-   *   });
-   * });
-   * ```
-   */
-  public updateAndReload(patch: Record<string, unknown>): void {
-    this.updateUrlConfig(patch);
-    this.reload();
-  }
-
-  /**
-   * Send message to survey iframe
-   *
-   * @param data - Data to send (must be JSON-serializable)
-   * @param targetOrigin - Target origin for security (default: baseUrl)
-   * @throws {Error} If iframe is not ready
-   *
-   * @example
-   * ```typescript
-   * survey.sendMessage({
-   *   type: 'prefill',
-   *   data: { email: 'user@example.com' }
-   * });
-   * ```
-   */
-  public sendMessage(data: unknown, targetOrigin?: string): void {
-    if (!this.iFrameHandle.contentWindow) {
-      throw new Error(
-        '[Hello Customer SDK] Iframe not ready for postMessage communication',
-      );
-    }
-
-    const origin = targetOrigin || this.urlFactory!.getBaseUrlWithLanguage();
-    this.iFrameHandle.contentWindow.postMessage(data, origin);
-  }
-
-  /**
-   * Listen for messages from survey iframe
-   * Automatically verifies message origin for security
-   *
-   * @param callback - Function to call when message received
-   * @returns Cleanup function to stop listening
-   *
-   * @example
-   * ```typescript
-   * const cleanup = survey.onMessage((data) => {
-   *   if (data.type === 'survey_completed') {
-   *     console.log('Survey completed!');
-   *   }
-   * });
-   *
-   * // Later, clean up
-   * cleanup();
-   * ```
-   */
-  public onMessage(callback: (data: unknown) => void): () => void {
-    this.messageHandler = callback;
-
-    const handler = (event: MessageEvent) => {
-      // Verify origin for security
-      const expectedOrigin = new URL(this.urlFactory!.getBaseUrlWithLanguage())
-        .origin;
-
-      if (event.origin !== expectedOrigin) {
-        console.warn(
-          `[Hello Customer SDK] Rejected postMessage from unexpected origin: ${event.origin}`,
-        );
-        return;
-      }
-
-      if (this.messageHandler) {
-        this.messageHandler(event.data);
-      }
-    };
-
-    this.messageEventListener = handler;
-    window.addEventListener('message', handler);
-
-    // Return cleanup function
-    return () => {
-      if (this.messageEventListener) {
-        window.removeEventListener('message', this.messageEventListener);
-        this.messageEventListener = null;
-      }
-      this.messageHandler = null;
-    };
+    this.iFrameHandle!.src = this.urlFactory!.getUrlWithParams();
   }
 
   /**
@@ -293,11 +189,7 @@ export class ModalSurvey extends BaseSurvey<ModalSurveyConfig> {
     this.deactivateFocusTrap();
 
     // Clean up message listeners if active
-    if (this.messageEventListener) {
-      window.removeEventListener('message', this.messageEventListener);
-      this.messageEventListener = null;
-    }
-    this.messageHandler = null;
+    this.cleanupMessageHandlers();
 
     // Remove all event listeners
     this.eventListeners.forEach(({ element, event, handler }) => {

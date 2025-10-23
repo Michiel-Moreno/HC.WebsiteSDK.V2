@@ -48,10 +48,6 @@ import { InlineSurveyConfigValidator } from './inline-survey.config-validator';
  * @category Surveys
  */
 export class InlineSurvey extends BaseSurvey<InlineSurveyConfig> {
-  private readonly iFrameHandle: HTMLIFrameElement;
-  private messageHandler: ((data: unknown) => void) | null = null;
-  private messageEventListener: ((event: MessageEvent) => void) | null = null;
-
   constructor(
     configBuilder: UrlBuilder,
     private inlineConfig: InlineSurveyConfig,
@@ -75,7 +71,7 @@ export class InlineSurvey extends BaseSurvey<InlineSurveyConfig> {
    * Get iframe element displaying embedded survey
    */
   public get iFrame(): HTMLIFrameElement {
-    return this.iFrameHandle;
+    return this.iFrameHandle!;
   }
 
   /**
@@ -83,7 +79,7 @@ export class InlineSurvey extends BaseSurvey<InlineSurveyConfig> {
    */
   public show(): void {
     if (!this.quarantineService.isUnderQuarantine()) {
-      this.iFrameHandle.style.display = '';
+      this.iFrameHandle!.style.display = '';
       this.quarantineService.startQuarantine();
       this.inlineConfig.callbacks?.onShow?.();
     } else {
@@ -96,7 +92,7 @@ export class InlineSurvey extends BaseSurvey<InlineSurveyConfig> {
    * Hide survey
    */
   public hide(): void {
-    this.iFrameHandle.style.display = 'none';
+    this.iFrameHandle!.style.display = 'none';
     this.inlineConfig.callbacks?.onHide?.();
   }
 
@@ -104,111 +100,7 @@ export class InlineSurvey extends BaseSurvey<InlineSurveyConfig> {
    * Reload survey iframe with url produced bu UrlFactory
    */
   public reload(): void {
-    this.iFrameHandle.src = this.urlFactory!.getUrlWithParams();
-  }
-
-  /**
-   * Update survey configuration and reload iframe automatically
-   * Convenience method that combines updateUrlConfig() and reload()
-   *
-   * @param patch - Partial config to merge with existing
-   *
-   * @example
-   * ```typescript
-   * // User logs in - update metadata and reload
-   * user.onLogin((userData) => {
-   *   survey.updateAndReload({
-   *     extra: {
-   *       respondent: {
-   *         id: userData.id,
-   *         email: userData.email,
-   *       }
-   *     }
-   *   });
-   * });
-   * ```
-   */
-  public updateAndReload(patch: Record<string, unknown>): void {
-    this.updateUrlConfig(patch);
-    this.reload();
-  }
-
-  /**
-   * Send message to survey iframe
-   *
-   * @param data - Data to send (must be JSON-serializable)
-   * @param targetOrigin - Target origin for security (default: baseUrl)
-   * @throws {Error} If iframe is not ready
-   *
-   * @example
-   * ```typescript
-   * survey.sendMessage({
-   *   type: 'prefill',
-   *   data: { email: 'user@example.com' }
-   * });
-   * ```
-   */
-  public sendMessage(data: unknown, targetOrigin?: string): void {
-    if (!this.iFrameHandle.contentWindow) {
-      throw new Error(
-        '[Hello Customer SDK] Iframe not ready for postMessage communication',
-      );
-    }
-
-    const origin = targetOrigin || this.urlFactory!.getBaseUrlWithLanguage();
-    this.iFrameHandle.contentWindow.postMessage(data, origin);
-  }
-
-  /**
-   * Listen for messages from survey iframe
-   * Automatically verifies message origin for security
-   *
-   * @param callback - Function to call when message received
-   * @returns Cleanup function to stop listening
-   *
-   * @example
-   * ```typescript
-   * const cleanup = survey.onMessage((data) => {
-   *   if (data.type === 'survey_completed') {
-   *     console.log('Survey completed!');
-   *   }
-   * });
-   *
-   * // Later, clean up
-   * cleanup();
-   * ```
-   */
-  public onMessage(callback: (data: unknown) => void): () => void {
-    this.messageHandler = callback;
-
-    const handler = (event: MessageEvent) => {
-      // Verify origin for security
-      const expectedOrigin = new URL(this.urlFactory!.getBaseUrlWithLanguage())
-        .origin;
-
-      if (event.origin !== expectedOrigin) {
-        console.warn(
-          `[Hello Customer SDK] Rejected postMessage from unexpected origin: ${event.origin}`,
-        );
-        return;
-      }
-
-      if (this.messageHandler) {
-        this.messageHandler(event.data);
-      }
-    };
-
-    this.messageEventListener = handler;
-    window.addEventListener('message', handler);
-
-    // Return cleanup function
-    return () => {
-      if (this.messageEventListener) {
-        window.removeEventListener('message', this.messageEventListener);
-        this.messageEventListener = null;
-      }
-      this.messageHandler = null;
-    };
+    this.iFrameHandle!.src = this.urlFactory!.getUrlWithParams();
   }
 
   /**
@@ -216,11 +108,7 @@ export class InlineSurvey extends BaseSurvey<InlineSurveyConfig> {
    */
   public destroy(): void {
     // Clean up message listeners if active
-    if (this.messageEventListener) {
-      window.removeEventListener('message', this.messageEventListener);
-      this.messageEventListener = null;
-    }
-    this.messageHandler = null;
+    this.cleanupMessageHandlers();
 
     if (this.iFrame.parentElement) {
       this.iFrame.parentElement.removeChild(this.iFrame);

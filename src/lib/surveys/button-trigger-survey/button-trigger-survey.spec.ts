@@ -1068,7 +1068,7 @@ describe('ButtonTriggerSurvey', () => {
       consoleSpy.mockRestore();
     });
 
-    test('should not have updateAndReload method', () => {
+    test('should have updateAndReload but warn when called (no reload method)', () => {
       const config: ButtonTriggerSurveyConfig = {
         position: 'bottom-right',
         text: 'Feedback',
@@ -1076,10 +1076,16 @@ describe('ButtonTriggerSurvey', () => {
       };
 
       const survey = new ButtonTriggerSurvey(config);
+      const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
 
-      // ButtonTriggerSurvey should not have updateAndReload because it has no iframe
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      expect((survey as any).updateAndReload).toBeUndefined();
+      // updateAndReload exists but logs warning for ButtonTriggerSurvey (no reload method)
+      survey.updateAndReload({ extra: { test: 'value' } });
+
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        '[Hello Customer SDK] updateAndReload not supported for this survey type (no reload method)',
+      );
+
+      consoleWarnSpy.mockRestore();
     });
 
     test('should not crash with multiple updateUrlConfig calls', () => {
