@@ -1,4 +1,5 @@
 import { InvalidQuerySelectorException } from '../../core/exceptions/invalid-query-selector.exception';
+import { StyledElementFactory } from '../../core/factories/styled-element.factory';
 import { UrlBuilder } from '../../url-builder/url.builder';
 
 import { ModalSurvey } from './modal-survey';
@@ -21,6 +22,9 @@ describe('ModalSurvey', () => {
 
     // Clean up DOM
     document.body.innerHTML = '';
+
+    // Clear style cache to prevent CSS accumulation between tests
+    StyledElementFactory.clearStyleCache();
 
     // Mock localStorage
     localStorageMock = (() => {
@@ -70,6 +74,7 @@ describe('ModalSurvey', () => {
 
     document.body.innerHTML = '';
     localStorageMock.clear();
+    StyledElementFactory.clearStyleCache();
   });
 
   describe('A. Constructor & Validation Tests', () => {

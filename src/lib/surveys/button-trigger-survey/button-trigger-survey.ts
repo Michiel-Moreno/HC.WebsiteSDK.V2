@@ -381,12 +381,14 @@ export class ButtonTriggerSurvey extends BaseSurvey<ButtonTriggerSurveyConfig> {
     const positionStyle = defaults.positionStyles[this.position];
     const presetStyles = defaults.stylePresets[this.stylePreset];
 
-    // Merge styles
-    const containerStyle = {
+    // Separate base styles (shared across all buttons) from position-specific styles
+    // Position styles are applied inline to avoid conflicts when multiple buttons exist
+    const containerBaseStyle = {
       ...defaults.baseContainerStyle,
-      ...positionStyle,
       ...(this.config.zIndex && { zIndex: this.config.zIndex.toString() }),
     };
+
+    const containerPositionStyle = positionStyle;
 
     // Use position-aware button style that automatically adjusts for odd combinations
     const buttonStyle = {
@@ -394,10 +396,11 @@ export class ButtonTriggerSurvey extends BaseSurvey<ButtonTriggerSurveyConfig> {
       ...this.config.customStyle?.buttonStyle,
     };
 
-    // Create container
-    const container = new StyledElementFactory(
-      document.createElement('div'),
-    ).applyClass(this.classNames.buttonContainer, containerStyle).styledElement;
+    // Create container with base styles as CSS class and position styles as inline
+    // This prevents CSS conflicts when multiple buttons with different positions exist
+    const container = new StyledElementFactory(document.createElement('div'))
+      .applyClass(this.classNames.buttonContainer, containerBaseStyle)
+      .applyInlineStyle(containerPositionStyle).styledElement;
 
     // Create button
     const button = new StyledElementFactory(

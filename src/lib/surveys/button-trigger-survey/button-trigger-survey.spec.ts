@@ -1,4 +1,5 @@
 import { InvalidQuerySelectorException } from '../../core/exceptions/invalid-query-selector.exception';
+import { StyledElementFactory } from '../../core/factories/styled-element.factory';
 
 import { BUTTON_TEXT_TRANSLATIONS, getButtonText } from './button-translations';
 import { ButtonTriggerSurvey } from './button-trigger-survey';
@@ -18,6 +19,9 @@ describe('ButtonTriggerSurvey', () => {
   beforeEach(() => {
     // Clean up DOM
     document.body.innerHTML = '';
+
+    // Clear style cache to prevent CSS accumulation between tests
+    StyledElementFactory.clearStyleCache();
 
     // Clear the noop mock
     noop.mockClear();
@@ -46,6 +50,7 @@ describe('ButtonTriggerSurvey', () => {
   afterEach(() => {
     document.body.innerHTML = '';
     localStorageMock.clear();
+    StyledElementFactory.clearStyleCache();
   });
 
   describe('A. Constructor & Creation Tests', () => {

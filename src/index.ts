@@ -2,6 +2,7 @@ export * from './lib/url-builder/url.builder';
 export * from './lib/core/exceptions/base.exception';
 export * from './lib/core/exceptions/invalid-config.exception';
 export * from './lib/core/exceptions/invalid-query-selector.exception';
+export * from './lib/core/factories/styled-element.factory';
 export * from './lib/core/interfaces/survey-config.interface';
 export * from './lib/core/interfaces/survey-extra-config.interface';
 export * from './lib/core/interfaces/survey-metadata.interface';

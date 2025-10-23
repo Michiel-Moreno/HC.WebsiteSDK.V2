@@ -15,6 +15,18 @@ export class StyledElementFactory<T extends HTMLElement> {
 
   private static readonly STYLES_ATTRIBUTE = 'data-hello-customer-styles';
 
+  /**
+   * Set to track CSS classes that have already been appended to prevent duplicates
+   * @private
+   */
+  private static appendedClasses = new Set<string>();
+
+  /**
+   * Set to track media rules that have already been appended to prevent duplicates
+   * @private
+   */
+  private static appendedMediaRules = new Set<string>();
+
   public constructor(element: T) {
     this.elementClone = element.cloneNode(true) as T;
   }
@@ -105,6 +117,8 @@ export class StyledElementFactory<T extends HTMLElement> {
    * and append it to the dedicated style element in the header - marked by [[StyledElementFactory.STYLES_ATTRIBUTE]].
    * If this style element does not exist it gets created.
    *
+   * Deduplicates CSS classes to prevent memory bloat when surveys are created/destroyed repeatedly.
+   *
    * @param style
    * @param name
    */
@@ -113,12 +127,23 @@ export class StyledElementFactory<T extends HTMLElement> {
     name: string,
   ): void {
     if (Object.keys(style).length < 1) return;
+
+    // Check if this class has already been appended to prevent duplicates
+    if (StyledElementFactory.appendedClasses.has(name)) {
+      return;
+    }
+
     const element = StyledElementFactory.getStyleElement();
     element.innerHTML += StyledElementFactory.parseStyleToClass(name, style);
+
+    // Track that we've appended this class
+    StyledElementFactory.appendedClasses.add(name);
   }
 
   /**
    * Add media rule to the header
+   *
+   * Deduplicates media rules to prevent memory bloat when surveys are created/destroyed repeatedly.
    *
    * @param media
    * @param rules
@@ -128,10 +153,40 @@ export class StyledElementFactory<T extends HTMLElement> {
     rules: Record<string, Partial<CSSStyleDeclaration>>,
   ) {
     if (Object.keys(rules).length < 1) return;
-    const element = StyledElementFactory.getStyleElement();
-    element.innerHTML += `@media ${media} {${Object.entries(rules)
+
+    // Generate the media rule string
+    const mediaRuleString = `@media ${media} {${Object.entries(rules)
       .map((rule) => StyledElementFactory.parseStyleToClass(rule[0], rule[1]))
       .join(' ')}}`;
+
+    // Check if this exact media rule has already been appended
+    if (StyledElementFactory.appendedMediaRules.has(mediaRuleString)) {
+      return;
+    }
+
+    const element = StyledElementFactory.getStyleElement();
+    element.innerHTML += mediaRuleString;
+
+    // Track that we've appended this media rule
+    StyledElementFactory.appendedMediaRules.add(mediaRuleString);
+  }
+
+  /**
+   * Clear style cache and remove all appended styles.
+   * Useful for testing and cleanup scenarios.
+   *
+   * @internal
+   */
+  public static clearStyleCache(): void {
+    StyledElementFactory.appendedClasses.clear();
+    StyledElementFactory.appendedMediaRules.clear();
+
+    const element = document.querySelector(
+      `[${StyledElementFactory.STYLES_ATTRIBUTE}]`,
+    );
+    if (element) {
+      element.innerHTML = '';
+    }
   }
 
   private static getStyleElement(): HTMLStyleElement {
