@@ -5,6 +5,7 @@ import { BaseSurvey } from '../common/base-survey';
 
 import { ButtonPosition } from './button-position.type';
 import { ButtonStylePreset } from './button-style-preset.type';
+import { getButtonText, isRTL } from './button-translations';
 import { ButtonTriggerSurveyConfig } from './button-trigger-survey-config.interface';
 import * as defaults from './button-trigger-survey-defaults.style';
 import { ButtonTriggerSurveyConfigValidator } from './button-trigger-survey.config-validator';
@@ -55,6 +56,8 @@ export class ButtonTriggerSurvey extends BaseSurvey<ButtonTriggerSurveyConfig> {
   private readonly position: ButtonPosition;
   private readonly stylePreset: ButtonStylePreset;
   private clickHandler: EventListener | null = null;
+  private buttonText: string;
+  private ariaLabel: string;
 
   constructor(config: ButtonTriggerSurveyConfig) {
     // Set defaults before calling super
@@ -73,6 +76,10 @@ export class ButtonTriggerSurvey extends BaseSurvey<ButtonTriggerSurveyConfig> {
 
     this.position = position;
     this.stylePreset = stylePreset;
+
+    // Determine button text and ARIA label based on config
+    this.buttonText = this.determineButtonText();
+    this.ariaLabel = this.determineAriaLabel();
 
     // Create button DOM
     const [container, button] = this.createButton();
@@ -153,6 +160,96 @@ export class ButtonTriggerSurvey extends BaseSurvey<ButtonTriggerSurveyConfig> {
     }
 
     this.config.callbacks?.onDestroy?.();
+  }
+
+  /**
+   * Update button language dynamically
+   * Only works if no custom text was provided initially
+   *
+   * @param newLanguage - New language code (ISO 639-1)
+   *
+   * @example
+   * ```typescript
+   * button.updateLanguage('FR'); // Changes button text to 'Commentaires'
+   * button.updateLanguage('ES'); // Changes button text to 'Comentarios'
+   * ```
+   */
+  public updateLanguage(newLanguage: string): void {
+    // Only update if using automatic translation (no explicit text provided)
+    if (this.config.text) {
+      console.warn(
+        '[Hello Customer SDK] Cannot update language: Custom text is set',
+      );
+      return;
+    }
+
+    this.config.language = newLanguage;
+
+    // Recalculate button text
+    this.buttonText = getButtonText(newLanguage);
+    this.ariaLabel = this.buttonText;
+
+    // Update DOM
+    const textElement = this.buttonHandle.querySelector(
+      `.${this.getClassNames().buttonText}`,
+    );
+    if (textElement) {
+      textElement.textContent = this.buttonText;
+    }
+
+    this.buttonHandle.setAttribute('aria-label', this.ariaLabel);
+
+    // Update RTL if needed
+    this.updateRTL(newLanguage);
+  }
+
+  /**
+   * Determine button text based on config
+   * Priority: explicit text > language translation > default
+   */
+  private determineButtonText(): string {
+    // Priority 1: Explicit text provided
+    if (this.config.text) {
+      return this.config.text;
+    }
+
+    // Priority 2: Auto-translate based on language
+    if (this.config.language) {
+      return getButtonText(this.config.language);
+    }
+
+    // Priority 3: Default fallback
+    return getButtonText(undefined); // Returns 'Feedback'
+  }
+
+  /**
+   * Determine ARIA label for accessibility
+   * Uses button text or custom aria label
+   */
+  private determineAriaLabel(): string {
+    // Use custom aria label if provided, otherwise use button text
+    return this.config.ariaLabel || this.buttonText;
+  }
+
+  /**
+   * Update RTL styling for button
+   */
+  private updateRTL(language: string | undefined): void {
+    if (isRTL(language)) {
+      this.buttonHandle.setAttribute('dir', 'rtl');
+      this.buttonHandle.style.direction = 'rtl';
+
+      // Adjust icon position for RTL (if icon exists)
+      if (this.config.icon) {
+        this.buttonHandle.style.flexDirection = 'row-reverse';
+      }
+    } else {
+      this.buttonHandle.removeAttribute('dir');
+      this.buttonHandle.style.direction = '';
+      if (this.config.icon) {
+        this.buttonHandle.style.flexDirection = '';
+      }
+    }
   }
 
   /**
@@ -243,10 +340,13 @@ export class ButtonTriggerSurvey extends BaseSurvey<ButtonTriggerSurveyConfig> {
 
     // Set accessibility
     button.setAttribute('type', 'button');
-    button.setAttribute(
-      'aria-label',
-      this.config.ariaLabel || this.config.text || 'Open feedback',
-    );
+    button.setAttribute('aria-label', this.ariaLabel);
+
+    // Apply RTL styling if needed
+    if (isRTL(this.config.language)) {
+      button.setAttribute('dir', 'rtl');
+      button.style.direction = 'rtl';
+    }
 
     // Add icon if provided
     if (this.config.icon) {
@@ -265,14 +365,19 @@ export class ButtonTriggerSurvey extends BaseSurvey<ButtonTriggerSurveyConfig> {
         iconContainer.appendChild(this.config.icon);
       }
 
+      // Adjust icon position for RTL
+      if (isRTL(this.config.language)) {
+        button.style.flexDirection = 'row-reverse';
+      }
+
       button.appendChild(iconContainer);
     }
 
-    // Add text if provided (and not circle button which typically has no text)
-    if (this.config.text && this.stylePreset !== 'circle-button') {
+    // Add text (hidden for circle button, but kept for accessibility)
+    if (this.buttonText && this.stylePreset !== 'circle-button') {
       const textSpan = document.createElement('span');
       textSpan.className = classNames.buttonText;
-      textSpan.textContent = this.config.text;
+      textSpan.textContent = this.buttonText;
 
       // Apply text styles if not ignoring defaults
       if (!this.config.ignoreDefaultStyles && presetStyles.buttonTextStyle) {

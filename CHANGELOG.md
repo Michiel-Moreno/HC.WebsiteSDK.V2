@@ -2,6 +2,41 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.3.0] (2025-10-23)
+
+### Features
+* add multi-language support (i18n) to ButtonTriggerSurvey
+* add automatic translation for 30 languages (EN, FR, ES, DE, NL, IT, PT, PL, RU, AR, ZH, and more)
+* add `language` parameter for automatic button text translation
+* add `updateLanguage()` method for dynamic language switching
+* add RTL (right-to-left) support for Arabic with automatic layout adjustments
+* add 51 comprehensive i18n tests covering all languages and edge cases
+
+### Changes
+* button text now auto-translates based on `language` parameter
+* explicit `text` parameter takes priority over automatic translation
+* ARIA labels automatically use translated text for accessibility
+* circle buttons keep translated text in ARIA labels while hiding visually
+
+### Documentation
+* add comprehensive Multi-Language Support section to README
+* add usage examples for automatic translation, custom text, and RTL support
+* add list of all 30 supported languages grouped by region
+* update .cspell.json with all translation words
+
+## [2.2.0] (2025-10-16)
+
+### Features
+* add PostMessage communication to InlineSurvey and ModalSurvey
+* add bidirectional iframe communication with origin verification
+* add sendMessage() and onMessage() methods for response-level analytics
+* enable tracking of individual question responses and completion funnels
+
+### Documentation
+* add comprehensive PostMessage Communication section to README
+* add PostMessage use cases and security details
+* update Memory Management section with PostMessage cleanup
+
 ## [2.1.0] (2025-10-15)
 
 ### Features

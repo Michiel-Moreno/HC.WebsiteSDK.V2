@@ -34,8 +34,26 @@ export interface ButtonTriggerSurveyConfig extends BaseSurveyConfig {
   stylePreset?: ButtonStylePreset;
 
   /**
+   * Language code for automatic translation (ISO 639-1)
+   * If provided and text is not specified, button text will be
+   * automatically translated based on this language.
+   * Supports 30 languages including EN, FR, ES, DE, NL, IT, PT, PL, RU, AR, ZH, and more.
+   *
+   * @example 'EN', 'FR', 'ES', 'DE'
+   * @see button-translations.ts for full list of supported languages
+   */
+  language?: string;
+
+  /**
    * Button text content
-   * @default 'Feedback'
+   * - If provided: Uses this exact text (no translation)
+   * - If not provided: Auto-translates based on language parameter
+   * - If neither provided: Defaults to 'Feedback'
+   *
+   * For circle-button preset, text is hidden visually but used
+   * for ARIA label (accessibility)
+   *
+   * @default Auto-translated based on language, or 'Feedback' if no language specified
    */
   text?: string;
 

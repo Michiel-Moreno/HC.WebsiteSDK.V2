@@ -242,6 +242,81 @@ const button = new hcWebsiteTouchpoint.ButtonTriggerSurvey({
 });
 ```
 
+#### Multi-Language Support
+
+ButtonTriggerSurvey automatically translates button text based on survey language, supporting **30 languages** including all EU languages and neighbors.
+
+**Automatic Translation** (Recommended)
+```js
+// Button text automatically matches survey language
+const urlBuilder = new hcWebsiteTouchpoint.UrlBuilder({
+  baseUrl: 'https://base.com',
+  tenantId: 'xxx',
+  touchPointId: 'zzzzz',
+  language: 'FR'  // French survey
+});
+
+const button = new hcWebsiteTouchpoint.ButtonTriggerSurvey({
+  position: 'bottom-right',
+  language: 'FR',  // Button shows "Commentaires"
+  onTrigger: () => modalSurvey.show()
+});
+```
+
+**Supported Languages** (30 total):
+- **Western Europe**: EN, FR, DE, NL, IT, ES, PT, CA, GA
+- **Nordic**: SV, DA, NO, FI
+- **Eastern Europe**: PL, CS, SK, HU, RO, BG, RU
+- **Southern Europe**: EL, HR, SL, MT
+- **Baltic**: LT, LV, ET
+- **Other**: TR, AR (with RTL support), ZH
+
+**Custom Text Override**
+```js
+// Override automatic translation with custom text
+const button = new hcWebsiteTouchpoint.ButtonTriggerSurvey({
+  position: 'bottom-right',
+  language: 'ES',
+  text: 'Comparte tu opinión',  // Custom Spanish text
+  onTrigger: () => modalSurvey.show()
+});
+```
+
+**Dynamic Language Switching**
+```js
+const button = new hcWebsiteTouchpoint.ButtonTriggerSurvey({
+  position: 'bottom-right',
+  language: 'EN',
+  onTrigger: () => modalSurvey.show()
+});
+
+// When user changes language preference
+function onLanguageChange(newLang) {
+  urlBuilder.updateUrlConfig({ language: newLang });
+  button.updateLanguage(newLang);  // Button text updates automatically
+  modalSurvey.updateAndReload({ language: newLang });
+}
+```
+
+**Right-to-Left (RTL) Support**
+
+Arabic automatically displays right-to-left with proper icon positioning:
+```js
+const button = new hcWebsiteTouchpoint.ButtonTriggerSurvey({
+  position: 'bottom-right',
+  language: 'AR',  // Shows "تعليقات" with RTL layout
+  icon: '<svg>...</svg>',
+  onTrigger: () => modalSurvey.show()
+});
+```
+
+**Text Priority Order:**
+1. **Explicit `text` parameter** - Always takes priority
+2. **Automatic translation** - Based on `language` parameter
+3. **Default fallback** - "Feedback" if neither is provided
+
+**Accessibility:** All translations include proper ARIA labels for screen readers. Circle buttons hide text visually but keep ARIA labels for accessibility.
+
 Please consult the docs for more [configuration options](https://hellocustomer.github.io/HC.WebsiteSDK.V2/interfaces/buttontriggersurveyconfig.html).
 
 ***
@@ -257,3 +332,278 @@ Please consult the docs for more [configuration options](https://hellocustomer.g
     }
   });
   ```
+
+***
+
+## Advanced Features
+
+### Lifecycle Callbacks
+
+All survey types support lifecycle callbacks to hook into survey events:
+
+#### Example - InlineSurvey with callbacks
+```js
+const inlineSurvey = new hcWebsiteTouchpoint.InlineSurvey(urlBuilder, {
+  elementSelector: '#survey',
+  callbacks: {
+    onBeforeShow: () => {
+      console.log('About to show survey');
+    },
+    onShow: () => {
+      console.log('Survey is now visible');
+      analytics.track('survey_shown');
+    },
+    onHide: () => {
+      console.log('Survey hidden');
+    },
+    onLoad: (iframe) => {
+      console.log('Survey iframe loaded', iframe);
+    },
+    onError: (error) => {
+      console.error('Survey error:', error);
+    },
+    onDestroy: () => {
+      console.log('Survey destroyed and cleaned up');
+    },
+    onQuarantineBlocked: (remainingDays) => {
+      console.log(`Survey blocked. ${remainingDays} days until next show.`);
+    }
+  }
+});
+```
+
+#### Available Callbacks
+- `onBeforeShow()` - Called before survey is shown
+- `onShow()` - Called when survey becomes visible
+- `onHide()` - Called when survey is hidden
+- `onLoad(iframe)` - Called when iframe finishes loading
+- `onError(error)` - Called when an error occurs
+- `onDestroy()` - Called when survey is destroyed
+- `onQuarantineBlocked(remainingDays)` - Called when quarantine prevents showing
+
+**ModalSurvey specific:**
+- `onClose()` - Called when modal is closed (X button or ESC key)
+
+**WindowSurvey specific:**
+- Same as above, adapted for popup windows
+
+**ButtonTriggerSurvey specific:**
+- Uses `onTrigger` instead of lifecycle callbacks
+
+***
+
+### Dynamic URL Updates
+
+Update survey configuration dynamically without recreating the survey instance.
+
+#### Example - User login scenario
+```js
+const survey = new hcWebsiteTouchpoint.InlineSurvey(urlBuilder, {
+  elementSelector: '#survey'
+});
+
+// Later, when user logs in
+user.onLogin((userData) => {
+  survey.updateAndReload({
+    extra: {
+      respondent: {
+        id: userData.id,
+        email: userData.email,
+        name: userData.name
+      },
+      metadata: {
+        loginTime: new Date().toISOString()
+      }
+    }
+  });
+});
+```
+
+#### Available Methods
+
+**`updateUrlConfig(patch)`** - Update URL configuration
+```js
+survey.updateUrlConfig({
+  language: 'FR',
+  extra: { metadata: { step: 2 } }
+});
+// Call survey.reload() to apply changes (InlineSurvey/ModalSurvey)
+// Or survey.open() to use new config (WindowSurvey)
+```
+
+**`updateAndReload(patch)`** - Update and reload automatically
+```js
+survey.updateAndReload({
+  extra: { metadata: { variant: 'A' } }
+});
+// Convenience method for InlineSurvey and ModalSurvey only
+```
+
+**Use Cases:**
+- Add user details after login
+- Update metadata between multi-step flows
+- Change language dynamically
+- Switch A/B test variants
+
+***
+
+### Quarantine Management
+
+Check quarantine status and get remaining days:
+
+```js
+const survey = new hcWebsiteTouchpoint.InlineSurvey(urlBuilder, {
+  elementSelector: '#survey',
+  quarantineConfig: {
+    period: 7 // 7 days
+  },
+  callbacks: {
+    onQuarantineBlocked: (remainingDays) => {
+      showNotification(
+        `Please wait ${remainingDays} more day(s) before taking this survey again.`
+      );
+    }
+  }
+});
+
+// Check if currently under quarantine
+if (survey.isQuarantined()) {
+  console.log('Survey is under quarantine');
+}
+
+// Get quarantine details
+const status = survey.getQuarantineStatus();
+console.log(`Remaining: ${status.remainingDays} days`);
+
+// Manually clear quarantine (e.g., for testing)
+survey.clearQuarantine();
+```
+
+***
+
+### Accessibility
+
+ModalSurvey includes comprehensive accessibility features:
+
+- **ARIA Attributes**: Proper `role="dialog"`, `aria-modal="true"`, `aria-label`
+- **Keyboard Support**: ESC to close, Tab navigation
+- **Focus Management**: Auto-focus on open, restore on close
+- **Screen Reader**: Announces modal state changes
+
+**WCAG 2.1 AA Compliant**
+
+```js
+const modalSurvey = new hcWebsiteTouchpoint.ModalSurvey(urlBuilder, {
+  closeOnEscape: true,  // ESC key support
+  closeButton: true,    // Visible close button
+  closeOnBackdropClick: false  // Prevent accidental closure
+});
+```
+
+***
+
+### PostMessage Communication
+
+**InlineSurvey and ModalSurvey** support bidirectional iframe communication for advanced integrations like response-level analytics.
+
+#### Receiving Messages from Survey
+
+```js
+const survey = new hcWebsiteTouchpoint.InlineSurvey(urlBuilder, {
+  elementSelector: '#survey'
+});
+
+// Listen for messages from the survey iframe
+const cleanup = survey.onMessage((data) => {
+  console.log('Survey event:', data);
+
+  // Example: Track individual question responses
+  if (data.type === 'question_answered') {
+    analytics.track('question_answered', {
+      questionId: data.questionId,
+      answer: data.answer
+    });
+  }
+
+  // Example: Track survey completion
+  if (data.type === 'survey_submitted') {
+    analytics.track('survey_completed');
+  }
+});
+
+// Clean up listener when done (optional - destroy() also cleans up)
+cleanup();
+```
+
+**Standard Survey Events:**
+- `question_shown` - A question was displayed
+- `question_answered` - User answered a question
+- `question_skipped` - User skipped a question
+- `survey_submitted` - User completed the survey
+- `survey_abandoned` - User exited without completing
+- `validation_error` - User input failed validation
+
+**Note:** Only one message listener is supported at a time. Calling `onMessage()` again will replace the previous listener.
+
+#### Sending Messages to Survey
+
+```js
+// Send data to the survey iframe
+survey.sendMessage({ action: 'update_context', userId: '12345' });
+
+// With custom origin (optional)
+survey.sendMessage({ action: 'ping' }, 'https://custom-origin.com');
+```
+
+**Security:** All incoming messages are validated against the survey's origin. Messages from unexpected origins are rejected with a console warning.
+
+#### Use Cases
+- **Analytics Integration**: Track question-level responses and completion funnels
+- **GTM Integration**: Forward survey events to Google Tag Manager dataLayer
+- **Multi-Step Flows**: Update survey context as user progresses through your app
+- **Custom Logic**: Trigger actions based on specific survey responses
+
+#### ButtonTriggerSurvey with PostMessage
+
+```js
+// Create a feedback button that spawns a modal with analytics
+const button = new hcWebsiteTouchpoint.ButtonTriggerSurvey({
+  position: 'bottom-right',
+  text: 'Feedback',
+  onTrigger: () => {
+    const modal = new hcWebsiteTouchpoint.ModalSurvey(urlBuilder, {});
+
+    // Track survey events
+    modal.onMessage((data) => {
+      window.dataLayer.push({
+        event: `survey_${data.type}`,
+        surveyData: data
+      });
+    });
+
+    modal.show();
+  }
+});
+
+button.show();
+```
+
+***
+
+### Memory Management
+
+Always call `destroy()` when removing a survey to prevent memory leaks:
+
+```js
+const survey = new hcWebsiteTouchpoint.InlineSurvey(urlBuilder, config);
+
+// When done with survey
+survey.destroy();  // Removes DOM elements, event listeners, postMessage listeners, etc.
+```
+
+All surveys automatically clean up:
+- DOM elements
+- Event listeners
+- PostMessage listeners (InlineSurvey/ModalSurvey)
+- Quarantine data (optional)
+- Callback references

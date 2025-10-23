@@ -1,5 +1,6 @@
 import { InvalidQuerySelectorException } from '../../core/exceptions/invalid-query-selector.exception';
 
+import { BUTTON_TEXT_TRANSLATIONS, getButtonText } from './button-translations';
 import { ButtonTriggerSurvey } from './button-trigger-survey';
 import { ButtonTriggerSurveyConfig } from './button-trigger-survey-config.interface';
 import * as defaults from './button-trigger-survey-defaults.style';
@@ -1080,6 +1081,414 @@ describe('ButtonTriggerSurvey', () => {
       expect(consoleSpy).toHaveBeenCalledTimes(3);
 
       consoleSpy.mockRestore();
+    });
+  });
+
+  describe('N. i18n Tests', () => {
+    describe('Automatic Translation', () => {
+      test('should use English by default when no language provided', () => {
+        const button = new ButtonTriggerSurvey({
+          onTrigger: noop,
+        });
+
+        expect(button['buttonText']).toBe('Feedback');
+      });
+
+      test('should translate to French when language is FR', () => {
+        const button = new ButtonTriggerSurvey({
+          onTrigger: noop,
+          language: 'FR',
+        });
+
+        expect(button['buttonText']).toBe('Commentaires');
+      });
+
+      test('should translate to Spanish when language is ES', () => {
+        const button = new ButtonTriggerSurvey({
+          onTrigger: noop,
+          language: 'ES',
+        });
+
+        expect(button['buttonText']).toBe('Comentarios');
+      });
+
+      test('should translate to German when language is DE', () => {
+        const button = new ButtonTriggerSurvey({
+          onTrigger: noop,
+          language: 'DE',
+        });
+
+        expect(button['buttonText']).toBe('Rückmeldung');
+      });
+
+      test('should translate to Arabic when language is AR', () => {
+        const button = new ButtonTriggerSurvey({
+          onTrigger: noop,
+          language: 'AR',
+        });
+
+        expect(button['buttonText']).toBe('تعليقات');
+      });
+
+      test('should translate to Chinese when language is ZH', () => {
+        const button = new ButtonTriggerSurvey({
+          onTrigger: noop,
+          language: 'ZH',
+        });
+
+        expect(button['buttonText']).toBe('反馈');
+      });
+
+      test('should handle case-insensitive language codes', () => {
+        const buttonLowercase = new ButtonTriggerSurvey({
+          onTrigger: noop,
+          language: 'fr',
+        });
+
+        const buttonUppercase = new ButtonTriggerSurvey({
+          onTrigger: noop,
+          language: 'FR',
+        });
+
+        expect(buttonLowercase['buttonText']).toBe('Commentaires');
+        expect(buttonUppercase['buttonText']).toBe('Commentaires');
+      });
+
+      test('should fallback to English for unsupported language', () => {
+        const button = new ButtonTriggerSurvey({
+          onTrigger: noop,
+          language: 'XX', // Invalid language code
+        });
+
+        expect(button['buttonText']).toBe('Feedback');
+      });
+
+      test('should fallback to English for empty string language', () => {
+        const button = new ButtonTriggerSurvey({
+          onTrigger: noop,
+          language: '',
+        });
+
+        expect(button['buttonText']).toBe('Feedback');
+      });
+    });
+
+    describe('Custom Text Override', () => {
+      test('should use custom text when provided', () => {
+        const button = new ButtonTriggerSurvey({
+          onTrigger: noop,
+          language: 'FR',
+          text: 'Custom French Text',
+        });
+
+        expect(button['buttonText']).toBe('Custom French Text');
+      });
+
+      test('should prefer custom text over translation', () => {
+        const button = new ButtonTriggerSurvey({
+          onTrigger: noop,
+          language: 'ES',
+          text: 'Mi Texto Personalizado',
+        });
+
+        expect(button['buttonText']).toBe('Mi Texto Personalizado');
+        // Should not be the Spanish translation
+        expect(button['buttonText']).not.toBe('Comentarios');
+      });
+
+      test('should use custom text even when no language provided', () => {
+        const button = new ButtonTriggerSurvey({
+          onTrigger: noop,
+          text: 'My Custom Button',
+        });
+
+        expect(button['buttonText']).toBe('My Custom Button');
+      });
+    });
+
+    describe('Circle Button Accessibility', () => {
+      test('should hide text visually but use for ARIA label', () => {
+        const button = new ButtonTriggerSurvey({
+          onTrigger: noop,
+          stylePreset: 'circle-button',
+          language: 'FR',
+          icon: '<svg><circle></circle></svg>',
+        });
+
+        // Text should not be in DOM (circle buttons don't show text)
+        const textElement = button.button.querySelector(
+          '.hello-customer-button-trigger__text',
+        );
+        expect(textElement).toBeNull();
+
+        // But ARIA label should use the translated text
+        expect(button.button.getAttribute('aria-label')).toBe('Commentaires');
+      });
+
+      test('should set ARIA label correctly for all languages', () => {
+        const languages = [
+          { code: 'EN', text: 'Feedback' },
+          { code: 'FR', text: 'Commentaires' },
+          { code: 'ES', text: 'Comentarios' },
+          { code: 'DE', text: 'Rückmeldung' },
+        ];
+
+        languages.forEach(({ code, text }) => {
+          const button = new ButtonTriggerSurvey({
+            onTrigger: noop,
+            stylePreset: 'circle-button',
+            language: code,
+            icon: '<svg></svg>',
+          });
+
+          expect(button.button.getAttribute('aria-label')).toBe(text);
+        });
+      });
+    });
+
+    describe('Dynamic Language Switching', () => {
+      test('should update button text when language changes', () => {
+        const button = new ButtonTriggerSurvey({
+          onTrigger: noop,
+          language: 'EN',
+        });
+
+        expect(button['buttonText']).toBe('Feedback');
+
+        // Change language
+        button.updateLanguage('FR');
+
+        expect(button['buttonText']).toBe('Commentaires');
+
+        const textElement = button.button.querySelector(
+          '.hello-customer-button-trigger__text',
+        );
+        expect(textElement?.textContent).toBe('Commentaires');
+      });
+
+      test('should update ARIA label when language changes', () => {
+        const button = new ButtonTriggerSurvey({
+          onTrigger: noop,
+          language: 'EN',
+        });
+
+        expect(button.button.getAttribute('aria-label')).toBe('Feedback');
+
+        button.updateLanguage('ES');
+
+        expect(button.button.getAttribute('aria-label')).toBe('Comentarios');
+      });
+
+      test('should not update when custom text is provided', () => {
+        const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
+
+        const button = new ButtonTriggerSurvey({
+          onTrigger: noop,
+          language: 'EN',
+          text: 'Custom Text',
+        });
+
+        expect(button['buttonText']).toBe('Custom Text');
+
+        // Try to change language - should not affect custom text
+        button.updateLanguage('FR');
+
+        expect(button['buttonText']).toBe('Custom Text');
+        expect(consoleSpy).toHaveBeenCalledWith(
+          expect.stringContaining('Cannot update language'),
+        );
+
+        consoleSpy.mockRestore();
+      });
+
+      test('should switch between multiple languages', () => {
+        const button = new ButtonTriggerSurvey({
+          onTrigger: noop,
+          language: 'EN',
+        });
+
+        expect(button['buttonText']).toBe('Feedback');
+
+        button.updateLanguage('FR');
+        expect(button['buttonText']).toBe('Commentaires');
+
+        button.updateLanguage('ES');
+        expect(button['buttonText']).toBe('Comentarios');
+
+        button.updateLanguage('DE');
+        expect(button['buttonText']).toBe('Rückmeldung');
+
+        button.updateLanguage('EN');
+        expect(button['buttonText']).toBe('Feedback');
+      });
+    });
+
+    describe('Translation Dictionary Completeness', () => {
+      test('should have translations for all 30 languages', () => {
+        const expectedLanguages = [
+          'AR',
+          'BG',
+          'CA',
+          'CS',
+          'DA',
+          'DE',
+          'EL',
+          'EN',
+          'ES',
+          'ET',
+          'FI',
+          'FR',
+          'GA',
+          'HR',
+          'HU',
+          'IT',
+          'LT',
+          'LV',
+          'MT',
+          'NL',
+          'NO',
+          'PL',
+          'PT',
+          'RO',
+          'RU',
+          'SK',
+          'SL',
+          'SV',
+          'TR',
+          'ZH',
+        ];
+
+        expect(expectedLanguages).toHaveLength(30);
+
+        expectedLanguages.forEach((lang) => {
+          const translation = getButtonText(lang);
+          expect(translation).toBeDefined();
+          expect(translation.length).toBeGreaterThan(0);
+          expect(translation).toBe(BUTTON_TEXT_TRANSLATIONS[lang]);
+        });
+      });
+
+      test('should have non-empty translations for each language', () => {
+        Object.values(BUTTON_TEXT_TRANSLATIONS).forEach((text) => {
+          expect(text).toBeDefined();
+          expect(typeof text).toBe('string');
+          expect(text.length).toBeGreaterThan(0);
+          expect(text.trim()).toBe(text); // No leading/trailing whitespace
+        });
+      });
+    });
+
+    describe('RTL Support', () => {
+      test('should set RTL attributes for Arabic', () => {
+        const button = new ButtonTriggerSurvey({
+          onTrigger: noop,
+          language: 'AR',
+        });
+
+        expect(button.button.getAttribute('dir')).toBe('rtl');
+        expect(button.button.style.direction).toBe('rtl');
+      });
+
+      test('should not set RTL for LTR languages', () => {
+        const languages = ['EN', 'FR', 'ES', 'DE'];
+
+        languages.forEach((lang) => {
+          const button = new ButtonTriggerSurvey({
+            onTrigger: noop,
+            language: lang,
+          });
+
+          expect(button.button.getAttribute('dir')).toBeFalsy();
+        });
+      });
+
+      test('should adjust icon position for RTL with icon', () => {
+        const button = new ButtonTriggerSurvey({
+          onTrigger: noop,
+          language: 'AR',
+          icon: '<svg></svg>',
+        });
+
+        expect(button.button.style.flexDirection).toBe('row-reverse');
+      });
+
+      test('should update RTL when language switches to/from Arabic', () => {
+        const button = new ButtonTriggerSurvey({
+          onTrigger: noop,
+          language: 'EN',
+          icon: '<svg></svg>',
+        });
+
+        // Initially LTR
+        expect(button.button.getAttribute('dir')).toBeFalsy();
+
+        // Switch to Arabic
+        button.updateLanguage('AR');
+        expect(button.button.getAttribute('dir')).toBe('rtl');
+        expect(button.button.style.direction).toBe('rtl');
+        expect(button.button.style.flexDirection).toBe('row-reverse');
+
+        // Switch back to English
+        button.updateLanguage('EN');
+        expect(button.button.getAttribute('dir')).toBeFalsy();
+        expect(button.button.style.direction).toBe('');
+        expect(button.button.style.flexDirection).toBe('');
+      });
+    });
+
+    describe('Priority Order', () => {
+      test('should prioritize explicit text over language translation', () => {
+        const button = new ButtonTriggerSurvey({
+          onTrigger: noop,
+          text: 'Explicit Text',
+          language: 'FR',
+        });
+
+        expect(button['buttonText']).toBe('Explicit Text');
+        expect(button['buttonText']).not.toBe('Commentaires');
+      });
+
+      test('should prioritize language translation over default', () => {
+        const button = new ButtonTriggerSurvey({
+          onTrigger: noop,
+          language: 'FR',
+        });
+
+        expect(button['buttonText']).toBe('Commentaires');
+        expect(button['buttonText']).not.toBe('Feedback');
+      });
+
+      test('should use default when neither text nor language provided', () => {
+        const button = new ButtonTriggerSurvey({
+          onTrigger: noop,
+        });
+
+        expect(button['buttonText']).toBe('Feedback');
+      });
+    });
+
+    describe('Custom ARIA Label', () => {
+      test('should use custom ariaLabel over translated text', () => {
+        const button = new ButtonTriggerSurvey({
+          onTrigger: noop,
+          language: 'FR',
+          ariaLabel: 'Custom ARIA Label',
+        });
+
+        expect(button.button.getAttribute('aria-label')).toBe(
+          'Custom ARIA Label',
+        );
+        expect(button['buttonText']).toBe('Commentaires');
+      });
+
+      test('should use translated text as ARIA label by default', () => {
+        const button = new ButtonTriggerSurvey({
+          onTrigger: noop,
+          language: 'ES',
+        });
+
+        expect(button.button.getAttribute('aria-label')).toBe('Comentarios');
+      });
     });
   });
 });
