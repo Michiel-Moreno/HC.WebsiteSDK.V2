@@ -1,6 +1,10 @@
-import { BaseConfigValidator } from '../../core/base-classes/base.config-validator';
 import { ConfigValidationFunctionType } from '../../core/types/config-validation-function.type';
-import { SurveyQuarantineConfigValidator } from '../common/survey-quarantine.config-validator';
+import {
+  validateArray,
+  validateObject,
+  validateString,
+} from '../../core/utils/config-validation-helpers.util';
+import { SurveyConfigValidator } from '../common/survey.config-validator';
 
 import { InlineSurveyConfig } from './inline-survey-config.interface';
 
@@ -9,7 +13,7 @@ import { InlineSurveyConfig } from './inline-survey-config.interface';
  *
  * @category Validators
  */
-export class InlineSurveyConfigValidator extends BaseConfigValidator<InlineSurveyConfig> {
+export class InlineSurveyConfigValidator extends SurveyConfigValidator<InlineSurveyConfig> {
   public constructor() {
     super();
   }
@@ -17,27 +21,23 @@ export class InlineSurveyConfigValidator extends BaseConfigValidator<InlineSurve
   /**
    * Here validation functions for InlineSurveyConfig can be provided
    */
-  protected defineValidationFunctions(): ConfigValidationFunctionType<InlineSurveyConfig>[] {
+  protected surveySpecificValidations(): ConfigValidationFunctionType<InlineSurveyConfig>[] {
     return [
+      // Element selector is required
       (config) =>
         config.elementSelector
           ? null
           : {
               elementSelectorRequired: 'Element selector is required',
             },
-      (config) =>
-        (typeof config.elementSelector as unknown) == 'string'
-          ? null
-          : {
-              elementSelectorIsString: 'Element selector must be a string',
-            },
-      (config) =>
-        !config.iFrameCssClasses ||
-        (config.iFrameCssClasses as unknown) instanceof Array
-          ? null
-          : {
-              cssClassesAreList: 'CssClasses must be a list',
-            },
+
+      // String validation using helper
+      (config) => validateString(config.elementSelector, 'elementSelector'),
+
+      // Array validation using helper
+      (config) => validateArray(config.iFrameCssClasses, 'iFrameCssClasses'),
+
+      // Custom validation for array items
       (config) =>
         !config.iFrameCssClasses ||
         config.iFrameCssClasses.every(
@@ -47,28 +47,13 @@ export class InlineSurveyConfigValidator extends BaseConfigValidator<InlineSurve
           : {
               cssClassesItemsAreString: 'CssClasses items must be strings',
             },
+
+      // Object validation using helper
       (config) =>
-        !config.iFrameInlineStylesRules ||
-        (typeof config.iFrameInlineStylesRules as unknown) === 'object'
-          ? null
-          : {
-              inlineStyleRulesAreObject: 'inlineStyleRules must be an object',
-            },
-      (config) => {
-        return !config.quarantineConfig ||
-          (typeof config.quarantineConfig as unknown) === 'object'
-          ? null
-          : {
-              quarantineConfigIsObject: 'Quarantine config must be an object',
-            };
-      },
-      (config) => {
-        return config.quarantineConfig
-          ? new SurveyQuarantineConfigValidator().validate(
-              config.quarantineConfig,
-            )
-          : null;
-      },
+        validateObject(
+          config.iFrameInlineStylesRules,
+          'iFrameInlineStylesRules',
+        ),
     ];
   }
 }

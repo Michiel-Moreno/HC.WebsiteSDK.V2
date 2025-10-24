@@ -1,6 +1,6 @@
-import { BaseConfigValidator } from '../../core/base-classes/base.config-validator';
 import { ConfigValidationFunctionType } from '../../core/types/config-validation-function.type';
-import { SurveyQuarantineConfigValidator } from '../common/survey-quarantine.config-validator';
+import { validateBoolean } from '../../core/utils/config-validation-helpers.util';
+import { SurveyConfigValidator } from '../common/survey.config-validator';
 
 import { WindowSurveyConfig } from './window-survey-config.interface';
 
@@ -9,42 +9,16 @@ import { WindowSurveyConfig } from './window-survey-config.interface';
  *
  * @category Validators
  */
-export class WindowSurveyConfigValidator extends BaseConfigValidator<WindowSurveyConfig> {
+export class WindowSurveyConfigValidator extends SurveyConfigValidator<WindowSurveyConfig> {
   public constructor() {
     super();
   }
 
-  protected defineValidationFunctions(): ConfigValidationFunctionType<WindowSurveyConfig>[] {
+  protected surveySpecificValidations(): ConfigValidationFunctionType<WindowSurveyConfig>[] {
     return [
-      (config) =>
-        config.openOnCreation == undefined ||
-        (typeof config.openOnCreation as unknown) == 'boolean'
-          ? null
-          : {
-              openOnCreationIsBoolean: 'openOnCreation must be a boolean',
-            },
-      (config) =>
-        config.openNewWindow == undefined ||
-        (typeof config.openNewWindow as unknown) == 'boolean'
-          ? null
-          : {
-              openNewWindowsIsBoolean: 'openNewWindow must be a boolean',
-            },
-      (config) => {
-        return !config.quarantineConfig ||
-          (typeof config.quarantineConfig as unknown) === 'object'
-          ? null
-          : {
-              quarantineConfigIsObject: 'Quarantine config must be an object',
-            };
-      },
-      (config) => {
-        return config.quarantineConfig
-          ? new SurveyQuarantineConfigValidator().validate(
-              config.quarantineConfig,
-            )
-          : null;
-      },
+      // Boolean validations using helper
+      (config) => validateBoolean(config.openOnCreation, 'openOnCreation'),
+      (config) => validateBoolean(config.openNewWindow, 'openNewWindow'),
     ];
   }
 }

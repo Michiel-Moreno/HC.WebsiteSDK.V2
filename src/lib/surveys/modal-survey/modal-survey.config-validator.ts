@@ -1,6 +1,10 @@
-import { BaseConfigValidator } from '../../core/base-classes/base.config-validator';
 import { ConfigValidationFunctionType } from '../../core/types/config-validation-function.type';
-import { SurveyQuarantineConfigValidator } from '../common/survey-quarantine.config-validator';
+import {
+  validateBoolean,
+  validateObject,
+  validateString,
+} from '../../core/utils/config-validation-helpers.util';
+import { SurveyConfigValidator } from '../common/survey.config-validator';
 
 import { ModalSurveyConfig } from './modal-survey-config.interface';
 
@@ -9,65 +13,31 @@ import { ModalSurveyConfig } from './modal-survey-config.interface';
  *
  * @category Validators
  */
-export class ModalSurveyConfigValidator extends BaseConfigValidator<ModalSurveyConfig> {
+export class ModalSurveyConfigValidator extends SurveyConfigValidator<ModalSurveyConfig> {
   public constructor() {
     super();
   }
 
-  protected defineValidationFunctions(): ConfigValidationFunctionType<ModalSurveyConfig>[] {
+  protected surveySpecificValidations(): ConfigValidationFunctionType<ModalSurveyConfig>[] {
     return [
+      // Boolean validations using helper
       (config) =>
-        config.ignoreDefaultStyles == undefined ||
-        (typeof config.ignoreDefaultStyles as unknown) == 'boolean'
-          ? null
-          : {
-              ignoreDefaultStylesIsBoolean:
-                'ignoreDefaultStyles must be a boolean',
-            },
+        validateBoolean(config.ignoreDefaultStyles, 'ignoreDefaultStyles'),
       (config) =>
-        config.translucentBackground == undefined ||
-        (typeof config.translucentBackground as unknown) == 'boolean'
-          ? null
-          : {
-              translucentBackgroundIsBoolean:
-                'translucentBackground must be a boolean',
-            },
+        validateBoolean(config.translucentBackground, 'translucentBackground'),
       (config) =>
-        config.closeOnBackgroundClick == undefined ||
-        (typeof config.closeOnBackgroundClick as unknown) == 'boolean'
-          ? null
-          : {
-              closeOnBackgroundClickIsBoolean:
-                'closeOnBackgroundClick must be a boolean',
-            },
-      (config) =>
-        config.closeOnEscape == undefined ||
-        (typeof config.closeOnEscape as unknown) == 'boolean'
-          ? null
-          : {
-              closeOnEscapeIsBoolean: 'closeOnEscape must be a boolean',
-            },
-      (config) =>
-        config.closeButton == undefined ||
-        (typeof config.closeButton as unknown) == 'boolean'
-          ? null
-          : {
-              closeButtonIsBoolean: 'closeButton must be a boolean',
-            },
-      (config) =>
-        config.showByDefault == undefined ||
-        (typeof config.showByDefault as unknown) == 'boolean'
-          ? null
-          : {
-              showByDefaultIsBoolean: 'showByDefault must be a boolean',
-            },
-      (config) =>
-        config.classNames == undefined ||
-        (typeof config.classNames as unknown) == 'object'
-          ? null
-          : {
-              classNamesIsObject: 'classNames must be an object',
-            },
+        validateBoolean(
+          config.closeOnBackgroundClick,
+          'closeOnBackgroundClick',
+        ),
+      (config) => validateBoolean(config.closeOnEscape, 'closeOnEscape'),
+      (config) => validateBoolean(config.closeButton, 'closeButton'),
+      (config) => validateBoolean(config.showByDefault, 'showByDefault'),
+
+      // Object validations using helper
+      (config) => validateObject(config.classNames, 'classNames'),
+
+      // Custom validation for classNames values
       (config) =>
         config.classNames == undefined ||
         Object.entries(config.classNames).every(
@@ -77,13 +47,11 @@ export class ModalSurveyConfigValidator extends BaseConfigValidator<ModalSurveyC
           : {
               classNamesValuesStrings: 'classNames values must be strings',
             },
-      (config) =>
-        config.modalStyle == undefined ||
-        (typeof config.modalStyle as unknown) == 'object'
-          ? null
-          : {
-              modalStyleIsObject: 'modalStyle must be an object',
-            },
+
+      // Object validation for modalStyle
+      (config) => validateObject(config.modalStyle, 'modalStyle'),
+
+      // Custom validation for modalStyle values
       (config) =>
         config.modalStyle == undefined ||
         Object.entries(config.modalStyle).every(
@@ -93,29 +61,10 @@ export class ModalSurveyConfigValidator extends BaseConfigValidator<ModalSurveyC
           : {
               modalStyleValuesObjects: 'modalStyle values must be objects',
             },
+
+      // String validation using helper
       (config) =>
-        config.modalContainerSelector == undefined ||
-        (typeof config.modalContainerSelector as unknown) == 'string'
-          ? null
-          : {
-              modalContainerSelectorIsString:
-                'modalContainerSelector is string',
-            },
-      (config) => {
-        return !config.quarantineConfig ||
-          (typeof config.quarantineConfig as unknown) === 'object'
-          ? null
-          : {
-              quarantineConfigIsObject: 'Quarantine config must be an object',
-            };
-      },
-      (config) => {
-        return config.quarantineConfig
-          ? new SurveyQuarantineConfigValidator().validate(
-              config.quarantineConfig,
-            )
-          : null;
-      },
+        validateString(config.modalContainerSelector, 'modalContainerSelector'),
     ];
   }
 }
