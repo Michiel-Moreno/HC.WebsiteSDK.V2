@@ -1,5 +1,6 @@
 import { InvalidQuerySelectorException } from '../../core/exceptions/invalid-query-selector.exception';
 import { StyledElementFactory } from '../../core/factories/styled-element.factory';
+import { observeDOMRemoval } from '../../core/utils/dom-removal-observer.util';
 import { isRTL } from '../../core/utils/rtl.util';
 import { trueByDefault } from '../../core/utils/true-by-default.util';
 import { BaseSurvey } from '../common/base-survey';
@@ -59,6 +60,7 @@ export class ButtonTriggerSurvey extends BaseSurvey<ButtonTriggerSurveyConfig> {
   private buttonText: string;
   private ariaLabel: string;
   private isDestroyed: boolean = false;
+  private domRemovalCleanup?: () => void;
   private readonly classNames: {
     buttonContainer: string;
     button: string;
@@ -108,6 +110,13 @@ export class ButtonTriggerSurvey extends BaseSurvey<ButtonTriggerSurveyConfig> {
     const [container, button] = this.createButton();
     this.containerHandle = container;
     this.buttonHandle = button;
+
+    // Set up DOM removal detection
+    this.domRemovalCleanup = observeDOMRemoval(this.containerHandle, () => {
+      if (!this.isDestroyed) {
+        this.destroy();
+      }
+    });
 
     // Initialize styles
     if (!this.config.ignoreDefaultStyles) {
@@ -172,6 +181,12 @@ export class ButtonTriggerSurvey extends BaseSurvey<ButtonTriggerSurveyConfig> {
     // Prevent double-destroy
     if (this.isDestroyed) {
       return;
+    }
+
+    // Clean up DOM removal observer
+    if (this.domRemovalCleanup) {
+      this.domRemovalCleanup();
+      this.domRemovalCleanup = undefined;
     }
 
     // Remove all tracked event listeners

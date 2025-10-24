@@ -1,3 +1,7 @@
+import { ButtonTriggerSurvey } from '../../surveys/button-trigger-survey/button-trigger-survey';
+import { ModalSurvey } from '../../surveys/modal-survey/modal-survey';
+import { UrlBuilder } from '../../url-builder/url.builder';
+
 import { StyledElementFactory } from './styled-element.factory';
 
 describe('StyledElementFactory', () => {
@@ -442,6 +446,185 @@ describe('StyledElementFactory', () => {
 
       expect(classCount).toBe(1);
       expect(mediaCount).toBe(1);
+    });
+  });
+
+  describe('H. CSS Deduplication with Multiple Surveys', () => {
+    let mockUrlBuilder: UrlBuilder;
+    let localStorageMock: {
+      getItem: jest.Mock;
+      setItem: jest.Mock;
+      clear: jest.Mock;
+      store: Record<string, string>;
+    };
+
+    beforeEach(() => {
+      // Mock localStorage
+      localStorageMock = (() => {
+        let store: Record<string, string> = {};
+        return {
+          getItem: jest.fn((key: string) => store[key] || null),
+          setItem: jest.fn((key: string, value: string) => {
+            store[key] = value;
+          }),
+          clear: jest.fn(() => {
+            store = {};
+          }),
+          store,
+        };
+      })();
+
+      Object.defineProperty(window, 'localStorage', {
+        value: localStorageMock,
+        writable: true,
+        configurable: true,
+      });
+
+      // Create mock UrlBuilder
+      mockUrlBuilder = {
+        getUrlFactory: jest.fn().mockReturnValue({
+          getUrlWithParams: jest
+            .fn()
+            .mockReturnValue('https://example.com/survey?entry.test=value'),
+          getSurveyIdentifier: jest.fn().mockReturnValue('test-survey-id'),
+          patchConfig: jest.fn(),
+          getBaseUrlWithLanguage: jest
+            .fn()
+            .mockReturnValue('https://example.com/EN/tenant-id/touchpoint-id'),
+        }),
+      } as unknown as UrlBuilder;
+    });
+
+    afterEach(() => {
+      localStorageMock.clear();
+    });
+
+    test('should not accumulate CSS with 100 ModalSurvey instances', () => {
+      StyledElementFactory.clearStyleCache();
+
+      const surveys = [];
+      for (let i = 0; i < 100; i++) {
+        surveys.push(new ModalSurvey(mockUrlBuilder, {}));
+      }
+
+      const styleElement = document.querySelector(
+        '[data-hello-customer-styles]',
+      );
+      const cssLengthAfter100 = styleElement?.innerHTML.length || 0;
+
+      // Create 100 more
+      for (let i = 0; i < 100; i++) {
+        surveys.push(new ModalSurvey(mockUrlBuilder, {}));
+      }
+
+      const cssLengthAfter200 = styleElement?.innerHTML.length || 0;
+
+      // CSS should not grow (deduplicated)
+      expect(cssLengthAfter200).toBe(cssLengthAfter100);
+
+      surveys.forEach((s) => s.destroy());
+      StyledElementFactory.clearStyleCache();
+    });
+
+    test('should not accumulate CSS with 100 ButtonTriggerSurvey instances', () => {
+      StyledElementFactory.clearStyleCache();
+
+      const surveys = [];
+      for (let i = 0; i < 100; i++) {
+        surveys.push(
+          new ButtonTriggerSurvey({
+            onTrigger: jest.fn(),
+          }),
+        );
+      }
+
+      const styleElement = document.querySelector(
+        '[data-hello-customer-styles]',
+      );
+      const cssLengthAfter100 = styleElement?.innerHTML.length || 0;
+
+      // Create 100 more
+      for (let i = 0; i < 100; i++) {
+        surveys.push(
+          new ButtonTriggerSurvey({
+            onTrigger: jest.fn(),
+          }),
+        );
+      }
+
+      const cssLengthAfter200 = styleElement?.innerHTML.length || 0;
+
+      // CSS should not grow (deduplicated)
+      expect(cssLengthAfter200).toBe(cssLengthAfter100);
+
+      surveys.forEach((s) => s.destroy());
+      StyledElementFactory.clearStyleCache();
+    });
+
+    test('should not accumulate CSS with mixed survey types (50 Modal + 50 Button)', () => {
+      StyledElementFactory.clearStyleCache();
+
+      const surveys = [];
+
+      // Create 25 of each type
+      for (let i = 0; i < 25; i++) {
+        surveys.push(new ModalSurvey(mockUrlBuilder, {}));
+        surveys.push(
+          new ButtonTriggerSurvey({
+            onTrigger: jest.fn(),
+          }),
+        );
+      }
+
+      const styleElement = document.querySelector(
+        '[data-hello-customer-styles]',
+      );
+      const cssLengthAfter50 = styleElement?.innerHTML.length || 0;
+
+      // Create 25 more of each type
+      for (let i = 0; i < 25; i++) {
+        surveys.push(new ModalSurvey(mockUrlBuilder, {}));
+        surveys.push(
+          new ButtonTriggerSurvey({
+            onTrigger: jest.fn(),
+          }),
+        );
+      }
+
+      const cssLengthAfter100 = styleElement?.innerHTML.length || 0;
+
+      // CSS should not grow (deduplicated)
+      expect(cssLengthAfter100).toBe(cssLengthAfter50);
+
+      surveys.forEach((s) => s.destroy());
+      StyledElementFactory.clearStyleCache();
+    });
+
+    test('should verify CSS deduplication prevents memory bloat', () => {
+      StyledElementFactory.clearStyleCache();
+
+      // Create initial survey to establish baseline
+      const baseline = new ModalSurvey(mockUrlBuilder, {});
+      const styleElement = document.querySelector(
+        '[data-hello-customer-styles]',
+      );
+      const baselineCssLength = styleElement?.innerHTML.length || 0;
+      baseline.destroy();
+
+      // Create 500 surveys
+      const surveys = [];
+      for (let i = 0; i < 500; i++) {
+        surveys.push(new ModalSurvey(mockUrlBuilder, {}));
+      }
+
+      const finalCssLength = styleElement?.innerHTML.length || 0;
+
+      // CSS length should still be approximately the same as baseline
+      // Allow for small variance due to potential additional styles
+      expect(finalCssLength).toBeLessThanOrEqual(baselineCssLength * 1.1);
+
+      surveys.forEach((s) => s.destroy());
+      StyledElementFactory.clearStyleCache();
     });
   });
 });

@@ -62,14 +62,17 @@ export interface ButtonTriggerSurveyConfig extends BaseSurveyConfig {
    *
    * ⚠️ **SECURITY WARNING:** If providing an HTML string, ensure it comes from a
    * trusted source to prevent XSS attacks. HTML content is NOT sanitized.
-   * Only use static strings or SVG elements from your own codebase.
+   * Only use static strings or SVG/HTML elements from your own codebase.
    *
    * @example
    * // ✅ Safe - static string
    * icon: '<svg><circle cx="10" cy="10" r="5"/></svg>'
    *
-   * // ✅ Safe - DOM element
+   * // ✅ Safe - SVG element
    * icon: document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+   *
+   * // ✅ Safe - HTML element
+   * icon: document.createElement('span')
    *
    * // ❌ UNSAFE - user input
    * icon: userProvidedContent // DO NOT DO THIS
@@ -77,7 +80,7 @@ export interface ButtonTriggerSurveyConfig extends BaseSurveyConfig {
    * If provided as string, will be set as innerHTML.
    * For circle-button preset, an icon is highly recommended.
    */
-  icon?: HTMLElement | string;
+  icon?: Element | string;
 
   /**
    * Callback function when button is clicked

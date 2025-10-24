@@ -6,7 +6,10 @@ import { BaseException } from './base.exception';
  * @category Exceptions
  */
 export class CannotOpenWindowException extends BaseException {
-  constructor() {
-    super('[Hello Customer SDK] Cannot open window - check Your browser!');
+  constructor(message?: string) {
+    super(
+      message ||
+        '[Hello Customer SDK] Cannot open window - check Your browser!',
+    );
   }
 }

@@ -1,5 +1,6 @@
 import { InvalidQuerySelectorException } from '../../core/exceptions/invalid-query-selector.exception';
 import { StyledElementFactory } from '../../core/factories/styled-element.factory';
+import { observeDOMRemoval } from '../../core/utils/dom-removal-observer.util';
 import { UrlBuilder } from '../../url-builder/url.builder';
 import { BaseSurvey } from '../common/base-survey';
 
@@ -48,6 +49,8 @@ import { InlineSurveyConfigValidator } from './inline-survey.config-validator';
  * @category Surveys
  */
 export class InlineSurvey extends BaseSurvey<InlineSurveyConfig> {
+  private domRemovalCleanup?: () => void;
+
   constructor(
     configBuilder: UrlBuilder,
     private inlineConfig: InlineSurveyConfig,
@@ -58,6 +61,11 @@ export class InlineSurvey extends BaseSurvey<InlineSurveyConfig> {
     // InlineSurvey-specific initialization
     this.iFrameHandle = this.createIframeElement();
     this.reload();
+
+    // Set up DOM removal detection
+    this.domRemovalCleanup = observeDOMRemoval(this.iFrameHandle, () =>
+      this.destroy(),
+    );
 
     // Handle quarantine state
     if (this.quarantineService.isUnderQuarantine()) {
@@ -107,6 +115,12 @@ export class InlineSurvey extends BaseSurvey<InlineSurveyConfig> {
    * Destroy survey iframe
    */
   public destroy(): void {
+    // Clean up DOM removal observer
+    if (this.domRemovalCleanup) {
+      this.domRemovalCleanup();
+      this.domRemovalCleanup = undefined;
+    }
+
     // Clean up message listeners if active
     this.cleanupMessageHandlers();
 

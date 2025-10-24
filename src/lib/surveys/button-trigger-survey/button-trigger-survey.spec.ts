@@ -1693,4 +1693,314 @@ describe('ButtonTriggerSurvey', () => {
       consoleSpy.mockRestore();
     });
   });
+
+  describe('P. Config Validation Tests', () => {
+    test('should throw error for invalid position', () => {
+      const config = {
+        onTrigger: noop,
+        position: 'invalid-position',
+      } as unknown as ButtonTriggerSurveyConfig;
+
+      expect(() => new ButtonTriggerSurvey(config)).toThrow();
+    });
+
+    test('should accept all valid positions', () => {
+      const validPositions: Array<
+        | 'top-left'
+        | 'top-center'
+        | 'top-right'
+        | 'left-center'
+        | 'right-center'
+        | 'bottom-left'
+        | 'bottom-center'
+        | 'bottom-right'
+      > = [
+        'top-left',
+        'top-center',
+        'top-right',
+        'left-center',
+        'right-center',
+        'bottom-left',
+        'bottom-center',
+        'bottom-right',
+      ];
+
+      validPositions.forEach((position) => {
+        const config: ButtonTriggerSurveyConfig = {
+          onTrigger: noop,
+          position: position,
+        };
+
+        expect(() => new ButtonTriggerSurvey(config)).not.toThrow();
+      });
+    });
+
+    test('should throw error for invalid stylePreset', () => {
+      const config = {
+        onTrigger: noop,
+        stylePreset: 'invalid-preset',
+      } as unknown as ButtonTriggerSurveyConfig;
+
+      expect(() => new ButtonTriggerSurvey(config)).toThrow();
+    });
+
+    test('should accept all valid stylePresets', () => {
+      const validPresets: Array<
+        'pill-button' | 'circle-button' | 'side-tab' | 'banner'
+      > = ['pill-button', 'circle-button', 'side-tab', 'banner'];
+
+      validPresets.forEach((preset) => {
+        const config: ButtonTriggerSurveyConfig = {
+          onTrigger: noop,
+          stylePreset: preset,
+        };
+
+        expect(() => new ButtonTriggerSurvey(config)).not.toThrow();
+      });
+    });
+
+    test('should throw error for non-string containerSelector', () => {
+      const config = {
+        onTrigger: noop,
+        containerSelector: 123,
+      } as unknown as ButtonTriggerSurveyConfig;
+
+      expect(() => new ButtonTriggerSurvey(config)).toThrow();
+    });
+
+    test('should throw error for negative zIndex', () => {
+      const config: ButtonTriggerSurveyConfig = {
+        onTrigger: noop,
+        zIndex: -100,
+      };
+
+      expect(() => new ButtonTriggerSurvey(config)).toThrow();
+    });
+
+    test('should throw error for zero zIndex', () => {
+      const config: ButtonTriggerSurveyConfig = {
+        onTrigger: noop,
+        zIndex: 0,
+      };
+
+      expect(() => new ButtonTriggerSurvey(config)).toThrow();
+    });
+
+    test('should throw error for non-number zIndex', () => {
+      const config = {
+        onTrigger: noop,
+        zIndex: '9999',
+      } as unknown as ButtonTriggerSurveyConfig;
+
+      expect(() => new ButtonTriggerSurvey(config)).toThrow();
+    });
+
+    test('should accept positive zIndex', () => {
+      const config: ButtonTriggerSurveyConfig = {
+        onTrigger: noop,
+        zIndex: 10000,
+      };
+
+      expect(() => new ButtonTriggerSurvey(config)).not.toThrow();
+    });
+
+    test('should throw error for invalid icon type (number)', () => {
+      const config = {
+        onTrigger: noop,
+        icon: 123,
+      } as unknown as ButtonTriggerSurveyConfig;
+
+      expect(() => new ButtonTriggerSurvey(config)).toThrow();
+    });
+
+    test('should throw error for invalid icon type (plain object)', () => {
+      const config = {
+        onTrigger: noop,
+        icon: { foo: 'bar' },
+      } as unknown as ButtonTriggerSurveyConfig;
+
+      expect(() => new ButtonTriggerSurvey(config)).toThrow();
+    });
+
+    test('should accept icon as string', () => {
+      const config: ButtonTriggerSurveyConfig = {
+        onTrigger: noop,
+        icon: '<svg><circle cx="10" cy="10" r="5"></circle></svg>',
+      };
+
+      expect(() => new ButtonTriggerSurvey(config)).not.toThrow();
+    });
+
+    test('should accept icon as HTMLElement', () => {
+      const iconElement = document.createElementNS(
+        'http://www.w3.org/2000/svg',
+        'svg',
+      ) as unknown as HTMLElement;
+
+      const config: ButtonTriggerSurveyConfig = {
+        onTrigger: noop,
+        icon: iconElement,
+      };
+
+      expect(() => new ButtonTriggerSurvey(config)).not.toThrow();
+    });
+
+    test('should accept valid kitchen sink config', () => {
+      const iconElement = document.createElement('span');
+      iconElement.innerHTML = '★';
+
+      const config: ButtonTriggerSurveyConfig = {
+        onTrigger: noop,
+        position: 'top-right',
+        stylePreset: 'circle-button',
+        containerSelector: 'body',
+        zIndex: 5000,
+        icon: iconElement,
+        text: 'Test',
+      };
+
+      expect(() => new ButtonTriggerSurvey(config)).not.toThrow();
+    });
+  });
+
+  describe('Q. DOM Removal Detection Tests', () => {
+    test('should call onDestroy when button container is removed from DOM', (done) => {
+      const onDestroy = jest.fn();
+      const survey = new ButtonTriggerSurvey({
+        onTrigger: noop,
+        callbacks: { onDestroy },
+      });
+
+      // Verify button is in DOM
+      expect(document.body.contains(survey.container)).toBe(true);
+
+      // Manually remove button from DOM (simulating external removal)
+      document.body.removeChild(survey.container);
+
+      // MutationObserver is asynchronous, wait for callback
+      setTimeout(() => {
+        expect(onDestroy).toHaveBeenCalledTimes(1);
+        done();
+      }, 50);
+    });
+
+    test('should not trigger double-destroy when manually removed', (done) => {
+      const onDestroy = jest.fn();
+      const survey = new ButtonTriggerSurvey({
+        onTrigger: noop,
+        callbacks: { onDestroy },
+      });
+
+      // Manually remove from DOM
+      document.body.removeChild(survey.container);
+
+      // Wait for observer callback
+      setTimeout(() => {
+        // isDestroyed flag should prevent double-destroy
+        expect(onDestroy).toHaveBeenCalledTimes(1);
+
+        // Try to destroy again manually - should be no-op
+        survey.destroy();
+        expect(onDestroy).toHaveBeenCalledTimes(1); // Still only once
+
+        done();
+      }, 50);
+    });
+
+    test('should cleanup observer when destroy is called manually', () => {
+      const onDestroy = jest.fn();
+      const survey = new ButtonTriggerSurvey({
+        onTrigger: noop,
+        callbacks: { onDestroy },
+      });
+
+      // Manually destroy
+      survey.destroy();
+
+      expect(onDestroy).toHaveBeenCalledTimes(1);
+      expect(survey['domRemovalCleanup']).toBeUndefined();
+    });
+
+    test('should not trigger observer after manual destroy', (done) => {
+      const onDestroy = jest.fn();
+      const survey = new ButtonTriggerSurvey({
+        onTrigger: noop,
+        callbacks: { onDestroy },
+      });
+
+      // Manually destroy first
+      survey.destroy();
+      expect(onDestroy).toHaveBeenCalledTimes(1);
+
+      // Now try to remove from DOM (observer should be cleaned up)
+      // Container is already removed, but verify callback isn't called again
+      setTimeout(() => {
+        expect(onDestroy).toHaveBeenCalledTimes(1); // Still only once
+        done();
+      }, 50);
+    });
+
+    test('should handle rapid create/destroy cycles without memory leaks', () => {
+      const iterations = 100;
+      const surveys: ButtonTriggerSurvey[] = [];
+
+      // Create many surveys
+      for (let i = 0; i < iterations; i++) {
+        surveys.push(
+          new ButtonTriggerSurvey({
+            onTrigger: noop,
+            text: `Survey ${i}`,
+          }),
+        );
+      }
+
+      // Verify all created
+      expect(surveys).toHaveLength(iterations);
+      surveys.forEach((survey) => {
+        expect(document.body.contains(survey.container)).toBe(true);
+      });
+
+      // Destroy all
+      surveys.forEach((survey) => survey.destroy());
+
+      // Verify all destroyed
+      surveys.forEach((survey) => {
+        expect(document.body.contains(survey.container)).toBe(false);
+        expect(survey['isDestroyed']).toBe(true);
+        expect(survey['domRemovalCleanup']).toBeUndefined();
+      });
+
+      // Verify DOM is clean
+      const remainingButtons = document.querySelectorAll(
+        '.hello-customer-button-trigger',
+      );
+      expect(remainingButtons).toHaveLength(0);
+    });
+
+    test('should cleanup observer when container is removed by parent removal', (done) => {
+      // Create custom parent container
+      const parent = document.createElement('div');
+      parent.id = 'custom-parent';
+      document.body.appendChild(parent);
+
+      const onDestroy = jest.fn();
+      const survey = new ButtonTriggerSurvey({
+        onTrigger: noop,
+        containerSelector: '#custom-parent',
+        callbacks: { onDestroy },
+      });
+
+      // Verify button is in custom parent
+      expect(parent.contains(survey.container)).toBe(true);
+
+      // Remove parent (which removes button indirectly)
+      document.body.removeChild(parent);
+
+      // Observer should detect removal
+      setTimeout(() => {
+        expect(onDestroy).toHaveBeenCalled();
+        done();
+      }, 50);
+    });
+  });
 });

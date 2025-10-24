@@ -1690,4 +1690,152 @@ describe('ModalSurvey', () => {
       }, 10);
     });
   });
+
+  describe('Q. DOM Removal Detection Tests', () => {
+    test('should trigger onDestroy when modal is removed from DOM', (done) => {
+      const onDestroy = jest.fn();
+      const config: ModalSurveyConfig = {
+        showByDefault: false,
+        callbacks: {
+          onDestroy,
+        },
+      };
+
+      const modal = new ModalSurvey(mockUrlBuilder, config);
+      createdModals.push(modal);
+
+      // Remove modal from DOM
+      document.body.removeChild(modal.modalContainer);
+
+      // Wait for MutationObserver to detect removal
+      setTimeout(() => {
+        expect(onDestroy).toHaveBeenCalledTimes(1);
+        done();
+      }, 100);
+    });
+
+    test('should not trigger onDestroy twice if manually destroyed then removed', (done) => {
+      const onDestroy = jest.fn();
+      const config: ModalSurveyConfig = {
+        showByDefault: false,
+        callbacks: {
+          onDestroy,
+        },
+      };
+
+      const modal = new ModalSurvey(mockUrlBuilder, config);
+      createdModals.push(modal);
+
+      // Manually call destroy first
+      modal.destroy();
+      expect(onDestroy).toHaveBeenCalledTimes(1);
+
+      // Try to remove from DOM (should already be removed by destroy)
+      if (document.body.contains(modal.modalContainer)) {
+        document.body.removeChild(modal.modalContainer);
+      }
+
+      // Wait to ensure callback doesn't fire again
+      setTimeout(() => {
+        expect(onDestroy).toHaveBeenCalledTimes(1); // Still 1, not 2
+        done();
+      }, 100);
+    });
+
+    test('should clean up observer when destroyed manually', (done) => {
+      const onDestroy = jest.fn();
+      const config: ModalSurveyConfig = {
+        showByDefault: false,
+        callbacks: {
+          onDestroy,
+        },
+      };
+
+      const modal = new ModalSurvey(mockUrlBuilder, config);
+      createdModals.push(modal);
+
+      // Manually destroy
+      modal.destroy();
+      expect(onDestroy).toHaveBeenCalledTimes(1);
+
+      // Create a detached element that looks like the modal container
+      // to verify observer was properly cleaned up
+      const detachedElement = document.createElement('div');
+      document.body.appendChild(detachedElement);
+      document.body.removeChild(detachedElement);
+
+      // Wait to ensure no additional callbacks fire
+      setTimeout(() => {
+        expect(onDestroy).toHaveBeenCalledTimes(1); // Still 1, observer was cleaned up
+        done();
+      }, 100);
+    });
+
+    test('should trigger onDestroy when parent container is removed', (done) => {
+      // Create a container for the modal
+      const container = document.createElement('div');
+      container.id = 'modal-container';
+      document.body.appendChild(container);
+
+      const onDestroy = jest.fn();
+      const config: ModalSurveyConfig = {
+        showByDefault: false,
+        modalContainerSelector: '#modal-container',
+        callbacks: {
+          onDestroy,
+        },
+      };
+
+      const modal = new ModalSurvey(mockUrlBuilder, config);
+      createdModals.push(modal);
+
+      // Verify modal is in the custom container
+      expect(container.contains(modal.modalContainer)).toBe(true);
+
+      // Remove the parent container (which removes modal too)
+      document.body.removeChild(container);
+
+      // Wait for MutationObserver to detect removal
+      setTimeout(() => {
+        expect(onDestroy).toHaveBeenCalledTimes(1);
+        done();
+      }, 100);
+    });
+
+    test('should handle rapid create/destroy without memory leaks', (done) => {
+      const destroyCallbacks: jest.Mock[] = [];
+      const modals: ModalSurvey[] = [];
+
+      // Create and destroy 50 modals
+      for (let i = 0; i < 50; i++) {
+        const onDestroy = jest.fn();
+        destroyCallbacks.push(onDestroy);
+
+        const modal = new ModalSurvey(mockUrlBuilder, {
+          showByDefault: false,
+          callbacks: { onDestroy },
+        });
+        modals.push(modal);
+        modal.destroy();
+      }
+
+      // Verify all modals are removed from DOM
+      modals.forEach((modal) => {
+        expect(document.body.contains(modal.modalContainer)).toBe(false);
+      });
+
+      // Verify all onDestroy callbacks were called exactly once
+      destroyCallbacks.forEach((callback) => {
+        expect(callback).toHaveBeenCalledTimes(1);
+      });
+
+      // Wait to ensure no additional callbacks fire after cleanup
+      setTimeout(() => {
+        destroyCallbacks.forEach((callback) => {
+          expect(callback).toHaveBeenCalledTimes(1); // Still 1, no memory leaks
+        });
+        done();
+      }, 100);
+    });
+  });
 });

@@ -237,12 +237,63 @@ describe('WindowSurvey', () => {
       const survey = new WindowSurvey(mockUrlBuilder, config);
 
       expect(() => survey.open()).toThrow(
-        '[Hello Customer SDK] Cannot open window - check Your browser!',
+        '[Hello Customer SDK] Failed to open survey window. ' +
+          'This is usually caused by a popup blocker. ' +
+          'Please allow popups for this site to view the survey.',
       );
     });
   });
 
-  describe('D. Lifecycle Methods Tests', () => {
+  describe('D. Popup Blocker Detection', () => {
+    test('should detect popup blocker and throw helpful error', () => {
+      windowOpenSpy.mockReturnValue(null);
+
+      const config: WindowSurveyConfig = {};
+      const survey = new WindowSurvey(mockUrlBuilder, config);
+
+      expect(() => survey.open()).toThrow(
+        '[Hello Customer SDK] Failed to open survey window. ' +
+          'This is usually caused by a popup blocker. ' +
+          'Please allow popups for this site to view the survey.',
+      );
+    });
+
+    test('should call onError callback with popup blocker error', () => {
+      windowOpenSpy.mockReturnValue(null);
+
+      const onError = jest.fn();
+      const config: WindowSurveyConfig = {
+        callbacks: { onError },
+      };
+
+      const survey = new WindowSurvey(mockUrlBuilder, config);
+
+      expect(() => survey.open()).toThrow(CannotOpenWindowException);
+      expect(onError).toHaveBeenCalled();
+      expect(onError).toHaveBeenCalledWith(
+        expect.any(CannotOpenWindowException),
+      );
+    });
+
+    test('should include troubleshooting hint in error message', () => {
+      windowOpenSpy.mockReturnValue(null);
+
+      const config: WindowSurveyConfig = {};
+      const survey = new WindowSurvey(mockUrlBuilder, config);
+
+      try {
+        survey.open();
+        fail('Expected CannotOpenWindowException to be thrown');
+      } catch (error) {
+        expect(error).toBeInstanceOf(CannotOpenWindowException);
+        const errorMessage = (error as CannotOpenWindowException).message;
+        expect(errorMessage).toContain('popup blocker');
+        expect(errorMessage).toContain('allow popups for this site');
+      }
+    });
+  });
+
+  describe('E. Lifecycle Methods Tests', () => {
     test('should close window when close is called', () => {
       const config: WindowSurveyConfig = {};
 
@@ -275,7 +326,7 @@ describe('WindowSurvey', () => {
     });
   });
 
-  describe('E. Quarantine Integration Tests', () => {
+  describe('F. Quarantine Integration Tests', () => {
     test('should not open window when under quarantine', () => {
       // Set quarantine in localStorage
       const quarantineKey = 'hcSDK.SurveyQuarantineStart:test-survey-id';
@@ -375,7 +426,7 @@ describe('WindowSurvey', () => {
     });
   });
 
-  describe('F. URL Integration Tests', () => {
+  describe('G. URL Integration Tests', () => {
     test('should get URL from urlFactory when opening', () => {
       const config: WindowSurveyConfig = {};
 
@@ -398,7 +449,7 @@ describe('WindowSurvey', () => {
     });
   });
 
-  describe('G. Destroy Method Tests', () => {
+  describe('H. Destroy Method Tests', () => {
     test('should have destroy method', () => {
       const config: WindowSurveyConfig = {};
 
@@ -439,7 +490,7 @@ describe('WindowSurvey', () => {
     });
   });
 
-  describe('H. Lifecycle Callbacks Tests', () => {
+  describe('I. Lifecycle Callbacks Tests', () => {
     test('should call onShow when window is opened', () => {
       const onShow = jest.fn();
       const config: WindowSurveyConfig = {
@@ -543,7 +594,7 @@ describe('WindowSurvey', () => {
     });
   });
 
-  describe('I. Dynamic URL Updates Tests', () => {
+  describe('J. Dynamic URL Updates Tests', () => {
     test('should update URL config for next open()', () => {
       const config: WindowSurveyConfig = {
         openOnCreation: false,

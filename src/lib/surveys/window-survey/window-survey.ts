@@ -82,7 +82,11 @@ export class WindowSurvey extends BaseSurvey<WindowSurveyConfig> {
           '_blank',
         );
       if (!this.windowHandle) {
-        const error = new CannotOpenWindowException();
+        const error = new CannotOpenWindowException(
+          '[Hello Customer SDK] Failed to open survey window. ' +
+            'This is usually caused by a popup blocker. ' +
+            'Please allow popups for this site to view the survey.',
+        );
         this.windowConfig.callbacks?.onError?.(error);
         throw error;
       }

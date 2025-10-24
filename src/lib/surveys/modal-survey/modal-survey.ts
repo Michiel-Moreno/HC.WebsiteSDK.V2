@@ -1,5 +1,7 @@
 import { InvalidQuerySelectorException } from '../../core/exceptions/invalid-query-selector.exception';
 import { StyledElementFactory } from '../../core/factories/styled-element.factory';
+import { computeClassNames } from '../../core/utils/compute-class-names.util';
+import { observeDOMRemoval } from '../../core/utils/dom-removal-observer.util';
 import { trueByDefault } from '../../core/utils/true-by-default.util';
 import { UrlBuilder } from '../../url-builder/url.builder';
 import { BaseSurvey } from '../common/base-survey';
@@ -80,6 +82,7 @@ export class ModalSurvey extends BaseSurvey<ModalSurveyConfig> {
   private focusTrapHandlerCast: EventListener | null = null;
   private focusTrapActivationTimeout: ReturnType<typeof setTimeout> | null =
     null;
+  private domRemovalCleanup?: () => void;
 
   constructor(
     configBuilder: UrlBuilder,
@@ -94,6 +97,12 @@ export class ModalSurvey extends BaseSurvey<ModalSurveyConfig> {
     const [root, frame] = this.createModal();
     this.iFrameHandle = frame;
     this.modalHandle = root;
+
+    // Set up DOM removal detection
+    this.domRemovalCleanup = observeDOMRemoval(this.modalHandle, () =>
+      this.destroy(),
+    );
+
     if (!this.modalConfig.ignoreDefaultStyles) this.initModalClasses();
     this.reload();
     if (this.modalConfig.showByDefault) this.show();
@@ -180,6 +189,12 @@ export class ModalSurvey extends BaseSurvey<ModalSurveyConfig> {
    * Removes modal from DOM and prevents memory leaks
    */
   public destroy(): void {
+    // Clean up DOM removal observer
+    if (this.domRemovalCleanup) {
+      this.domRemovalCleanup();
+      this.domRemovalCleanup = undefined;
+    }
+
     // Deactivate focus trap
     this.deactivateFocusTrap();
 
@@ -375,35 +390,10 @@ export class ModalSurvey extends BaseSurvey<ModalSurveyConfig> {
   }
 
   private computeClassNames(): Required<ClassNamesConfigType> {
-    return {
-      rootDivStyle:
-        this.modalConfig?.classNames?.rootDivStyle ||
-        modalDefaultStyles.classNames.rootDivStyle,
-      windowBarDivStyle:
-        this.modalConfig?.classNames?.windowBarDivStyle ||
-        modalDefaultStyles.classNames.windowBarDivStyle,
-      windowDivStyle:
-        this.modalConfig?.classNames?.windowDivStyle ||
-        modalDefaultStyles.classNames.windowDivStyle,
-      windowCloseButtonStyle:
-        this.modalConfig?.classNames?.windowCloseButtonStyle ||
-        modalDefaultStyles.classNames.windowCloseButtonStyle,
-      iFrameStyle:
-        this.modalConfig?.classNames?.iFrameStyle ||
-        modalDefaultStyles.classNames.iFrameStyle,
-      modalVisible:
-        this.modalConfig?.classNames?.modalVisible ||
-        modalDefaultStyles.classNames.modalVisible,
-      modalTranslucentBackground:
-        this.modalConfig?.classNames?.modalTranslucentBackground ||
-        modalDefaultStyles.classNames.modalTranslucentBackground,
-      footerStyle:
-        this.modalConfig?.classNames?.footerStyle ||
-        modalDefaultStyles.classNames.footerStyle,
-      footerLogoStyle:
-        this.modalConfig?.classNames?.footerLogoStyle ||
-        modalDefaultStyles.classNames.footerLogoStyle,
-    };
+    return computeClassNames(
+      this.modalConfig.classNames,
+      modalDefaultStyles.classNames,
+    );
   }
 
   private getModalStyle(): Required<ModalSurveyStyleConfig> {

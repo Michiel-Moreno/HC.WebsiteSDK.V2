@@ -138,17 +138,71 @@ describe('ButtonTriggerSurveyConfigValidator', () => {
   });
 
   describe('Validation with optional fields', () => {
-    test('should pass validation regardless of other fields if onTrigger is valid', () => {
+    test('should validate optional fields when provided', () => {
       const config = {
         onTrigger: noop,
         position: 'invalid-position',
         stylePreset: 'invalid-preset',
-        text: 12345,
       } as unknown as ButtonTriggerSurveyConfig;
 
-      // Validator only checks onTrigger - other fields are validated at runtime
+      // Validator now checks optional fields as well
       const errors = validator.validate(config);
-      expect(Object.keys(errors).length).toBe(0);
+      expect(Object.keys(errors).length).toBeGreaterThan(0);
+      expect(errors.positionIsValid).toBeDefined();
+      expect(errors.stylePresetIsValid).toBeDefined();
+    });
+
+    test('should fail validation for invalid position', () => {
+      const config = {
+        onTrigger: noop,
+        position: 'invalid',
+      } as unknown as ButtonTriggerSurveyConfig;
+
+      const errors = validator.validate(config);
+      expect(errors.positionIsValid).toBeDefined();
+    });
+
+    test('should fail validation for invalid stylePreset', () => {
+      const config = {
+        onTrigger: noop,
+        stylePreset: 'invalid',
+      } as unknown as ButtonTriggerSurveyConfig;
+
+      const errors = validator.validate(config);
+      expect(errors.stylePresetIsValid).toBeDefined();
+    });
+
+    test('should fail validation for non-string containerSelector', () => {
+      const config = {
+        onTrigger: noop,
+        containerSelector: 123,
+      } as unknown as ButtonTriggerSurveyConfig;
+
+      const errors = validator.validate(config);
+      expect(errors.containerSelectorIsString).toBeDefined();
+    });
+
+    test('should fail validation for non-positive zIndex', () => {
+      const config = {
+        onTrigger: noop,
+        zIndex: -100,
+      } as unknown as ButtonTriggerSurveyConfig;
+
+      const errors = validator.validate(config);
+      expect(errors.zIndexIsPositiveNumber).toBeDefined();
+    });
+
+    test('should fail validation for invalid icon type', () => {
+      const config = {
+        onTrigger: noop,
+        icon: 123,
+      } as unknown as ButtonTriggerSurveyConfig;
+
+      const errors = validator.validate(config);
+      expect(errors.iconIsStringOrElement).toBeDefined();
+      expect(errors.iconIsStringOrElement).toBe(
+        'icon must be a string (HTML/SVG) or an Element',
+      );
     });
   });
 });

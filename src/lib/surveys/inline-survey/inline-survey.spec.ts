@@ -983,4 +983,141 @@ describe('InlineSurvey', () => {
       });
     });
   });
+
+  describe('I. DOM Removal Detection Tests', () => {
+    test('should trigger onDestroy when iframe removed from DOM', (done) => {
+      const container = document.createElement('div');
+      container.id = 'survey-container';
+      document.body.appendChild(container);
+
+      const onDestroy = jest.fn(() => {
+        expect(onDestroy).toHaveBeenCalledTimes(1);
+        done();
+      });
+
+      const config: InlineSurveyConfig = {
+        elementSelector: '#survey-container',
+        callbacks: { onDestroy },
+      };
+
+      const survey = new InlineSurvey(mockUrlBuilder, config);
+
+      // Remove iframe directly from container
+      setTimeout(() => {
+        container.removeChild(survey.iFrame);
+      }, 10);
+    });
+
+    test('should trigger onDestroy when container removed from DOM', (done) => {
+      const container = document.createElement('div');
+      container.id = 'survey-container';
+      document.body.appendChild(container);
+
+      const onDestroy = jest.fn(() => {
+        expect(onDestroy).toHaveBeenCalledTimes(1);
+        done();
+      });
+
+      const config: InlineSurveyConfig = {
+        elementSelector: '#survey-container',
+        callbacks: { onDestroy },
+      };
+
+      new InlineSurvey(mockUrlBuilder, config);
+
+      // Remove entire container from DOM
+      setTimeout(() => {
+        document.body.removeChild(container);
+      }, 10);
+    });
+
+    test('should not trigger onDestroy twice if manually destroyed then removed', () => {
+      const container = document.createElement('div');
+      container.id = 'survey-container';
+      document.body.appendChild(container);
+
+      const onDestroy = jest.fn();
+      const config: InlineSurveyConfig = {
+        elementSelector: '#survey-container',
+        callbacks: { onDestroy },
+      };
+
+      const survey = new InlineSurvey(mockUrlBuilder, config);
+
+      // Manually destroy first
+      survey.destroy();
+      expect(onDestroy).toHaveBeenCalledTimes(1);
+
+      // Try to remove from DOM (should not trigger callback again)
+      if (container.contains(survey.iFrame)) {
+        container.removeChild(survey.iFrame);
+      }
+
+      // Wait a bit to ensure no additional callbacks
+      return new Promise<void>((resolve) => {
+        setTimeout(() => {
+          expect(onDestroy).toHaveBeenCalledTimes(1);
+          resolve();
+        }, 50);
+      });
+    });
+
+    test('should clean up observer on manual destroy', () => {
+      const container = document.createElement('div');
+      container.id = 'survey-container';
+      document.body.appendChild(container);
+
+      const onDestroy = jest.fn();
+      const config: InlineSurveyConfig = {
+        elementSelector: '#survey-container',
+        callbacks: { onDestroy },
+      };
+
+      const survey = new InlineSurvey(mockUrlBuilder, config);
+
+      // Manually destroy
+      survey.destroy();
+
+      expect(onDestroy).toHaveBeenCalledTimes(1);
+
+      // Verify observer is cleaned up by checking domRemovalCleanup is undefined
+      expect(survey['domRemovalCleanup']).toBeUndefined();
+    });
+
+    test('should handle rapid create/destroy without memory leaks', () => {
+      const containers: HTMLDivElement[] = [];
+
+      // Create and destroy 100 surveys
+      for (let i = 0; i < 100; i++) {
+        const container = document.createElement('div');
+        container.id = `survey-container-${i}`;
+        document.body.appendChild(container);
+        containers.push(container);
+
+        const onDestroy = jest.fn();
+        const config: InlineSurveyConfig = {
+          elementSelector: `#survey-container-${i}`,
+          callbacks: { onDestroy },
+        };
+
+        const survey = new InlineSurvey(mockUrlBuilder, config);
+
+        // Immediately destroy
+        survey.destroy();
+
+        expect(onDestroy).toHaveBeenCalledTimes(1);
+        expect(survey['domRemovalCleanup']).toBeUndefined();
+      }
+
+      // Clean up containers
+      containers.forEach((container) => {
+        if (document.body.contains(container)) {
+          document.body.removeChild(container);
+        }
+      });
+
+      // Verify all cleaned up
+      expect(document.body.children.length).toBe(0);
+    });
+  });
 });
