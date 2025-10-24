@@ -19,6 +19,9 @@ import { closeIconSvgElementFactory } from './modal-survey.svg-factory';
  * All styles and class names used by the library can be easily overwritten,
  * by passing new values in the configuration object.
  *
+ * **v3.0 Feature**: Automatic DOM removal detection - when the modal is removed from the DOM,
+ * destroy() is called automatically to prevent memory leaks in SPA scenarios.
+ *
  * ### Modal structure
  *
  * The structure of the modal can be described as follows:
@@ -68,6 +71,28 @@ import { closeIconSvgElementFactory } from './modal-survey.svg-factory';
  *    });
  * const modalSurvey = new  hcWebsiteTouchpoint.ModalSurvey(urlBuilder, {});
  * </script>
+ * ```
+ *
+ * ### Example (automatic cleanup in SPA - v3.0+)
+ * ```typescript
+ * // React component example
+ * function SurveyModal({ show }) {
+ *   useEffect(() => {
+ *     if (show) {
+ *       const modal = new ModalSurvey(urlBuilder, {
+ *         callbacks: {
+ *           onDestroy: () => console.log('Auto-cleanup completed')
+ *         }
+ *       });
+ *       modal.show();
+ *
+ *       // When component unmounts, modal is automatically destroyed
+ *       // No need to call modal.destroy() manually!
+ *     }
+ *   }, [show]);
+ *
+ *   return null;
+ * }
  * ```
  *
  * @category Surveys
@@ -187,6 +212,41 @@ export class ModalSurvey extends BaseSurvey<ModalSurveyConfig> {
   /**
    * Destroy modal and clean up all event listeners
    * Removes modal from DOM and prevents memory leaks
+   *
+   * **v3.0+**: Automatically called when modal element is removed from DOM
+   * Safe to call multiple times (idempotent)
+   *
+   * Cleans up:
+   * - DOM elements
+   * - Event listeners (keyboard, mouse, focus trap)
+   * - PostMessage listeners
+   * - DOM removal observer
+   * - Restores focus to previous element
+   *
+   * @example
+   * ```typescript
+   * // Manual cleanup
+   * const modal = new ModalSurvey(urlBuilder, {});
+   * modal.show();
+   * // ... later
+   * modal.destroy(); // Clean up manually
+   * ```
+   *
+   * @example
+   * ```typescript
+   * // Automatic cleanup (v3.0+)
+   * const modal = new ModalSurvey(urlBuilder, {
+   *   callbacks: {
+   *     onDestroy: () => {
+   *       console.log('Modal automatically cleaned up!');
+   *     }
+   *   }
+   * });
+   * modal.show();
+   *
+   * // Later, removing from DOM triggers automatic cleanup
+   * modal.modalContainer.remove(); // destroy() called automatically
+   * ```
    */
   public destroy(): void {
     // Clean up DOM removal observer

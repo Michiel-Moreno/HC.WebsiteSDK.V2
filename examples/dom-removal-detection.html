@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DOM Removal Detection Example - Hello Customer SDK v3.0</title>
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+          Oxygen, Ubuntu, Cantarell, sans-serif;
+        max-width: 800px;
+        margin: 50px auto;
+        padding: 20px;
+        background: #f5f5f5;
+      }
+      .container {
+        background: white;
+        padding: 40px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      h1 {
+        color: #333;
+        margin-bottom: 10px;
+      }
+      .subtitle {
+        color: #666;
+        margin-bottom: 30px;
+      }
+      .info-box {
+        background: #fff3e0;
+        border-left: 4px solid #ff9800;
+        padding: 15px;
+        margin: 20px 0;
+      }
+      .success-box {
+        background: #e8f5e9;
+        border-left: 4px solid #4caf50;
+        padding: 15px;
+        margin: 20px 0;
+        display: none;
+      }
+      button {
+        background: #4caf50;
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        font-size: 16px;
+        border-radius: 4px;
+        cursor: pointer;
+        margin-right: 10px;
+        margin-bottom: 10px;
+      }
+      button:hover {
+        background: #45a049;
+      }
+      button.danger {
+        background: #f44336;
+      }
+      button.danger:hover {
+        background: #d32f2f;
+      }
+      #log {
+        background: #263238;
+        color: #4caf50;
+        padding: 15px;
+        border-radius: 4px;
+        font-family: 'Courier New', monospace;
+        font-size: 12px;
+        max-height: 300px;
+        overflow-y: auto;
+        margin-top: 20px;
+      }
+      .log-entry {
+        margin: 5px 0;
+      }
+      #modal-container {
+        /* Container for the modal - will be removed to demonstrate auto-cleanup */
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🔥 DOM Removal Detection Demo</h1>
+      <p class="subtitle">
+        v3.0 Feature: Automatic cleanup prevents memory leaks in SPAs
+      </p>
+
+      <!-- Info box explaining the feature -->
+      <div class="info-box">
+        <strong>✨ What's New in v3.0:</strong> When a survey element is removed
+        from the DOM (e.g., during SPA route changes), <code>destroy()</code> is
+        called automatically. This prevents memory leaks without manual cleanup!
+      </div>
+
+      <!-- Success message (shown after demo) -->
+      <div class="success-box" id="success-msg">
+        <strong>✅ Success!</strong> The modal was automatically destroyed when
+        removed from the DOM. Check the console log below to see the cleanup
+        sequence.
+      </div>
+
+      <!-- Demo controls -->
+      <div>
+        <button id="create-modal-btn">1️⃣ Create Modal Survey</button>
+        <button id="show-modal-btn" disabled>2️⃣ Show Modal</button>
+        <button id="remove-dom-btn" class="danger" disabled>
+          3️⃣ Remove from DOM (Triggers Auto-Cleanup)
+        </button>
+      </div>
+
+      <!-- Feature explanation -->
+      <h2>How It Works</h2>
+      <ol>
+        <li><strong>Create Modal:</strong> Instantiate a ModalSurvey</li>
+        <li><strong>Show Modal:</strong> Display the survey to users</li>
+        <li>
+          <strong>Remove from DOM:</strong> Simulate SPA navigation by removing
+          the modal container
+        </li>
+        <li>
+          <strong>Automatic Cleanup:</strong> The SDK detects removal and calls
+          <code>destroy()</code> automatically
+        </li>
+      </ol>
+
+      <h2>Use Cases</h2>
+      <ul>
+        <li>React/Vue/Angular SPA route changes</li>
+        <li>Dynamic component mounting/unmounting</li>
+        <li>Conditional rendering</li>
+        <li>Any scenario where elements are removed from DOM</li>
+      </ul>
+
+      <!-- Console log -->
+      <h2>Console Log</h2>
+      <div id="log"></div>
+    </div>
+
+    <!-- Container where modal will be created (and later removed) -->
+    <div id="modal-container"></div>
+
+    <!-- Include Hello Customer SDK from CDN -->
+    <script src="https://resources.hellocustomer.com/hubfs/HC.WebsiteSDK.V2/website-touchpoint-v2.js"></script>
+
+    <script>
+      // Initialize logger
+      const logDiv = document.getElementById('log');
+      function log(message, color) {
+        const entry = document.createElement('div');
+        entry.className = 'log-entry';
+        entry.style.color = color || '#4caf50';
+        entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+        logDiv.appendChild(entry);
+        logDiv.scrollTop = logDiv.scrollHeight;
+        console.log(message);
+      }
+
+      // Buttons
+      const createBtn = document.getElementById('create-modal-btn');
+      const showBtn = document.getElementById('show-modal-btn');
+      const removeBtn = document.getElementById('remove-dom-btn');
+      const successMsg = document.getElementById('success-msg');
+
+      let modalSurvey = null;
+
+      /**
+       * STEP 1: Create UrlBuilder
+       */
+      const urlBuilder = new hcWebsiteTouchpoint.UrlBuilder({
+        baseUrl: 'https://your-domain.hellocustomer.com',
+        tenantId: 'your-tenant-id',
+        touchPointId: 'your-touchpoint-id',
+        language: 'EN',
+      });
+      log('✅ UrlBuilder created', '#2196f3');
+
+      /**
+       * STEP 2: Create Modal Survey
+       */
+      createBtn.addEventListener('click', function () {
+        log('🔨 Creating ModalSurvey...', '#ff9800');
+
+        modalSurvey = new hcWebsiteTouchpoint.ModalSurvey(urlBuilder, {
+          showByDefault: false,
+          modalContainerSelector: '#modal-container', // Append to our container
+          callbacks: {
+            onShow: function () {
+              log('👁️ Modal shown', '#4caf50');
+            },
+            onHide: function () {
+              log('🙈 Modal hidden', '#9e9e9e');
+            },
+            onDestroy: function () {
+              log(
+                '🗑️ ✨ AUTOMATIC CLEANUP TRIGGERED! destroy() called automatically!',
+                '#ff5722',
+              );
+              log(
+                'Memory leak prevented - all event listeners removed',
+                '#ff5722',
+              );
+              successMsg.style.display = 'block';
+            },
+          },
+        });
+
+        log(
+          '✅ ModalSurvey created and appended to #modal-container',
+          '#4caf50',
+        );
+        createBtn.disabled = true;
+        showBtn.disabled = false;
+      });
+
+      /**
+       * STEP 3: Show Modal
+       */
+      showBtn.addEventListener('click', function () {
+        log('📢 Calling modalSurvey.show()...', '#2196f3');
+        modalSurvey.show();
+        showBtn.disabled = true;
+        removeBtn.disabled = false;
+      });
+
+      /**
+       * STEP 4: Remove Modal from DOM (Simulates SPA navigation)
+       */
+      removeBtn.addEventListener('click', function () {
+        log(
+          '⚠️ Simulating SPA route change - removing modal container from DOM...',
+          '#ff9800',
+        );
+
+        // This simulates what happens in SPAs when you navigate to a different route
+        // In React/Vue/Angular, this happens automatically when components unmount
+        const container = modalSurvey.modalContainer;
+
+        log(
+          '🔍 Modal element exists: ' +
+            (container && container.parentElement ? 'YES' : 'NO'),
+          '#9e9e9e',
+        );
+
+        // Remove the modal's parent container from DOM
+        // In v3.0, this triggers automatic cleanup!
+        if (container && container.parentElement) {
+          container.remove();
+          log('❌ Modal removed from DOM', '#f44336');
+          log('⏳ Waiting for automatic cleanup...', '#ff9800');
+        }
+
+        removeBtn.disabled = true;
+
+        // Check DOM after a short delay
+        setTimeout(function () {
+          const stillExists = document.querySelector('.hello-customer-modal');
+          log(
+            '🔍 Checking if modal still exists in DOM: ' +
+              (stillExists ? 'YES (ERROR!)' : 'NO (SUCCESS!)'),
+            stillExists ? '#f44336' : '#4caf50',
+          );
+          log('', '');
+          log(
+            '💡 In a real SPA, this cleanup happens automatically when:',
+            '#2196f3',
+          );
+          log('   - User navigates to a different route', '#2196f3');
+          log('   - Component unmounts (React/Vue/Angular)', '#2196f3');
+          log('   - Element is conditionally removed', '#2196f3');
+        }, 100);
+      });
+
+      log('👉 Click "Create Modal Survey" to start the demo', '#9e9e9e');
+    </script>
+  </body>
+</html>

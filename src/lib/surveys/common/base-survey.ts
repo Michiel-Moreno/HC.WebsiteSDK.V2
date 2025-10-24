@@ -82,6 +82,39 @@ export abstract class BaseSurvey<TConfig extends BaseSurveyConfig> {
   /**
    * Destroy survey and clean up resources
    * Must be implemented by each survey type
+   *
+   * Safe to call multiple times (idempotent)
+   * Automatically called when survey is removed from DOM (v3.0+)
+   *
+   * @example
+   * ```typescript
+   * const modal = new ModalSurvey(urlBuilder, {
+   *   callbacks: {
+   *     onDestroy: () => console.log('Cleaned up!')
+   *   }
+   * });
+   *
+   * // Manual cleanup
+   * modal.destroy();
+   *
+   * // Or automatic cleanup when removed from DOM (v3.0+)
+   * modal.modalContainer.remove(); // destroy() called automatically
+   * ```
+   *
+   * @example
+   * ```typescript
+   * // SPA scenario - automatic cleanup prevents memory leaks
+   * function showSurvey() {
+   *   const survey = new InlineSurvey(urlBuilder, {
+   *     elementSelector: '#survey-container'
+   *   });
+   * }
+   *
+   * function navigateAway() {
+   *   document.getElementById('survey-container').remove();
+   *   // No need to manually call destroy() - automatic in v3.0!
+   * }
+   * ```
    */
   public abstract destroy(): void;
 
@@ -179,10 +212,32 @@ export abstract class BaseSurvey<TConfig extends BaseSurveyConfig> {
    *
    * @example
    * ```typescript
+   * // Simple message
    * survey.sendMessage({
    *   type: 'prefill',
    *   data: { email: 'user@example.com' }
    * });
+   * ```
+   *
+   * @example
+   * ```typescript
+   * // Update survey context dynamically
+   * function onUserAction(action) {
+   *   survey.sendMessage({
+   *     type: 'context_update',
+   *     action: action,
+   *     timestamp: Date.now()
+   *   });
+   * }
+   * ```
+   *
+   * @example
+   * ```typescript
+   * // With custom origin for security
+   * survey.sendMessage(
+   *   { type: 'ping' },
+   *   'https://custom-survey-domain.com'
+   * );
    * ```
    */
   public sendMessage(data: unknown, targetOrigin?: string): void {
@@ -207,11 +262,15 @@ export abstract class BaseSurvey<TConfig extends BaseSurveyConfig> {
    * Only available for iframe-based surveys (Modal, Inline)
    * Automatically verifies message origin for security
    *
+   * Note: Only one listener supported at a time (calling again replaces previous)
+   * Automatically cleaned up when destroy() is called
+   *
    * @param callback - Function to call when message received
    * @returns Cleanup function to stop listening
    *
    * @example
    * ```typescript
+   * // Basic usage
    * const cleanup = survey.onMessage((data) => {
    *   if (data.type === 'survey_completed') {
    *     console.log('Survey completed!');
@@ -220,6 +279,60 @@ export abstract class BaseSurvey<TConfig extends BaseSurveyConfig> {
    *
    * // Later, clean up
    * cleanup();
+   * ```
+   *
+   * @example
+   * ```typescript
+   * // Google Tag Manager integration
+   * survey.onMessage((data) => {
+   *   window.dataLayer = window.dataLayer || [];
+   *
+   *   if (data.type === 'question_answered') {
+   *     window.dataLayer.push({
+   *       event: 'survey_question_answered',
+   *       questionId: data.questionId,
+   *       answer: data.answer
+   *     });
+   *   }
+   *
+   *   if (data.type === 'survey_submitted') {
+   *     window.dataLayer.push({
+   *       event: 'survey_completed',
+   *       surveyId: data.surveyId
+   *     });
+   *   }
+   * });
+   * ```
+   *
+   * @example
+   * ```typescript
+   * // Advanced analytics with response tracking
+   * const analytics = {
+   *   questionViews: {},
+   *   responses: {},
+   *   startTime: Date.now()
+   * };
+   *
+   * survey.onMessage((data) => {
+   *   switch (data.type) {
+   *     case 'question_shown':
+   *       analytics.questionViews[data.questionId] = Date.now();
+   *       break;
+   *
+   *     case 'question_answered':
+   *       analytics.responses[data.questionId] = {
+   *         answer: data.answer,
+   *         timeSpent: Date.now() - analytics.questionViews[data.questionId]
+   *       };
+   *       break;
+   *
+   *     case 'survey_submitted':
+   *       const totalTime = Date.now() - analytics.startTime;
+   *       console.log('Survey analytics:', { ...analytics, totalTime });
+   *       // Send to your analytics service
+   *       break;
+   *   }
+   * });
    * ```
    */
   public onMessage(callback: (data: unknown) => void): () => void {
@@ -276,6 +389,49 @@ export abstract class BaseSurvey<TConfig extends BaseSurveyConfig> {
    *     respondent: { id: user.id, email: user.email }
    *   }
    * });
+   * ```
+   *
+   * @example
+   * ```typescript
+   * // SPA scenario - update context as user navigates
+   * const survey = new InlineSurvey(urlBuilder, {
+   *   elementSelector: '#feedback-widget'
+   * });
+   *
+   * // User logs in
+   * authService.onLogin((user) => {
+   *   survey.updateAndReload({
+   *     extra: {
+   *       respondent: {
+   *         id: user.id,
+   *         email: user.email,
+   *         name: user.name
+   *       }
+   *     }
+   *   });
+   * });
+   *
+   * // User navigates to different page
+   * router.onNavigate((route) => {
+   *   survey.updateAndReload({
+   *     extra: {
+   *       metadata: {
+   *         currentPage: route.path,
+   *         previousPage: route.from
+   *       }
+   *     }
+   *   });
+   * });
+   * ```
+   *
+   * @example
+   * ```typescript
+   * // Dynamic language switching
+   * function changeLanguage(newLang) {
+   *   survey.updateAndReload({
+   *     language: newLang
+   *   });
+   * }
    * ```
    */
   public updateAndReload(patch: Record<string, unknown>): void {

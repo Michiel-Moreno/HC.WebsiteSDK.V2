@@ -66,7 +66,86 @@ export class WindowSurvey extends BaseSurvey<WindowSurveyConfig> {
   }
 
   /**
-   * Open survey
+   * Open survey in new window or tab
+   *
+   * **v3.0 Feature**: Popup blocker detection with user-friendly error messages
+   *
+   * @throws {CannotOpenWindowException} When popup is blocked by browser
+   *
+   * @example
+   * ```typescript
+   * // Basic usage
+   * const survey = new WindowSurvey(urlBuilder, {
+   *   openNewWindow: true
+   * });
+   * survey.open();
+   * ```
+   *
+   * @example
+   * ```typescript
+   * // With popup blocker error handling (v3.0+)
+   * const survey = new WindowSurvey(urlBuilder, {
+   *   openNewWindow: true,
+   *   callbacks: {
+   *     onError: (error) => {
+   *       // User-friendly error message
+   *       if (error.message.includes('popup blocker')) {
+   *         showNotification({
+   *           type: 'warning',
+   *           title: 'Popup Blocked',
+   *           message: 'Please allow popups for this site to view the survey.',
+   *           actions: [
+   *             {
+   *               label: 'How to enable',
+   *               onClick: () => window.open('/help/enable-popups', '_blank')
+   *             },
+   *             {
+   *               label: 'Try again',
+   *               onClick: () => survey.open()
+   *             }
+   *           ]
+   *         });
+   *       }
+   *     }
+   *   }
+   * });
+   *
+   * try {
+   *   survey.open();
+   * } catch (error) {
+   *   // Error already handled by onError callback
+   * }
+   * ```
+   *
+   * @example
+   * ```typescript
+   * // Button click handler with error handling
+   * document.getElementById('feedback-btn').addEventListener('click', () => {
+   *   const survey = new WindowSurvey(urlBuilder, {
+   *     callbacks: {
+   *       onError: (error) => {
+   *         const message = document.createElement('div');
+   *         message.className = 'alert alert-warning';
+   *         message.innerHTML = `
+   *           <strong>Popup Blocked!</strong>
+   *           <p>Please allow popups and click the button again.</p>
+   *           <button onclick="this.parentElement.remove()">Dismiss</button>
+   *         `;
+   *         document.body.appendChild(message);
+   *       },
+   *       onShow: () => {
+   *         console.log('Survey opened successfully!');
+   *       }
+   *     }
+   *   });
+   *
+   *   try {
+   *     survey.open();
+   *   } catch (error) {
+   *     // Handled by onError callback
+   *   }
+   * });
+   * ```
    */
   public open(): void {
     if (!this.quarantineService.isUnderQuarantine()) {

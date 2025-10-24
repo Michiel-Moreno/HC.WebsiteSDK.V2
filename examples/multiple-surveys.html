@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Multiple Surveys Example - Hello Customer SDK v3.0</title>
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+          Oxygen, Ubuntu, Cantarell, sans-serif;
+        max-width: 1000px;
+        margin: 50px auto;
+        padding: 20px;
+        background: #f5f5f5;
+      }
+      .container {
+        background: white;
+        padding: 40px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      h1 {
+        color: #333;
+        margin-bottom: 10px;
+      }
+      .subtitle {
+        color: #666;
+        margin-bottom: 30px;
+      }
+      .info-box {
+        background: #e8f5e9;
+        border-left: 4px solid #4caf50;
+        padding: 15px;
+        margin: 20px 0;
+      }
+      .survey-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+        margin: 30px 0;
+      }
+      .survey-card {
+        border: 2px solid #e0e0e0;
+        border-radius: 8px;
+        padding: 20px;
+        background: #fafafa;
+      }
+      .survey-card h3 {
+        margin-top: 0;
+        color: #333;
+      }
+      button {
+        background: #2196f3;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        font-size: 14px;
+        border-radius: 4px;
+        cursor: pointer;
+        margin-right: 10px;
+        margin-top: 10px;
+      }
+      button:hover {
+        background: #1976d2;
+      }
+      button.success {
+        background: #4caf50;
+      }
+      button.success:hover {
+        background: #45a049;
+      }
+      button.warning {
+        background: #ff9800;
+      }
+      button.warning:hover {
+        background: #f57c00;
+      }
+      #inline-survey {
+        width: 100%;
+        min-height: 400px;
+        border: 2px dashed #e0e0e0;
+        border-radius: 8px;
+        margin-top: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🎯 Multiple Surveys on One Page</h1>
+      <p class="subtitle">
+        Demonstrating ModalSurvey + InlineSurvey + ButtonTriggerSurvey together
+      </p>
+
+      <!-- Info box -->
+      <div class="info-box">
+        <strong>✨ v3.0 Performance:</strong> CSS deduplication ensures that
+        adding multiple surveys doesn't slow down your page. The first survey
+        adds CSS rules, subsequent surveys reuse them!
+      </div>
+
+      <!-- Survey controls -->
+      <div class="survey-grid">
+        <!-- Modal Survey Card -->
+        <div class="survey-card">
+          <h3>1️⃣ Modal Survey</h3>
+          <p>Overlay modal with survey iframe</p>
+          <button id="show-modal" class="success">Show Modal</button>
+          <button id="hide-modal">Hide Modal</button>
+          <p><small>Quarantine: Independent for each touchpoint</small></p>
+        </div>
+
+        <!-- Inline Survey Card -->
+        <div class="survey-card">
+          <h3>2️⃣ Inline Survey</h3>
+          <p>Embedded iframe in container below</p>
+          <button id="show-inline" class="success">Show Inline</button>
+          <button id="hide-inline">Hide Inline</button>
+          <p><small>Embedded in #inline-survey container</small></p>
+        </div>
+
+        <!-- Button Trigger Card -->
+        <div class="survey-card">
+          <h3>3️⃣ Button Trigger</h3>
+          <p>Floating feedback button (v3.0 feature)</p>
+          <button id="show-button" class="success">Show Button</button>
+          <button id="hide-button">Hide Button</button>
+          <p><small>Bottom-right corner, triggers modal</small></p>
+        </div>
+      </div>
+
+      <!-- Inline survey container -->
+      <h2>Inline Survey Container</h2>
+      <div id="inline-survey"></div>
+
+      <!-- Features -->
+      <h2>Features Demonstrated</h2>
+      <ul>
+        <li>✅ Multiple survey types on same page</li>
+        <li>✅ Independent quarantine management</li>
+        <li>✅ CSS deduplication (no performance impact)</li>
+        <li>✅ No interference between surveys</li>
+        <li>✅ ButtonTriggerSurvey triggering ModalSurvey</li>
+      </ul>
+    </div>
+
+    <!-- Include Hello Customer SDK from CDN -->
+    <script src="https://resources.hellocustomer.com/hubfs/HC.WebsiteSDK.V2/website-touchpoint-v2.js"></script>
+
+    <script>
+      // Check if ButtonTriggerSurvey is available (v3.0+ feature)
+      if (!hcWebsiteTouchpoint.ButtonTriggerSurvey) {
+        alert(
+          '⚠️ ButtonTriggerSurvey is not available. This is a v3.0 feature.\n\n' +
+            'If using local build: Run "npm run build" first.\n' +
+            "If using CDN: Ensure you're using v3.0+ of the SDK.",
+        );
+        console.error(
+          'ButtonTriggerSurvey not found. This example requires v3.0+',
+        );
+      }
+    </script>
+
+    <script>
+      /**
+       * Create UrlBuilder instances for different surveys
+       * In production, you might use different touchPointIds for different surveys
+       */
+
+      // UrlBuilder for Modal Survey
+      const urlBuilderModal = new hcWebsiteTouchpoint.UrlBuilder({
+        baseUrl: 'https://your-domain.hellocustomer.com',
+        tenantId: 'your-tenant-id',
+        touchPointId: 'modal-touchpoint-id', // Different touchpoint
+        language: 'EN',
+        extra: {
+          metadata: { surveyType: 'modal' },
+        },
+      });
+
+      // UrlBuilder for Inline Survey
+      const urlBuilderInline = new hcWebsiteTouchpoint.UrlBuilder({
+        baseUrl: 'https://your-domain.hellocustomer.com',
+        tenantId: 'your-tenant-id',
+        touchPointId: 'inline-touchpoint-id', // Different touchpoint
+        language: 'EN',
+        extra: {
+          metadata: { surveyType: 'inline' },
+        },
+      });
+
+      /**
+       * 1️⃣ Create Modal Survey
+       */
+      const modalSurvey = new hcWebsiteTouchpoint.ModalSurvey(urlBuilderModal, {
+        showByDefault: false,
+        closeButton: true,
+        closeOnEscape: true,
+        closeOnBackgroundClick: true,
+        callbacks: {
+          onShow: () => console.log('Modal shown'),
+          onHide: () => console.log('Modal hidden'),
+          onDestroy: () => console.log('Modal destroyed'),
+        },
+        quarantineConfig: {
+          period: 7, // 7 days quarantine
+        },
+      });
+
+      /**
+       * 2️⃣ Create Inline Survey
+       */
+      const inlineSurvey = new hcWebsiteTouchpoint.InlineSurvey(
+        urlBuilderInline,
+        {
+          elementSelector: '#inline-survey',
+          fillContainer: true,
+          callbacks: {
+            onShow: () => console.log('Inline shown'),
+            onHide: () => console.log('Inline hidden'),
+            onLoad: (iframe) => console.log('Inline loaded:', iframe),
+          },
+          quarantineConfig: {
+            period: 3, // 3 days quarantine (independent of modal)
+          },
+        },
+      );
+
+      /**
+       * 3️⃣ Create Button Trigger Survey (v3.0 feature)
+       * This button will trigger the modal survey when clicked
+       */
+      const buttonTrigger = new hcWebsiteTouchpoint.ButtonTriggerSurvey({
+        position: 'bottom-right',
+        stylePreset: 'pill-button',
+        text: 'Feedback',
+        language: 'EN',
+        onTrigger: function () {
+          console.log('Button clicked - showing modal');
+          modalSurvey.show();
+        },
+        callbacks: {
+          onShow: () => console.log('Button shown'),
+          onHide: () => console.log('Button hidden'),
+        },
+        quarantineConfig: {
+          period: 1, // 1 day quarantine for button
+        },
+        showByDefault: false, // Start hidden, show on button click
+      });
+
+      /**
+       * Wire up control buttons
+       */
+
+      // Modal controls
+      document.getElementById('show-modal').addEventListener('click', () => {
+        modalSurvey.show();
+      });
+      document.getElementById('hide-modal').addEventListener('click', () => {
+        modalSurvey.hide();
+      });
+
+      // Inline controls
+      document.getElementById('show-inline').addEventListener('click', () => {
+        inlineSurvey.show();
+      });
+      document.getElementById('hide-inline').addEventListener('click', () => {
+        inlineSurvey.hide();
+      });
+
+      // Button trigger controls
+      document.getElementById('show-button').addEventListener('click', () => {
+        buttonTrigger.show();
+      });
+      document.getElementById('hide-button').addEventListener('click', () => {
+        buttonTrigger.hide();
+      });
+
+      /**
+       * Check quarantine status for all surveys
+       */
+      console.log('Quarantine Status:');
+      console.log('- Modal:', modalSurvey.getQuarantineStatus());
+      console.log('- Inline:', inlineSurvey.getQuarantineStatus());
+      console.log('- Button:', buttonTrigger.getQuarantineStatus());
+
+      /**
+       * v3.0 Performance Note:
+       * Even with 3 surveys on the page, CSS deduplication ensures
+       * only one set of styles is added to the <head>.
+       * Check DevTools → Elements → <head> to verify!
+       */
+      console.log(
+        '💡 TIP: Check browser DevTools → Elements → <head> to see CSS deduplication in action!',
+      );
+    </script>
+  </body>
+</html>

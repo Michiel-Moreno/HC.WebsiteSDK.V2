@@ -15,6 +15,11 @@ import { ButtonTriggerSurveyConfigValidator } from './button-trigger-survey.conf
 /**
  * Creates a floating feedback button that can trigger surveys or custom callbacks
  *
+ * **v3.0 Features**:
+ * - Automatic DOM removal detection for memory leak prevention
+ * - Comprehensive config validation with helpful warnings
+ * - Smart position + stylePreset compatibility checks
+ *
  * ### Example (ES module)
  * ```js
  * import { UrlBuilder, ModalSurvey, ButtonTriggerSurvey } from '@hello-customer/website-touchpoint-v2'
@@ -48,6 +53,31 @@ import { ButtonTriggerSurveyConfigValidator } from './button-trigger-survey.conf
  *     onTrigger: () => modalSurvey.show()
  *   });
  * </script>
+ * ```
+ *
+ * ### Example (validation warnings - v3.0+)
+ * ```typescript
+ * // Warning: 'side-tab' works best at 'left-center' or 'right-center'
+ * const button = new ButtonTriggerSurvey({
+ *   position: 'bottom-right',  // Corner position
+ *   stylePreset: 'side-tab',   // Side preset
+ *   onTrigger: () => {}
+ * });
+ * // Console: "[Hello Customer SDK] 'side-tab' preset works best at
+ * //  'left-center' or 'right-center'. Current position: 'bottom-right'..."
+ * ```
+ *
+ * ### Example (circle-button validation - v3.0+)
+ * ```typescript
+ * // Warning: circle-button needs an icon
+ * const button = new ButtonTriggerSurvey({
+ *   position: 'bottom-left',
+ *   stylePreset: 'circle-button',
+ *   text: 'Feedback',  // Text provided but no icon
+ *   onTrigger: () => {}
+ * });
+ * // Console: "[Hello Customer SDK] circle-button preset works best
+ * //  with an icon. Consider adding an icon..."
  * ```
  *
  * @category Surveys
@@ -176,6 +206,44 @@ export class ButtonTriggerSurvey extends BaseSurvey<ButtonTriggerSurveyConfig> {
   /**
    * Destroy button and remove from DOM
    * Cleans up event listeners and internal references to prevent memory leaks
+   *
+   * **v3.0+**: Automatically called when button element is removed from DOM
+   * Safe to call multiple times (idempotent)
+   *
+   * Cleans up:
+   * - Button container from DOM
+   * - Event listeners
+   * - DOM removal observer
+   *
+   * @example
+   * ```typescript
+   * // Manual cleanup
+   * const button = new ButtonTriggerSurvey({
+   *   position: 'bottom-right',
+   *   text: 'Feedback',
+   *   onTrigger: () => modal.show()
+   * });
+   * // ... later
+   * button.destroy();
+   * ```
+   *
+   * @example
+   * ```typescript
+   * // Automatic cleanup (v3.0+)
+   * const button = new ButtonTriggerSurvey({
+   *   position: 'bottom-right',
+   *   text: 'Feedback',
+   *   onTrigger: () => modal.show(),
+   *   callbacks: {
+   *     onDestroy: () => {
+   *       console.log('Button auto-cleaned!');
+   *     }
+   *   }
+   * });
+   *
+   * // Later, removing from DOM triggers automatic cleanup
+   * button.container.remove(); // destroy() called automatically
+   * ```
    */
   public destroy(): void {
     // Prevent double-destroy

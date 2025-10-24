@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Basic Modal Survey Example - Hello Customer SDK v3.0</title>
+    <style>
+      /* Basic page styling */
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+          Oxygen, Ubuntu, Cantarell, sans-serif;
+        max-width: 800px;
+        margin: 50px auto;
+        padding: 20px;
+        background: #f5f5f5;
+      }
+      .container {
+        background: white;
+        padding: 40px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      h1 {
+        color: #333;
+        margin-bottom: 10px;
+      }
+      .subtitle {
+        color: #666;
+        margin-bottom: 30px;
+      }
+      .info-box {
+        background: #e3f2fd;
+        border-left: 4px solid #2196f3;
+        padding: 15px;
+        margin: 20px 0;
+      }
+      button {
+        background: #2196f3;
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        font-size: 16px;
+        border-radius: 4px;
+        cursor: pointer;
+        margin-right: 10px;
+      }
+      button:hover {
+        background: #1976d2;
+      }
+      .code {
+        background: #f5f5f5;
+        padding: 10px;
+        border-radius: 4px;
+        font-family: 'Courier New', monospace;
+        font-size: 14px;
+        margin: 10px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Basic Modal Survey Example</h1>
+      <p class="subtitle">Simple ModalSurvey demonstration using CDN</p>
+
+      <!-- Info box explaining the example -->
+      <div class="info-box">
+        <strong>📝 Note:</strong> Replace <code>baseUrl</code>,
+        <code>tenantId</code>, and <code>touchPointId</code>
+        with your actual Hello Customer values to see a real survey.
+      </div>
+
+      <!-- Buttons to interact with the modal -->
+      <div>
+        <button id="show-btn">Show Modal Survey</button>
+        <button id="hide-btn">Hide Modal Survey</button>
+      </div>
+
+      <!-- Configuration info -->
+      <h2 style="margin-top: 40px">Configuration</h2>
+      <div class="code">
+        baseUrl: 'https://your-domain.hellocustomer.com'<br />
+        tenantId: 'your-tenant-id'<br />
+        touchPointId: 'your-touchpoint-id'<br />
+        language: 'EN'
+      </div>
+
+      <!-- Feature highlights -->
+      <h2>Features Demonstrated</h2>
+      <ul>
+        <li>Creating a UrlBuilder with survey configuration</li>
+        <li>Instantiating a ModalSurvey</li>
+        <li>Showing and hiding the modal programmatically</li>
+        <li>Using lifecycle callbacks (onShow, onHide)</li>
+      </ul>
+    </div>
+
+    <!-- Include Hello Customer SDK from CDN -->
+    <script src="https://resources.hellocustomer.com/hubfs/HC.WebsiteSDK.V2/website-touchpoint-v2.js"></script>
+
+    <script>
+      /**
+       * STEP 1: Create UrlBuilder with your survey configuration
+       * Replace these placeholder values with your actual Hello Customer credentials
+       */
+      const urlBuilder = new hcWebsiteTouchpoint.UrlBuilder({
+        baseUrl: 'https://your-domain.hellocustomer.com', // Replace with your domain
+        tenantId: 'your-tenant-id', // Replace with your tenant ID
+        touchPointId: 'your-touchpoint-id', // Replace with your touchpoint ID
+        language: 'EN', // Survey language
+        extra: {
+          // Optional: Add custom metadata
+          metadata: {
+            page: 'basic-modal-example',
+            source: 'sdk-v3-demo',
+          },
+        },
+      });
+
+      /**
+       * STEP 2: Create ModalSurvey instance with optional configuration
+       */
+      const modalSurvey = new hcWebsiteTouchpoint.ModalSurvey(urlBuilder, {
+        // Show modal by default? (false = hidden on load)
+        showByDefault: false,
+
+        // Enable close button in top-right corner
+        closeButton: true,
+
+        // Allow closing by pressing ESC key
+        closeOnEscape: true,
+
+        // Allow closing by clicking the background
+        closeOnBackgroundClick: true,
+
+        // Enable translucent dark background
+        translucentBackground: true,
+
+        // Lifecycle callbacks (v3.0 feature)
+        callbacks: {
+          onShow: function () {
+            console.log('✅ Modal survey shown!');
+          },
+          onHide: function () {
+            console.log('❌ Modal survey hidden');
+          },
+          onClose: function () {
+            console.log('🚪 Modal closed by user');
+          },
+          onLoad: function (iframe) {
+            console.log('📄 Survey iframe loaded:', iframe);
+          },
+          onError: function (error) {
+            console.error('⚠️ Survey error:', error);
+          },
+          onDestroy: function () {
+            console.log('🗑️ Modal destroyed');
+          },
+        },
+
+        // Quarantine configuration (prevent reshowing for N days)
+        quarantineConfig: {
+          period: 7, // Don't show again for 7 days after viewing
+        },
+      });
+
+      /**
+       * STEP 3: Wire up buttons to show/hide the modal
+       */
+      document
+        .getElementById('show-btn')
+        .addEventListener('click', function () {
+          modalSurvey.show();
+        });
+
+      document
+        .getElementById('hide-btn')
+        .addEventListener('click', function () {
+          modalSurvey.hide();
+        });
+
+      /**
+       * OPTIONAL: Check quarantine status
+       */
+      if (modalSurvey.isQuarantined()) {
+        const status = modalSurvey.getQuarantineStatus();
+        console.log(
+          `Survey is quarantined for ${status.remainingDays} more days`,
+        );
+      }
+
+      /**
+       * v3.0 Feature: Automatic cleanup when modal is removed from DOM
+       * No need to manually call destroy() in SPAs!
+       */
+      console.log(
+        '💡 TIP: In v3.0, destroy() is called automatically when the modal is removed from the DOM.',
+      );
+    </script>
+  </body>
+</html>
