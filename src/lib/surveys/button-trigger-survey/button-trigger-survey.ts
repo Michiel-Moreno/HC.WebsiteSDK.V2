@@ -1,11 +1,12 @@
 import { InvalidQuerySelectorException } from '../../core/exceptions/invalid-query-selector.exception';
 import { StyledElementFactory } from '../../core/factories/styled-element.factory';
+import { isRTL } from '../../core/utils/rtl.util';
 import { trueByDefault } from '../../core/utils/true-by-default.util';
 import { BaseSurvey } from '../common/base-survey';
 
 import { ButtonPosition } from './button-position.type';
 import { ButtonStylePreset } from './button-style-preset.type';
-import { getButtonText, isRTL } from './button-translations';
+import { getButtonText } from './button-translations';
 import { ButtonTriggerSurveyConfig } from './button-trigger-survey-config.interface';
 import * as defaults from './button-trigger-survey-defaults.style';
 import { ButtonTriggerSurveyConfigValidator } from './button-trigger-survey.config-validator';

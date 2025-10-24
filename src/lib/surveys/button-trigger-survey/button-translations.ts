@@ -60,11 +60,6 @@ export const BUTTON_TEXT_TRANSLATIONS: { [key: string]: string } = {
 export const DEFAULT_BUTTON_TEXT = 'Feedback';
 
 /**
- * List of languages that require right-to-left (RTL) text direction
- */
-export const RTL_LANGUAGES = ['AR'];
-
-/**
  * Get button text for a given language
  *
  * @param language - ISO 639-1 language code (case-insensitive)
@@ -85,25 +80,4 @@ export function getButtonText(language: string | undefined): string {
 
   const upperLang = language.toUpperCase();
   return BUTTON_TEXT_TRANSLATIONS[upperLang] || DEFAULT_BUTTON_TEXT;
-}
-
-/**
- * Check if a language requires right-to-left (RTL) text direction
- *
- * @param language - ISO 639-1 language code (case-insensitive)
- * @returns true if language is RTL, false otherwise
- *
- * @example
- * ```typescript
- * isRTL('AR')  // Returns true (Arabic)
- * isRTL('EN')  // Returns false
- * isRTL(undefined)  // Returns false
- * ```
- */
-export function isRTL(language: string | undefined): boolean {
-  if (!language) {
-    return false;
-  }
-
-  return RTL_LANGUAGES.includes(language.toUpperCase());
 }
