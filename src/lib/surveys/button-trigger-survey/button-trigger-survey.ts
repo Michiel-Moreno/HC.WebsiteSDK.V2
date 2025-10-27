@@ -464,7 +464,23 @@ export class ButtonTriggerSurvey extends BaseSurvey<ButtonTriggerSurveyConfig> {
       ...(this.config.zIndex && { zIndex: this.config.zIndex.toString() }),
     };
 
-    const containerPositionStyle = positionStyle;
+    let containerPositionStyle = positionStyle;
+
+    // Banner requires full-width container positioning for edge-to-edge display
+    if (
+      this.stylePreset === 'banner' &&
+      (this.position === 'top-center' || this.position === 'bottom-center')
+    ) {
+      // Override container position to span full viewport width
+      const modifiedPositionStyle: Partial<CSSStyleDeclaration> = {
+        ...containerPositionStyle,
+        left: '0',
+        right: '0',
+      };
+      // Remove the centering transform since we want edge-to-edge
+      delete modifiedPositionStyle.transform;
+      containerPositionStyle = modifiedPositionStyle;
+    }
 
     // Use position-aware button style that automatically adjusts for odd combinations
     const buttonStyle = {

@@ -160,7 +160,10 @@ export const stylePresets: Record<ButtonStylePreset, ButtonTriggerStyleConfig> =
     },
     banner: {
       buttonStyle: {
-        width: '100%',
+        width: '100vw',
+        left: '0',
+        right: '0',
+        margin: '0',
         padding: '12px 24px',
         backgroundColor: '#003161',
         color: '#ffffff',

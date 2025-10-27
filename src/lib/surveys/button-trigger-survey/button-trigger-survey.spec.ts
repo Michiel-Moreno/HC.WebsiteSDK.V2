@@ -1595,26 +1595,45 @@ describe('ButtonTriggerSurvey', () => {
     });
 
     test('should keep full width for banner at top-center', () => {
-      const button = new ButtonTriggerSurvey({
+      const survey = new ButtonTriggerSurvey({
         onTrigger: noop,
         position: 'top-center',
         stylePreset: 'banner',
       });
 
-      const computedStyle = window.getComputedStyle(button.button);
-      // In JSDOM, 100% width gets computed, check it's defined
-      expect(computedStyle.width).toBeDefined();
+      // Verify container has edge-to-edge positioning via inline styles
+      expect(survey.container.style.left).toBe('0px');
+      expect(survey.container.style.right).toBe('0px');
+      expect(survey.container.style.top).toBe('0px');
+      // Transform should be removed (not present in inline styles)
+      expect(survey.container.style.transform).toBe('');
+
+      // Verify button exists and is properly configured
+      expect(survey.button).toBeDefined();
+      expect(survey.button.classList.contains(defaults.classNames.button)).toBe(
+        true,
+      );
     });
 
     test('should keep full width for banner at bottom-center', () => {
-      const button = new ButtonTriggerSurvey({
+      const survey = new ButtonTriggerSurvey({
         onTrigger: noop,
         position: 'bottom-center',
         stylePreset: 'banner',
       });
 
-      const computedStyle = window.getComputedStyle(button.button);
-      expect(computedStyle.width).toBeDefined();
+      // Verify container has edge-to-edge positioning via inline styles
+      expect(survey.container.style.left).toBe('0px');
+      expect(survey.container.style.right).toBe('0px');
+      expect(survey.container.style.bottom).toBe('0px');
+      // Transform should be removed (not present in inline styles)
+      expect(survey.container.style.transform).toBe('');
+
+      // Verify button exists and is properly configured
+      expect(survey.button).toBeDefined();
+      expect(survey.button.classList.contains(defaults.classNames.button)).toBe(
+        true,
+      );
     });
 
     test('should warn when using banner at corner positions', () => {
