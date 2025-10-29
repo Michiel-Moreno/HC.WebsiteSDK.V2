@@ -22,6 +22,13 @@ export class UrlFactory {
   }
 
   /**
+   * Get configured language
+   */
+  public getLanguage(): string {
+    return this.config.language || 'EN';
+  }
+
+  /**
    * Get full url with all attached params
    */
   public getUrlWithParams(): string {
