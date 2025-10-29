@@ -172,6 +172,51 @@ export class StyledElementFactory<T extends HTMLElement> {
   }
 
   /**
+   * Remove a specific CSS class from the style element and cache.
+   * Used for cleanup when surveys are destroyed and need to clean up their styles.
+   *
+   * @param className - Class name to remove (e.g., 'my-button', 'my-button:hover')
+   */
+  public static removeStyleClass(className: string): void {
+    // Remove from cache
+    if (StyledElementFactory.appendedClasses.has(className)) {
+      StyledElementFactory.appendedClasses.delete(className);
+    }
+
+    // Get the style element
+    const element = document.querySelector(
+      `[${StyledElementFactory.STYLES_ATTRIBUTE}]`,
+    ) as HTMLStyleElement;
+
+    if (!element) {
+      return;
+    }
+
+    // Parse and filter out the target class
+    const styleContent = element.innerHTML;
+
+    // Create regex to match the specific class (including pseudo-selectors)
+    // Handles: .classname{...} and .classname:hover{...}
+    const escapedClassName = className.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const classRegex = new RegExp(`\\.${escapedClassName}\\s*\\{[^}]*\\}`, 'g');
+
+    // Remove the class definition
+    const newContent = styleContent.replace(classRegex, '');
+    element.innerHTML = newContent;
+  }
+
+  /**
+   * Check if a style class has been appended.
+   * Useful for testing and debugging.
+   *
+   * @param className - Class name to check
+   * @returns true if class exists in cache
+   */
+  public static hasStyleClass(className: string): boolean {
+    return StyledElementFactory.appendedClasses.has(className);
+  }
+
+  /**
    * Clear style cache and remove all appended styles.
    * Useful for testing and cleanup scenarios.
    *

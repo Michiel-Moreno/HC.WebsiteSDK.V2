@@ -99,6 +99,12 @@ export class ButtonTriggerSurvey extends BaseSurvey<ButtonTriggerSurveyConfig> {
     buttonVisible: string;
     buttonHidden: string;
   };
+  /**
+   * Track which CSS classes this instance added to the global style element
+   * Used for cleanup in destroy() to prevent style leakage between button instances
+   * @private
+   */
+  private readonly appliedStyleClasses: Set<string> = new Set();
 
   constructor(config: ButtonTriggerSurveyConfig) {
     // Set defaults before calling super
@@ -205,15 +211,20 @@ export class ButtonTriggerSurvey extends BaseSurvey<ButtonTriggerSurveyConfig> {
 
   /**
    * Destroy button and remove from DOM
-   * Cleans up event listeners and internal references to prevent memory leaks
+   * Cleans up event listeners, styles, and internal references to prevent memory leaks
    *
    * **v3.0+**: Automatically called when button element is removed from DOM
    * Safe to call multiple times (idempotent)
    *
    * Cleans up:
    * - Button container from DOM
+   * - CSS styles added by this instance (from global style element)
    * - Event listeners
    * - DOM removal observer
+   *
+   * **Style Cleanup (Important)**: This method removes CSS classes that were added
+   * to the global `<style>` tag by this button instance. This prevents style conflicts
+   * when switching between different button presets (e.g., pill-button → circle-button).
    *
    * @example
    * ```typescript
@@ -259,6 +270,12 @@ export class ButtonTriggerSurvey extends BaseSurvey<ButtonTriggerSurveyConfig> {
 
     // Remove all tracked event listeners
     this.cleanupEventListeners();
+
+    // Clean up styles added by this instance
+    this.appliedStyleClasses.forEach((className) => {
+      StyledElementFactory.removeStyleClass(className);
+    });
+    this.appliedStyleClasses.clear();
 
     // Remove from DOM
     if (this.containerHandle && this.containerHandle.parentElement) {
@@ -424,17 +441,23 @@ export class ButtonTriggerSurvey extends BaseSurvey<ButtonTriggerSurveyConfig> {
   private initStyles(): void {
     // Add animation styles
     if (trueByDefault(this.config.enableAnimation)) {
+      const visibleClass = this.classNames.buttonVisible;
+      const hiddenClass = this.classNames.buttonHidden;
+
       StyledElementFactory.appendCssClassToHeader(
         defaults.animationStyles.visible,
-        this.classNames.buttonVisible,
+        visibleClass,
       );
+      this.appliedStyleClasses.add(visibleClass);
+
       StyledElementFactory.appendCssClassToHeader(
         defaults.animationStyles.hidden,
-        this.classNames.buttonHidden,
+        hiddenClass,
       );
+      this.appliedStyleClasses.add(hiddenClass);
     }
 
-    // Add media queries
+    // Add media queries (shared, don't track for cleanup)
     Object.entries(defaults.medias).forEach(([media, rules]) =>
       StyledElementFactory.addMediaRule(media, rules),
     );
@@ -442,10 +465,12 @@ export class ButtonTriggerSurvey extends BaseSurvey<ButtonTriggerSurveyConfig> {
     // Add hover styles
     const presetStyles = defaults.stylePresets[this.stylePreset];
     if (presetStyles.buttonHoverStyle) {
+      const hoverClass = `${this.classNames.button}:hover`;
       StyledElementFactory.appendCssClassToHeader(
         presetStyles.buttonHoverStyle,
-        `${this.classNames.button}:hover`,
+        hoverClass,
       );
+      this.appliedStyleClasses.add(hoverClass);
     }
   }
 
@@ -501,6 +526,11 @@ export class ButtonTriggerSurvey extends BaseSurvey<ButtonTriggerSurveyConfig> {
       this.classNames.button,
       this.config.ignoreDefaultStyles ? {} : buttonStyle,
     ).styledElement;
+
+    // Track button class for cleanup (only if styles were applied)
+    if (!this.config.ignoreDefaultStyles) {
+      this.appliedStyleClasses.add(this.classNames.button);
+    }
 
     // Set accessibility
     button.setAttribute('type', 'button');

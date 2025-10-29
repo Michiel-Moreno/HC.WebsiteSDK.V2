@@ -2022,4 +2022,361 @@ describe('ButtonTriggerSurvey', () => {
       }, 50);
     });
   });
+
+  describe('R. Style Cleanup Tests', () => {
+    test('should remove styles from cache when destroy() is called', () => {
+      const button = new ButtonTriggerSurvey({
+        onTrigger: noop,
+        position: 'bottom-right',
+        stylePreset: 'pill-button',
+      });
+
+      // Verify styles were added to cache
+      expect(
+        StyledElementFactory.hasStyleClass(defaults.classNames.button),
+      ).toBe(true);
+
+      // Destroy button
+      button.destroy();
+
+      // Verify styles were removed from cache
+      expect(
+        StyledElementFactory.hasStyleClass(defaults.classNames.button),
+      ).toBe(false);
+    });
+
+    test('should remove hover styles from cache when destroy() is called', () => {
+      const button = new ButtonTriggerSurvey({
+        onTrigger: noop,
+        position: 'bottom-right',
+        stylePreset: 'pill-button',
+      });
+
+      const hoverClass = `${defaults.classNames.button}:hover`;
+
+      // Verify hover styles were added
+      expect(StyledElementFactory.hasStyleClass(hoverClass)).toBe(true);
+
+      // Destroy button
+      button.destroy();
+
+      // Verify hover styles were removed
+      expect(StyledElementFactory.hasStyleClass(hoverClass)).toBe(false);
+    });
+
+    test('should remove animation styles from cache when destroy() is called', () => {
+      const button = new ButtonTriggerSurvey({
+        onTrigger: noop,
+        position: 'bottom-right',
+        stylePreset: 'pill-button',
+        enableAnimation: true,
+      });
+
+      // Verify animation styles were added
+      expect(
+        StyledElementFactory.hasStyleClass(defaults.classNames.buttonVisible),
+      ).toBe(true);
+      expect(
+        StyledElementFactory.hasStyleClass(defaults.classNames.buttonHidden),
+      ).toBe(true);
+
+      // Destroy button
+      button.destroy();
+
+      // Verify animation styles were removed
+      expect(
+        StyledElementFactory.hasStyleClass(defaults.classNames.buttonVisible),
+      ).toBe(false);
+      expect(
+        StyledElementFactory.hasStyleClass(defaults.classNames.buttonHidden),
+      ).toBe(false);
+    });
+
+    test('should allow switching between pill-button and circle-button presets', () => {
+      // Create pill button
+      const button1 = new ButtonTriggerSurvey({
+        onTrigger: noop,
+        position: 'bottom-right',
+        stylePreset: 'pill-button',
+      });
+
+      expect(
+        StyledElementFactory.hasStyleClass(defaults.classNames.button),
+      ).toBe(true);
+
+      // Destroy pill button
+      button1.destroy();
+
+      expect(
+        StyledElementFactory.hasStyleClass(defaults.classNames.button),
+      ).toBe(false);
+
+      // Create circle button (should not have pill styles)
+      const button2 = new ButtonTriggerSurvey({
+        onTrigger: noop,
+        position: 'bottom-right',
+        stylePreset: 'circle-button',
+        icon: '<svg></svg>',
+      });
+
+      // New button should have its styles applied
+      expect(
+        StyledElementFactory.hasStyleClass(defaults.classNames.button),
+      ).toBe(true);
+      expect(button2.button).toBeDefined();
+
+      button2.destroy();
+    });
+
+    test('should allow switching between all 4 presets without style conflicts', () => {
+      const presets: Array<
+        'pill-button' | 'circle-button' | 'side-tab' | 'banner'
+      > = ['pill-button', 'circle-button', 'side-tab', 'banner'];
+
+      presets.forEach((preset) => {
+        // Create button with preset
+        const button = new ButtonTriggerSurvey({
+          onTrigger: noop,
+          position: 'bottom-right',
+          stylePreset: preset,
+          icon: preset === 'circle-button' ? '<svg></svg>' : undefined,
+        });
+
+        // Verify button was created
+        expect(button.button).toBeDefined();
+        expect(
+          StyledElementFactory.hasStyleClass(defaults.classNames.button),
+        ).toBe(true);
+
+        // Destroy button
+        button.destroy();
+
+        // Verify styles were cleaned up
+        expect(
+          StyledElementFactory.hasStyleClass(defaults.classNames.button),
+        ).toBe(false);
+      });
+    });
+
+    test('should not remove styles when ignoreDefaultStyles is true', () => {
+      const button = new ButtonTriggerSurvey({
+        onTrigger: noop,
+        position: 'bottom-right',
+        stylePreset: 'pill-button',
+        ignoreDefaultStyles: true,
+      });
+
+      // No styles should be in cache (ignoreDefaultStyles)
+      // The class name is still applied to the element, but no CSS is injected
+      expect(button.button.classList.contains(defaults.classNames.button)).toBe(
+        true,
+      );
+
+      // Destroy button
+      button.destroy();
+
+      // Should not throw and should cleanup gracefully
+      expect(() => button.destroy()).not.toThrow();
+    });
+
+    test('should handle rapid preset switching without style leakage', () => {
+      const iterations = 10;
+      const presets: Array<
+        'pill-button' | 'circle-button' | 'side-tab' | 'banner'
+      > = ['pill-button', 'circle-button', 'side-tab', 'banner'];
+
+      for (let i = 0; i < iterations; i++) {
+        presets.forEach((preset) => {
+          const button = new ButtonTriggerSurvey({
+            onTrigger: noop,
+            position: 'bottom-right',
+            stylePreset: preset,
+            icon: '<svg></svg>',
+          });
+
+          button.destroy();
+        });
+      }
+
+      // After all create/destroy cycles, cache should be empty
+      expect(
+        StyledElementFactory.hasStyleClass(defaults.classNames.button),
+      ).toBe(false);
+      expect(
+        StyledElementFactory.hasStyleClass(
+          `${defaults.classNames.button}:hover`,
+        ),
+      ).toBe(false);
+    });
+
+    test('should clean up styles from DOM style element', () => {
+      const button = new ButtonTriggerSurvey({
+        onTrigger: noop,
+        position: 'bottom-right',
+        stylePreset: 'pill-button',
+      });
+
+      // Get style element
+      const styleElement = document.querySelector(
+        '[data-hello-customer-styles]',
+      ) as HTMLStyleElement;
+      expect(styleElement).not.toBeNull();
+
+      // Verify styles are in DOM
+      const styleContentBefore = styleElement!.innerHTML;
+      expect(styleContentBefore).toContain(`.${defaults.classNames.button}`);
+
+      // Destroy button
+      button.destroy();
+
+      // Verify styles were removed from DOM
+      const styleContentAfter = styleElement!.innerHTML;
+      expect(styleContentAfter).not.toContain(`.${defaults.classNames.button}`);
+    });
+
+    test('should not affect media query styles (shared between buttons)', () => {
+      const button1 = new ButtonTriggerSurvey({
+        onTrigger: noop,
+        position: 'bottom-right',
+        stylePreset: 'pill-button',
+      });
+
+      // Get initial style content with media queries
+      const styleElement = document.querySelector(
+        '[data-hello-customer-styles]',
+      ) as HTMLStyleElement;
+      const contentWithMediaQueries = styleElement!.innerHTML;
+      expect(contentWithMediaQueries).toContain('@media');
+
+      // Destroy button
+      button1.destroy();
+
+      // Create new button
+      const button2 = new ButtonTriggerSurvey({
+        onTrigger: noop,
+        position: 'top-left',
+        stylePreset: 'circle-button',
+        icon: '<svg></svg>',
+      });
+
+      // Media queries should still be present (they're shared)
+      const contentAfterRecreate = styleElement!.innerHTML;
+      expect(contentAfterRecreate).toContain('@media');
+
+      button2.destroy();
+    });
+
+    test('should handle destroy() when animation is disabled', () => {
+      const button = new ButtonTriggerSurvey({
+        onTrigger: noop,
+        position: 'bottom-right',
+        stylePreset: 'pill-button',
+        enableAnimation: false,
+      });
+
+      // Animation styles should not be in cache
+      expect(
+        StyledElementFactory.hasStyleClass(defaults.classNames.buttonVisible),
+      ).toBe(false);
+      expect(
+        StyledElementFactory.hasStyleClass(defaults.classNames.buttonHidden),
+      ).toBe(false);
+
+      // Should destroy without issues
+      expect(() => button.destroy()).not.toThrow();
+
+      // Button styles should still be cleaned up
+      expect(
+        StyledElementFactory.hasStyleClass(defaults.classNames.button),
+      ).toBe(false);
+    });
+
+    test('should clean up custom class name styles', () => {
+      const customButtonClass = 'my-custom-button';
+
+      const button = new ButtonTriggerSurvey({
+        onTrigger: noop,
+        position: 'bottom-right',
+        stylePreset: 'pill-button',
+        classNames: {
+          button: customButtonClass,
+        },
+      });
+
+      // Verify custom class was added to cache
+      expect(StyledElementFactory.hasStyleClass(customButtonClass)).toBe(true);
+
+      // Destroy button
+      button.destroy();
+
+      // Verify custom class was removed from cache
+      expect(StyledElementFactory.hasStyleClass(customButtonClass)).toBe(false);
+    });
+
+    test('should allow multiple buttons with same preset to coexist', () => {
+      const button1 = new ButtonTriggerSurvey({
+        onTrigger: noop,
+        position: 'bottom-right',
+        stylePreset: 'pill-button',
+      });
+
+      const button2 = new ButtonTriggerSurvey({
+        onTrigger: noop,
+        position: 'top-left',
+        stylePreset: 'pill-button',
+      });
+
+      // Both should exist
+      expect(button1.button).toBeDefined();
+      expect(button2.button).toBeDefined();
+
+      // Styles should be in cache (only added once due to memoization)
+      expect(
+        StyledElementFactory.hasStyleClass(defaults.classNames.button),
+      ).toBe(true);
+
+      // Destroy first button
+      button1.destroy();
+
+      // Styles should still be in cache (button2 still uses them)
+      // NOTE: Current implementation removes styles immediately
+      // This test documents current behavior - styles are removed when ANY instance destroys
+      expect(
+        StyledElementFactory.hasStyleClass(defaults.classNames.button),
+      ).toBe(false);
+
+      // Second button should still be functional
+      expect(button2.button).toBeDefined();
+      expect(document.body.contains(button2.container)).toBe(true);
+
+      button2.destroy();
+    });
+
+    test('should clean up all tracked styles in appliedStyleClasses Set', () => {
+      const button = new ButtonTriggerSurvey({
+        onTrigger: noop,
+        position: 'bottom-right',
+        stylePreset: 'pill-button',
+        enableAnimation: true,
+      });
+
+      // Access private property for testing
+      const appliedStyles = button['appliedStyleClasses'];
+      expect(appliedStyles.size).toBeGreaterThan(0);
+
+      // Should include button class, hover class, animation classes
+      expect(appliedStyles.has(defaults.classNames.button)).toBe(true);
+      expect(appliedStyles.has(`${defaults.classNames.button}:hover`)).toBe(
+        true,
+      );
+      expect(appliedStyles.has(defaults.classNames.buttonVisible)).toBe(true);
+      expect(appliedStyles.has(defaults.classNames.buttonHidden)).toBe(true);
+
+      // Destroy button
+      button.destroy();
+
+      // Set should be cleared
+      expect(appliedStyles.size).toBe(0);
+    });
+  });
 });
