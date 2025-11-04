@@ -6,12 +6,13 @@ import { WindowSurveyConfig } from './window-survey-config.interface';
 import { WindowSurveyConfigValidator } from './window-survey.config-validator';
 
 /**
- * Class for opening survey in a new tab/window
+ * Class for opening survey in a new browser tab or popup window
  *
- * In the ```openNewWindow``` You can specify if the survey should be opened in a new window,
- * otherwise only a new tab will be created
+ * The `openNewWindow` option controls the opening behavior:
+ * - `openNewWindow: true` → Opens as a **popup window** (800x700px, separate OS window)
+ * - `openNewWindow: false` → Opens as a **new browser tab** (default)
  *
- * ### Example (es module)
+ * ### Example (es module) - Open as popup window
  * ```js
  * import { UrlBuilder, WindowSurvey } from '@hello-customer/website-touchpoint'
  * const urlBuilder = new UrlBuilder({
@@ -23,11 +24,13 @@ import { WindowSurveyConfigValidator } from './window-survey.config-validator';
  *     isPreview: true
  *   }
  * });
- * const inlineSurvey = new WindowSurvey(urlBuilder, {
- *   openNewWindow: true
+ * const windowSurvey = new WindowSurvey(urlBuilder, {
+ *   openNewWindow: true  // Opens as popup window
  * });
+ * windowSurvey.show();
  * ```
- * ### Example (script tag)
+ *
+ * ### Example (script tag) - Open as new tab
  * ```html
  * <script src="https://unpkg.com/@hello-customer/website-touchpoint"></script>
  * <script>
@@ -40,9 +43,10 @@ import { WindowSurveyConfigValidator } from './window-survey.config-validator';
  *       isPreview: true
  *     }
  *    });
- * const inlineSurvey = new hcWebsiteTouchpoint.WindowSurvey(urlBuilder, {
- *       openNewWindow: true
+ * const windowSurvey = new hcWebsiteTouchpoint.WindowSurvey(urlBuilder, {
+ *       openNewWindow: false  // Opens as new tab (default)
  *     });
+ * windowSurvey.show();
  * </script>
  * ```
  * @category Surveys
