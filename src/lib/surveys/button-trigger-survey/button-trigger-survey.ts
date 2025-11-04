@@ -291,30 +291,50 @@ export class ButtonTriggerSurvey extends BaseSurvey<ButtonTriggerSurveyConfig> {
 
   /**
    * Update button language dynamically
-   * Only works if no custom text was provided initially
+   * Works with automatic translation and per-language text objects
+   * Only blocked if text is a fixed string
    *
    * @param newLanguage - New language code (ISO 639-1)
    *
    * @example
    * ```typescript
+   * // With built-in translations
    * button.updateLanguage('FR'); // Changes button text to 'Commentaires'
    * button.updateLanguage('ES'); // Changes button text to 'Comentarios'
    * ```
+   *
+   * @example
+   * ```typescript
+   * // With per-language text object (NEW)
+   * const button = new ButtonTriggerSurvey({
+   *   text: { EN: 'Feedback', FR: 'Commentaires', ES: 'Comentarios' },
+   *   onTrigger: () => {}
+   * });
+   * button.updateLanguage('FR'); // Updates to 'Commentaires' from object
+   * ```
    */
   public updateLanguage(newLanguage: string): void {
-    // Only update if using automatic translation (no explicit text provided)
-    if (this.config.text) {
+    // Block if text is a string (backwards compatible behavior)
+    if (this.isTextString(this.config.text)) {
       console.warn(
-        '[Hello Customer SDK] Cannot update language: Custom text is set. ' +
-          'To enable dynamic language switching, remove the "text" config option and use "language" instead.',
+        '[Hello Customer SDK] Cannot update language: Custom text string is set. ' +
+          'To enable dynamic language switching, use a per-language text object like ' +
+          '{ EN: "Feedback", FR: "Commentaires" } or use the "language" parameter instead.',
       );
       return;
     }
 
     this.config.language = newLanguage;
 
-    // Recalculate button text
-    this.buttonText = getButtonText(newLanguage);
+    // Recalculate button text based on config type
+    if (this.isTextObject(this.config.text)) {
+      // Use text object with new language
+      this.buttonText = this.getTextFromObject(this.config.text, newLanguage);
+    } else {
+      // Use built-in translation
+      this.buttonText = getButtonText(newLanguage);
+    }
+
     this.ariaLabel = this.buttonText;
 
     // Update DOM
@@ -332,21 +352,85 @@ export class ButtonTriggerSurvey extends BaseSurvey<ButtonTriggerSurveyConfig> {
   }
 
   /**
+   * Type guard: Check if text is an object (language mapping)
+   */
+  private isTextObject(
+    text: string | Record<string, string> | undefined,
+  ): text is Record<string, string> {
+    return typeof text === 'object' && text !== null && !Array.isArray(text);
+  }
+
+  /**
+   * Type guard: Check if text is a string
+   */
+  private isTextString(
+    text: string | Record<string, string> | undefined,
+  ): text is string {
+    return typeof text === 'string';
+  }
+
+  /**
+   * Get text from object based on language with fallback logic
+   * Priority: current language > EN > first available key > default "Feedback"
+   *
+   * @param textObject - Object mapping language codes to text
+   * @param language - Current language code (optional)
+   * @returns Text for the specified language or fallback
+   */
+  private getTextFromObject(
+    textObject: Record<string, string>,
+    language?: string,
+  ): string {
+    // Normalize all keys to uppercase for case-insensitive comparison
+    const normalizedObject: Record<string, string> = {};
+    Object.keys(textObject).forEach((key) => {
+      normalizedObject[key.toUpperCase()] = textObject[key];
+    });
+
+    // Try current language first (case-insensitive)
+    if (language) {
+      const normalizedLanguage = language.toUpperCase();
+      if (normalizedObject[normalizedLanguage]) {
+        return normalizedObject[normalizedLanguage];
+      }
+    }
+
+    // Fallback to EN
+    if (normalizedObject['EN']) {
+      return normalizedObject['EN'];
+    }
+
+    // Fallback to first available key
+    const firstKey = Object.keys(normalizedObject)[0];
+    if (firstKey && normalizedObject[firstKey]) {
+      return normalizedObject[firstKey];
+    }
+
+    // Ultimate fallback to default
+    return getButtonText(undefined); // Returns 'Feedback'
+  }
+
+  /**
    * Determine button text based on config
-   * Priority: explicit text > language translation > default
+   * Priority: text object > text string > language translation > default
    */
   private determineButtonText(): string {
-    // Priority 1: Explicit text provided
-    if (this.config.text) {
+    // Priority 1: Text object (per-language mapping)
+    if (this.isTextObject(this.config.text)) {
+      return this.getTextFromObject(this.config.text, this.config.language);
+    }
+
+    // Priority 2: Explicit text string
+    if (this.isTextString(this.config.text)) {
       return this.config.text;
     }
 
-    // Priority 2: Auto-translate based on language
+    // Priority 3: Auto-translate based on language
     if (this.config.language) {
       return getButtonText(this.config.language);
     }
 
-    // Priority 3: Default fallback
+    // Priority 4: Default fallback
     return getButtonText(undefined); // Returns 'Feedback'
   }
 

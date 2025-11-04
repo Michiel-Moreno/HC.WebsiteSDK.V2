@@ -2379,4 +2379,293 @@ describe('ButtonTriggerSurvey', () => {
       expect(appliedStyles.size).toBe(0);
     });
   });
+
+  describe('S. Per-Language Text Object Tests', () => {
+    test('should use text from object when language matches', () => {
+      const config: ButtonTriggerSurveyConfig = {
+        text: { EN: 'Feedback', FR: 'Commentaires', ES: 'Comentarios' },
+        language: 'FR',
+        onTrigger: noop,
+      };
+
+      const survey = new ButtonTriggerSurvey(config);
+      const textElement = survey.button.querySelector(
+        '.hello-customer-button-trigger__text',
+      );
+
+      expect(textElement?.textContent).toBe('Commentaires');
+      expect(survey.button.getAttribute('aria-label')).toBe('Commentaires');
+    });
+
+    test('should fallback to EN when language not found in text object', () => {
+      const config: ButtonTriggerSurveyConfig = {
+        text: { EN: 'Feedback', FR: 'Commentaires' },
+        language: 'ES', // Not in object
+        onTrigger: noop,
+      };
+
+      const survey = new ButtonTriggerSurvey(config);
+      const textElement = survey.button.querySelector(
+        '.hello-customer-button-trigger__text',
+      );
+
+      expect(textElement?.textContent).toBe('Feedback'); // Fallback to EN
+    });
+
+    test('should fallback to first available key when no EN in text object', () => {
+      const config: ButtonTriggerSurveyConfig = {
+        text: { FR: 'Commentaires', ES: 'Comentarios' },
+        language: 'DE', // Not in object
+        onTrigger: noop,
+      };
+
+      const survey = new ButtonTriggerSurvey(config);
+      const textElement = survey.button.querySelector(
+        '.hello-customer-button-trigger__text',
+      );
+
+      // Should use first available key (FR)
+      expect(textElement?.textContent).toBe('Commentaires');
+    });
+
+    test('should fallback to default "Feedback" when text object is empty', () => {
+      const config: ButtonTriggerSurveyConfig = {
+        text: {},
+        language: 'EN',
+        onTrigger: noop,
+      };
+
+      const survey = new ButtonTriggerSurvey(config);
+      const textElement = survey.button.querySelector(
+        '.hello-customer-button-trigger__text',
+      );
+
+      expect(textElement?.textContent).toBe('Feedback');
+    });
+
+    test('should handle case-insensitive language codes in text object', () => {
+      const config: ButtonTriggerSurveyConfig = {
+        text: { en: 'Feedback', fr: 'Commentaires', ES: 'Comentarios' },
+        language: 'EN', // Uppercase, but keys are lowercase
+        onTrigger: noop,
+      };
+
+      const survey = new ButtonTriggerSurvey(config);
+      const textElement = survey.button.querySelector(
+        '.hello-customer-button-trigger__text',
+      );
+
+      expect(textElement?.textContent).toBe('Feedback');
+    });
+
+    test('should support dynamic language switching with text object', () => {
+      const config: ButtonTriggerSurveyConfig = {
+        text: { EN: 'Feedback', FR: 'Commentaires', ES: 'Comentarios' },
+        language: 'EN',
+        onTrigger: noop,
+      };
+
+      const survey = new ButtonTriggerSurvey(config);
+      const textElement = survey.button.querySelector(
+        '.hello-customer-button-trigger__text',
+      );
+
+      // Initial text
+      expect(textElement?.textContent).toBe('Feedback');
+
+      // Update to French
+      survey.updateLanguage('FR');
+      expect(textElement?.textContent).toBe('Commentaires');
+      expect(survey.button.getAttribute('aria-label')).toBe('Commentaires');
+
+      // Update to Spanish
+      survey.updateLanguage('ES');
+      expect(textElement?.textContent).toBe('Comentarios');
+      expect(survey.button.getAttribute('aria-label')).toBe('Comentarios');
+    });
+
+    test('should maintain backwards compatibility with string text', () => {
+      const config: ButtonTriggerSurveyConfig = {
+        text: 'Custom Feedback',
+        language: 'FR',
+        onTrigger: noop,
+      };
+
+      const survey = new ButtonTriggerSurvey(config);
+      const textElement = survey.button.querySelector(
+        '.hello-customer-button-trigger__text',
+      );
+
+      // Should use exact string, ignore language
+      expect(textElement?.textContent).toBe('Custom Feedback');
+    });
+
+    test('should warn when updateLanguage called with string text', () => {
+      const consoleWarnSpy = jest
+        .spyOn(console, 'warn')
+        .mockImplementation(() => {});
+
+      const config: ButtonTriggerSurveyConfig = {
+        text: 'Custom Feedback',
+        onTrigger: noop,
+      };
+
+      const survey = new ButtonTriggerSurvey(config);
+      const textElement = survey.button.querySelector(
+        '.hello-customer-button-trigger__text',
+      );
+
+      // Try to update language (should warn and not change)
+      survey.updateLanguage('FR');
+
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        expect.stringContaining(
+          'Cannot update language: Custom text string is set',
+        ),
+      );
+      expect(textElement?.textContent).toBe('Custom Feedback'); // Unchanged
+
+      consoleWarnSpy.mockRestore();
+    });
+
+    test('should NOT warn when updateLanguage called with text object', () => {
+      const consoleWarnSpy = jest
+        .spyOn(console, 'warn')
+        .mockImplementation(() => {});
+
+      const config: ButtonTriggerSurveyConfig = {
+        text: { EN: 'Feedback', FR: 'Commentaires' },
+        language: 'EN',
+        onTrigger: noop,
+      };
+
+      const survey = new ButtonTriggerSurvey(config);
+
+      // Update language (should work without warning)
+      survey.updateLanguage('FR');
+
+      expect(consoleWarnSpy).not.toHaveBeenCalled();
+
+      consoleWarnSpy.mockRestore();
+    });
+
+    test('should prioritize text object over built-in translations', () => {
+      const config: ButtonTriggerSurveyConfig = {
+        text: { EN: 'Custom Feedback', FR: 'Commentaires Personnalisés' },
+        language: 'EN',
+        onTrigger: noop,
+      };
+
+      const survey = new ButtonTriggerSurvey(config);
+      const textElement = survey.button.querySelector(
+        '.hello-customer-button-trigger__text',
+      );
+
+      // Should use custom text from object, not built-in translation
+      expect(textElement?.textContent).toBe('Custom Feedback');
+      expect(textElement?.textContent).not.toBe(getButtonText('EN'));
+    });
+
+    test('should update DOM correctly when switching languages with text object', () => {
+      const config: ButtonTriggerSurveyConfig = {
+        text: { EN: 'Feedback', AR: 'تعليقات' },
+        language: 'EN',
+        onTrigger: noop,
+      };
+
+      const survey = new ButtonTriggerSurvey(config);
+      const textElement = survey.button.querySelector(
+        '.hello-customer-button-trigger__text',
+      );
+
+      // Initial state (LTR)
+      expect(textElement?.textContent).toBe('Feedback');
+      expect(survey.button.getAttribute('dir')).toBeNull();
+
+      // Switch to Arabic (RTL)
+      survey.updateLanguage('AR');
+      expect(textElement?.textContent).toBe('تعليقات');
+      expect(survey.button.getAttribute('dir')).toBe('rtl');
+      expect(survey.button.getAttribute('aria-label')).toBe('تعليقات');
+    });
+
+    test('should handle text object with single language', () => {
+      const config: ButtonTriggerSurveyConfig = {
+        text: { EN: 'Feedback Only' },
+        language: 'FR', // Not in object
+        onTrigger: noop,
+      };
+
+      const survey = new ButtonTriggerSurvey(config);
+      const textElement = survey.button.querySelector(
+        '.hello-customer-button-trigger__text',
+      );
+
+      // Should use EN as fallback
+      expect(textElement?.textContent).toBe('Feedback Only');
+    });
+
+    test('should use text object without language parameter', () => {
+      const config: ButtonTriggerSurveyConfig = {
+        text: { EN: 'Feedback', FR: 'Commentaires' },
+        // No language specified
+        onTrigger: noop,
+      };
+
+      const survey = new ButtonTriggerSurvey(config);
+      const textElement = survey.button.querySelector(
+        '.hello-customer-button-trigger__text',
+      );
+
+      // Should fallback to EN when no language specified
+      expect(textElement?.textContent).toBe('Feedback');
+    });
+
+    test('should handle all 30 supported languages in text object', () => {
+      // Create text object with all supported languages
+      const allLanguages = Object.keys(BUTTON_TEXT_TRANSLATIONS).reduce(
+        (acc, lang) => {
+          acc[lang] = `Custom ${lang}`;
+          return acc;
+        },
+        {} as Record<string, string>,
+      );
+
+      const config: ButtonTriggerSurveyConfig = {
+        text: allLanguages,
+        language: 'ZH',
+        onTrigger: noop,
+      };
+
+      const survey = new ButtonTriggerSurvey(config);
+      const textElement = survey.button.querySelector(
+        '.hello-customer-button-trigger__text',
+      );
+
+      expect(textElement?.textContent).toBe('Custom ZH');
+
+      // Switch to another language (PL = Polish)
+      survey.updateLanguage('PL');
+      expect(textElement?.textContent).toBe('Custom PL');
+    });
+
+    test('should handle mixed case keys consistently', () => {
+      const config: ButtonTriggerSurveyConfig = {
+        text: { En: 'Feedback', fR: 'Commentaires', ES: 'Comentarios' },
+        language: 'en', // lowercase
+        onTrigger: noop,
+      };
+
+      const survey = new ButtonTriggerSurvey(config);
+      const textElement = survey.button.querySelector(
+        '.hello-customer-button-trigger__text',
+      );
+
+      expect(textElement?.textContent).toBe('Feedback');
+
+      // Update to FR (different case)
+      survey.updateLanguage('FR');
+      expect(textElement?.textContent).toBe('Commentaires');
+    });
+  });
 });

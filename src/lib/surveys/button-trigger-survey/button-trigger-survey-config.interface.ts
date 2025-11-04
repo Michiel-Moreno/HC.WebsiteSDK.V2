@@ -45,17 +45,44 @@ export interface ButtonTriggerSurveyConfig extends BaseSurveyConfig {
   language?: string;
 
   /**
-   * Button text content
-   * - If provided: Uses this exact text (no translation)
-   * - If not provided: Auto-translates based on language parameter
-   * - If neither provided: Defaults to 'Feedback'
+   * Button text content - accepts string or per-language object
+   *
+   * **String mode** (backwards compatible):
+   * - Uses exact text provided (no translation)
+   * - Disables dynamic language switching
+   *
+   * **Object mode** (NEW):
+   * - Maps language codes to custom text: { EN: 'Feedback', FR: 'Commentaires' }
+   * - Enables dynamic language switching with custom text
+   * - Falls back to 'EN' key if current language not found
+   * - Falls back to first available key if no 'EN' key
+   * - Falls back to default 'Feedback' if object is empty
+   * - Language codes are case-insensitive
+   *
+   * **Priority logic**:
+   * 1. If text is object → Use language-specific text from object
+   * 2. If text is string → Use exact text (no translation)
+   * 3. If language provided → Auto-translate using built-in translations
+   * 4. Default → 'Feedback'
    *
    * For circle-button preset, text is hidden visually but used
    * for ARIA label (accessibility)
    *
+   * @example
+   * // String mode (backwards compatible)
+   * text: 'Give Feedback'
+   *
+   * @example
+   * // Object mode with multiple languages
+   * text: { EN: 'Feedback', FR: 'Commentaires', ES: 'Comentarios' }
+   *
+   * @example
+   * // Object mode with case-insensitive keys
+   * text: { en: 'Feedback', fr: 'Commentaires' }
+   *
    * @default Auto-translated based on language, or 'Feedback' if no language specified
    */
-  text?: string;
+  text?: string | Record<string, string>;
 
   /**
    * Custom icon/SVG element or HTML string
