@@ -99,7 +99,10 @@ import { closeIconSvgElementFactory } from './modal-survey.svg-factory';
  */
 export class ModalSurvey extends BaseSurvey<ModalSurveyConfig> {
   private readonly modalHandle: HTMLDivElement;
-  private readonly computedStyles: Required<ModalSurveyStyleConfig>;
+  private readonly computedStyles: Required<
+    Omit<ModalSurveyStyleConfig, 'windowCloseButtonHoverStyle'>
+  > &
+    Pick<ModalSurveyStyleConfig, 'windowCloseButtonHoverStyle'>;
   private readonly computedClassNames: Required<ClassNamesConfigType>;
   private lastFocusedElement: HTMLElement | null = null;
   private focusTrapActive = false;
@@ -390,7 +393,10 @@ export class ModalSurvey extends BaseSurvey<ModalSurveyConfig> {
     }
   }
 
-  private computeModalStyle(): Required<ModalSurveyStyleConfig> {
+  private computeModalStyle(): Required<
+    Omit<ModalSurveyStyleConfig, 'windowCloseButtonHoverStyle'>
+  > &
+    Pick<ModalSurveyStyleConfig, 'windowCloseButtonHoverStyle'> {
     return {
       rootDivStyle: this.modalConfig.ignoreDefaultStyles
         ? this.modalConfig?.modalStyle?.rootDivStyle || {}
@@ -416,6 +422,8 @@ export class ModalSurvey extends BaseSurvey<ModalSurveyConfig> {
             ...modalDefaultStyles.windowCloseButtonStyle,
             ...this.modalConfig?.modalStyle?.windowCloseButtonStyle,
           },
+      windowCloseButtonHoverStyle:
+        this.modalConfig?.modalStyle?.windowCloseButtonHoverStyle,
       windowDivStyle: this.modalConfig.ignoreDefaultStyles
         ? this.modalConfig?.modalStyle?.windowDivStyle || {}
         : {
@@ -456,7 +464,10 @@ export class ModalSurvey extends BaseSurvey<ModalSurveyConfig> {
     );
   }
 
-  private getModalStyle(): Required<ModalSurveyStyleConfig> {
+  private getModalStyle(): Required<
+    Omit<ModalSurveyStyleConfig, 'windowCloseButtonHoverStyle'>
+  > &
+    Pick<ModalSurveyStyleConfig, 'windowCloseButtonHoverStyle'> {
     return this.computedStyles;
   }
 
@@ -482,13 +493,22 @@ export class ModalSurvey extends BaseSurvey<ModalSurveyConfig> {
         Object.entries(rules).reduce(
           (total, current) => ({
             ...total,
-            [styleClasses[current[0] as keyof ModalSurveyStyleConfig]]:
+            [styleClasses[current[0] as keyof ClassNamesConfigType]]:
               current[1],
           }),
           {},
         ),
       ),
     );
+
+    // Add close button hover styles if provided
+    if (modalStyle.windowCloseButtonHoverStyle) {
+      const hoverClass = `${styleClasses.windowCloseButtonStyle}:hover`;
+      StyledElementFactory.appendCssClassToHeader(
+        modalStyle.windowCloseButtonHoverStyle,
+        hoverClass,
+      );
+    }
   }
 
   /**
@@ -535,7 +555,13 @@ export class ModalSurvey extends BaseSurvey<ModalSurveyConfig> {
       styleClasses.windowCloseButtonStyle,
       modalStyle.windowCloseButtonStyle,
     ).styledElement;
-    closeButton.appendChild(closeIconSvgElementFactory('#eeeeee'));
+
+    // Extract close button icon color from config, default to light gray
+    const closeButtonIconColor =
+      modalStyle.windowCloseButtonStyle?.color ||
+      modalStyle.windowCloseButtonStyle?.fill ||
+      '#eeeeee';
+    closeButton.appendChild(closeIconSvgElementFactory(closeButtonIconColor));
 
     const windowBar = new StyledElementFactory(
       document.createElement('div'),

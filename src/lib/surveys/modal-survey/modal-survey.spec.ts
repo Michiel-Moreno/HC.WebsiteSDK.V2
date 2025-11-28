@@ -1838,4 +1838,242 @@ describe('ModalSurvey', () => {
       }, 100);
     });
   });
+
+  describe('R. Close Button Icon Color Tests', () => {
+    test('should use default color (#eeeeee) for close button icon when not specified', () => {
+      const config: ModalSurveyConfig = {
+        closeButton: true,
+      };
+
+      const survey = new ModalSurvey(mockUrlBuilder, config);
+      createdModals.push(survey);
+
+      const closeButton = survey.modalContainer.querySelector(
+        `.${defaults.classNames.windowCloseButtonStyle}`,
+      );
+      const svgPath = closeButton?.querySelector('path');
+
+      expect(svgPath).not.toBeNull();
+      expect(svgPath?.getAttribute('fill')).toBe('#eeeeee');
+    });
+
+    test('should use custom color from windowCloseButtonStyle.color', () => {
+      const config: ModalSurveyConfig = {
+        closeButton: true,
+        modalStyle: {
+          windowCloseButtonStyle: {
+            color: '#ff0000',
+          },
+        },
+      };
+
+      const survey = new ModalSurvey(mockUrlBuilder, config);
+      createdModals.push(survey);
+
+      const closeButton = survey.modalContainer.querySelector(
+        `.${defaults.classNames.windowCloseButtonStyle}`,
+      );
+      const svgPath = closeButton?.querySelector('path');
+
+      expect(svgPath).not.toBeNull();
+      expect(svgPath?.getAttribute('fill')).toBe('#ff0000');
+    });
+
+    test('should use custom color from windowCloseButtonStyle.fill', () => {
+      const config: ModalSurveyConfig = {
+        closeButton: true,
+        modalStyle: {
+          windowCloseButtonStyle: {
+            fill: '#00ff00',
+          },
+        },
+      };
+
+      const survey = new ModalSurvey(mockUrlBuilder, config);
+      createdModals.push(survey);
+
+      const closeButton = survey.modalContainer.querySelector(
+        `.${defaults.classNames.windowCloseButtonStyle}`,
+      );
+      const svgPath = closeButton?.querySelector('path');
+
+      expect(svgPath).not.toBeNull();
+      expect(svgPath?.getAttribute('fill')).toBe('#00ff00');
+    });
+
+    test('should prioritize color over fill when both are provided', () => {
+      const config: ModalSurveyConfig = {
+        closeButton: true,
+        modalStyle: {
+          windowCloseButtonStyle: {
+            color: '#ff0000',
+            fill: '#00ff00',
+          },
+        },
+      };
+
+      const survey = new ModalSurvey(mockUrlBuilder, config);
+      createdModals.push(survey);
+
+      const closeButton = survey.modalContainer.querySelector(
+        `.${defaults.classNames.windowCloseButtonStyle}`,
+      );
+      const svgPath = closeButton?.querySelector('path');
+
+      expect(svgPath).not.toBeNull();
+      expect(svgPath?.getAttribute('fill')).toBe('#ff0000');
+    });
+
+    test('should support various color formats (hex, rgb, named)', () => {
+      const testCases = [
+        { color: '#000000', expected: '#000000' },
+        { color: 'rgb(255, 0, 0)', expected: 'rgb(255, 0, 0)' },
+        { color: 'black', expected: 'black' },
+        { color: 'rgba(0, 0, 255, 0.5)', expected: 'rgba(0, 0, 255, 0.5)' },
+      ];
+
+      testCases.forEach((testCase) => {
+        const config: ModalSurveyConfig = {
+          closeButton: true,
+          modalStyle: {
+            windowCloseButtonStyle: {
+              color: testCase.color,
+            },
+          },
+        };
+
+        const survey = new ModalSurvey(mockUrlBuilder, config);
+        createdModals.push(survey);
+
+        const closeButton = survey.modalContainer.querySelector(
+          `.${defaults.classNames.windowCloseButtonStyle}`,
+        );
+        const svgPath = closeButton?.querySelector('path');
+
+        expect(svgPath?.getAttribute('fill')).toBe(testCase.expected);
+      });
+    });
+
+    test('should not affect close button when closeButton is false', () => {
+      const config: ModalSurveyConfig = {
+        closeButton: false,
+        modalStyle: {
+          windowCloseButtonStyle: {
+            color: '#ff0000',
+          },
+        },
+      };
+
+      const survey = new ModalSurvey(mockUrlBuilder, config);
+      createdModals.push(survey);
+
+      const closeButton = survey.modalContainer.querySelector(
+        `.${defaults.classNames.windowCloseButtonStyle}`,
+      );
+
+      expect(closeButton).toBeNull();
+    });
+
+    test('should apply hover styles to close button when windowCloseButtonHoverStyle provided', () => {
+      const config: ModalSurveyConfig = {
+        closeButton: true,
+        modalStyle: {
+          windowCloseButtonHoverStyle: {
+            opacity: '0.7',
+          },
+        },
+      };
+
+      const survey = new ModalSurvey(mockUrlBuilder, config);
+      createdModals.push(survey);
+
+      // Check if hover style was added to the global stylesheet
+      const hoverClassName = `${defaults.classNames.windowCloseButtonStyle}:hover`;
+      expect(StyledElementFactory.hasStyleClass(hoverClassName)).toBe(true);
+    });
+
+    test('should support custom hover opacity for close button', () => {
+      const config: ModalSurveyConfig = {
+        closeButton: true,
+        modalStyle: {
+          windowCloseButtonHoverStyle: {
+            opacity: '0.5',
+          },
+        },
+      };
+
+      const survey = new ModalSurvey(mockUrlBuilder, config);
+      createdModals.push(survey);
+
+      const hoverClassName = `${defaults.classNames.windowCloseButtonStyle}:hover`;
+      expect(StyledElementFactory.hasStyleClass(hoverClassName)).toBe(true);
+    });
+
+    test('should support multiple hover style properties', () => {
+      const config: ModalSurveyConfig = {
+        closeButton: true,
+        modalStyle: {
+          windowCloseButtonHoverStyle: {
+            opacity: '0.8',
+            transform: 'scale(1.1)',
+            cursor: 'pointer',
+          },
+        },
+      };
+
+      const survey = new ModalSurvey(mockUrlBuilder, config);
+      createdModals.push(survey);
+
+      const hoverClassName = `${defaults.classNames.windowCloseButtonStyle}:hover`;
+      expect(StyledElementFactory.hasStyleClass(hoverClassName)).toBe(true);
+    });
+
+    test('should not apply hover styles when windowCloseButtonHoverStyle not provided', () => {
+      const config: ModalSurveyConfig = {
+        closeButton: true,
+        modalStyle: {
+          windowCloseButtonStyle: {
+            color: '#000',
+          },
+        },
+      };
+
+      // Clear any existing hover styles from previous tests
+      const hoverClassName = `${defaults.classNames.windowCloseButtonStyle}:hover`;
+      StyledElementFactory.removeStyleClass(hoverClassName);
+
+      const survey = new ModalSurvey(mockUrlBuilder, config);
+      createdModals.push(survey);
+
+      expect(StyledElementFactory.hasStyleClass(hoverClassName)).toBe(false);
+    });
+
+    test('should work together: custom color + custom hover opacity', () => {
+      const config: ModalSurveyConfig = {
+        closeButton: true,
+        modalStyle: {
+          windowCloseButtonStyle: {
+            color: '#ff0000',
+          },
+          windowCloseButtonHoverStyle: {
+            opacity: '0.6',
+          },
+        },
+      };
+
+      const survey = new ModalSurvey(mockUrlBuilder, config);
+      createdModals.push(survey);
+
+      // Check close button color
+      const closeButton = survey.modalContainer.querySelector(
+        `.${defaults.classNames.windowCloseButtonStyle}`,
+      );
+      const svgPath = closeButton?.querySelector('path');
+      expect(svgPath?.getAttribute('fill')).toBe('#ff0000');
+
+      // Check hover style exists
+      const hoverClassName = `${defaults.classNames.windowCloseButtonStyle}:hover`;
+      expect(StyledElementFactory.hasStyleClass(hoverClassName)).toBe(true);
+    });
+  });
 });

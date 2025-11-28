@@ -2,6 +2,7 @@ export interface ModalSurveyStyleConfig {
   rootDivStyle?: Partial<CSSStyleDeclaration>;
   windowDivStyle?: Partial<CSSStyleDeclaration>;
   windowCloseButtonStyle?: Partial<CSSStyleDeclaration>;
+  windowCloseButtonHoverStyle?: Partial<CSSStyleDeclaration>;
   windowBarDivStyle?: Partial<CSSStyleDeclaration>;
   iFrameStyle?: Partial<CSSStyleDeclaration>;
   modalTranslucentBackground?: Partial<CSSStyleDeclaration>;
