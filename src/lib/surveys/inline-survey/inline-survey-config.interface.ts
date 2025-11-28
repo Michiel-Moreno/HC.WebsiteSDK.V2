@@ -32,4 +32,29 @@ export interface InlineSurveyConfig extends BaseSurveyConfig {
    * Only applies when `autoHeight` is enabled.
    */
   maxHeight?: number;
+  /**
+   * Timeout in milliseconds to wait for survey status message.
+   * If no status message is received within this time, onSurveyStatus fires with 'timeout'.
+   * Set to 0 to disable the timeout (callback will only fire on explicit status messages).
+   *
+   * Requires the survey page to send `hc:status` postMessage events.
+   *
+   * @default 10000 (10 seconds)
+   *
+   * @example
+   * ```typescript
+   * const survey = new InlineSurvey(urlBuilder, {
+   *   elementSelector: '#survey-container',
+   *   statusTimeout: 15000, // 15 seconds
+   *   callbacks: {
+   *     onSurveyStatus: (event) => {
+   *       if (event.status === 'timeout') {
+   *         console.warn('Survey did not respond');
+   *       }
+   *     }
+   *   }
+   * });
+   * ```
+   */
+  statusTimeout?: number;
 }

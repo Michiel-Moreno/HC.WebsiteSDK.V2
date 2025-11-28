@@ -2254,8 +2254,6 @@ describe('ModalSurvey', () => {
     });
 
     test('should reject resize messages from wrong origin', () => {
-      const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
-
       const config: ModalSurveyConfig = {
         autoHeight: true,
       };
@@ -2272,13 +2270,8 @@ describe('ModalSurvey', () => {
       });
       window.dispatchEvent(event);
 
-      // Height should not change
+      // Height should not change - message silently rejected for security
       expect(survey.iFrame.style.height).toBe(initialHeight);
-      expect(consoleWarnSpy).toHaveBeenCalledWith(
-        expect.stringContaining('unexpected origin'),
-      );
-
-      consoleWarnSpy.mockRestore();
     });
 
     test('should clean up auto-height listener on destroy', () => {
@@ -2317,6 +2310,303 @@ describe('ModalSurvey', () => {
 
       // survey2 doesn't have autoHeight, so its height should not change
       expect(survey2.iFrame.style.height).toBe(initialHeight);
+    });
+  });
+
+  describe('K. Survey Status Detection Tests', () => {
+    beforeEach(() => {
+      jest.useFakeTimers();
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    test('should call onSurveyStatus with ready when survey sends ready message', () => {
+      const onSurveyStatus = jest.fn();
+      const config: ModalSurveyConfig = {
+        callbacks: { onSurveyStatus },
+      };
+
+      const survey = new ModalSurvey(mockUrlBuilder, config);
+      createdModals.push(survey);
+
+      // Send a status message
+      const event = new MessageEvent('message', {
+        data: { type: 'hc:status', status: 'ready' },
+        origin: 'https://example.com',
+      });
+      window.dispatchEvent(event);
+
+      expect(onSurveyStatus).toHaveBeenCalledWith({
+        status: 'ready',
+        reason: undefined,
+        message: undefined,
+      });
+    });
+
+    test('should call onSurveyStatus with unavailable when survey is deactivated', () => {
+      const onSurveyStatus = jest.fn();
+      const config: ModalSurveyConfig = {
+        callbacks: { onSurveyStatus },
+      };
+
+      const survey = new ModalSurvey(mockUrlBuilder, config);
+      createdModals.push(survey);
+
+      // Send an unavailable status message
+      const event = new MessageEvent('message', {
+        data: {
+          type: 'hc:status',
+          status: 'unavailable',
+          reason: 'deactivated',
+          message: 'This survey has been deactivated',
+        },
+        origin: 'https://example.com',
+      });
+      window.dispatchEvent(event);
+
+      expect(onSurveyStatus).toHaveBeenCalledWith({
+        status: 'unavailable',
+        reason: 'deactivated',
+        message: 'This survey has been deactivated',
+      });
+    });
+
+    test('should call onSurveyStatus with timeout if no message received within timeout', () => {
+      const onSurveyStatus = jest.fn();
+      const config: ModalSurveyConfig = {
+        statusTimeout: 5000,
+        callbacks: { onSurveyStatus },
+      };
+
+      const survey = new ModalSurvey(mockUrlBuilder, config);
+      createdModals.push(survey);
+
+      // Fast-forward time to trigger timeout
+      jest.advanceTimersByTime(5000);
+
+      expect(onSurveyStatus).toHaveBeenCalledWith({
+        status: 'timeout',
+        reason: 'no_response',
+        message: 'Survey did not respond within timeout period',
+      });
+    });
+
+    test('should use default 10 second timeout', () => {
+      const onSurveyStatus = jest.fn();
+      const config: ModalSurveyConfig = {
+        callbacks: { onSurveyStatus },
+      };
+
+      const survey = new ModalSurvey(mockUrlBuilder, config);
+      createdModals.push(survey);
+
+      // Should not trigger after 9 seconds
+      jest.advanceTimersByTime(9000);
+      expect(onSurveyStatus).not.toHaveBeenCalled();
+
+      // Should trigger after 10 seconds
+      jest.advanceTimersByTime(1000);
+      expect(onSurveyStatus).toHaveBeenCalledWith({
+        status: 'timeout',
+        reason: 'no_response',
+        message: 'Survey did not respond within timeout period',
+      });
+    });
+
+    test('should not trigger timeout callback if status received in time', () => {
+      const onSurveyStatus = jest.fn();
+      const config: ModalSurveyConfig = {
+        statusTimeout: 5000,
+        callbacks: { onSurveyStatus },
+      };
+
+      const survey = new ModalSurvey(mockUrlBuilder, config);
+      createdModals.push(survey);
+
+      // Advance time partially
+      jest.advanceTimersByTime(3000);
+
+      // Send a status message before timeout
+      const event = new MessageEvent('message', {
+        data: { type: 'hc:status', status: 'ready' },
+        origin: 'https://example.com',
+      });
+      window.dispatchEvent(event);
+
+      expect(onSurveyStatus).toHaveBeenCalledWith({
+        status: 'ready',
+        reason: undefined,
+        message: undefined,
+      });
+      expect(onSurveyStatus).toHaveBeenCalledTimes(1);
+
+      // Advance past the timeout
+      jest.advanceTimersByTime(3000);
+
+      // Should still only have one call (the ready one, not timeout)
+      expect(onSurveyStatus).toHaveBeenCalledTimes(1);
+    });
+
+    test('should clear timeout on destroy', () => {
+      const onSurveyStatus = jest.fn();
+      const config: ModalSurveyConfig = {
+        statusTimeout: 5000,
+        callbacks: { onSurveyStatus },
+      };
+
+      const survey = new ModalSurvey(mockUrlBuilder, config);
+      createdModals.push(survey);
+
+      // Destroy before timeout
+      survey.destroy();
+
+      // Advance past the timeout
+      jest.advanceTimersByTime(6000);
+
+      // Should not have been called
+      expect(onSurveyStatus).not.toHaveBeenCalled();
+    });
+
+    test('should ignore status messages from wrong origin', () => {
+      const onSurveyStatus = jest.fn();
+      const config: ModalSurveyConfig = {
+        statusTimeout: 0, // Disable timeout for this test
+        callbacks: { onSurveyStatus },
+      };
+
+      const survey = new ModalSurvey(mockUrlBuilder, config);
+      createdModals.push(survey);
+
+      // Send a status message from wrong origin
+      const event = new MessageEvent('message', {
+        data: { type: 'hc:status', status: 'ready' },
+        origin: 'https://malicious.com',
+      });
+      window.dispatchEvent(event);
+
+      // Callback should not be called - message silently rejected for security
+      expect(onSurveyStatus).not.toHaveBeenCalled();
+    });
+
+    test('should handle malformed status messages gracefully', () => {
+      const onSurveyStatus = jest.fn();
+      const config: ModalSurveyConfig = {
+        statusTimeout: 0, // Disable timeout for this test
+        callbacks: { onSurveyStatus },
+      };
+
+      const survey = new ModalSurvey(mockUrlBuilder, config);
+      createdModals.push(survey);
+
+      // Send various malformed messages
+      const malformedMessages = [
+        { type: 'hc:status' }, // missing status
+        { type: 'wrong:type', status: 'ready' }, // wrong type
+        { status: 'ready' }, // missing type
+        { type: 'hc:status', status: 123 }, // non-string status
+        null,
+        'string message',
+        123,
+      ];
+
+      malformedMessages.forEach((data) => {
+        const event = new MessageEvent('message', {
+          data,
+          origin: 'https://example.com',
+        });
+        window.dispatchEvent(event);
+      });
+
+      // Should not have been called for any malformed message
+      expect(onSurveyStatus).not.toHaveBeenCalled();
+    });
+
+    test('should not set up timeout when statusTimeout is 0', () => {
+      const onSurveyStatus = jest.fn();
+      const config: ModalSurveyConfig = {
+        statusTimeout: 0,
+        callbacks: { onSurveyStatus },
+      };
+
+      const survey = new ModalSurvey(mockUrlBuilder, config);
+      createdModals.push(survey);
+
+      // Advance time well past default timeout
+      jest.advanceTimersByTime(20000);
+
+      // Should not have been called
+      expect(onSurveyStatus).not.toHaveBeenCalled();
+    });
+
+    test('should handle error status from survey', () => {
+      const onSurveyStatus = jest.fn();
+      const config: ModalSurveyConfig = {
+        callbacks: { onSurveyStatus },
+      };
+
+      const survey = new ModalSurvey(mockUrlBuilder, config);
+      createdModals.push(survey);
+
+      // Send an error status message
+      const event = new MessageEvent('message', {
+        data: {
+          type: 'hc:status',
+          status: 'error',
+          reason: 'internal_error',
+          message: 'An unexpected error occurred',
+        },
+        origin: 'https://example.com',
+      });
+      window.dispatchEvent(event);
+
+      expect(onSurveyStatus).toHaveBeenCalledWith({
+        status: 'error',
+        reason: 'internal_error',
+        message: 'An unexpected error occurred',
+      });
+    });
+
+    test('should not throw if onSurveyStatus callback not provided', () => {
+      const config: ModalSurveyConfig = {
+        statusTimeout: 1000,
+      };
+
+      const survey = new ModalSurvey(mockUrlBuilder, config);
+      createdModals.push(survey);
+
+      // Should not throw when status message received
+      expect(() => {
+        const event = new MessageEvent('message', {
+          data: { type: 'hc:status', status: 'ready' },
+          origin: 'https://example.com',
+        });
+        window.dispatchEvent(event);
+      }).not.toThrow();
+
+      // Should not throw when timeout fires
+      expect(() => {
+        jest.advanceTimersByTime(2000);
+      }).not.toThrow();
+    });
+
+    test('should clear statusTimeoutId on destroy', () => {
+      const config: ModalSurveyConfig = {
+        statusTimeout: 5000,
+      };
+
+      const survey = new ModalSurvey(mockUrlBuilder, config);
+      createdModals.push(survey);
+
+      // Verify statusTimeoutId is set
+      expect(survey['statusTimeoutId']).toBeDefined();
+
+      // Destroy
+      survey.destroy();
+
+      // Verify statusTimeoutId is cleared
+      expect(survey['statusTimeoutId']).toBeUndefined();
     });
   });
 });

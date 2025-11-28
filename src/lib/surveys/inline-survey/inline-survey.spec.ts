@@ -1443,8 +1443,6 @@ describe('InlineSurvey', () => {
       container.id = 'survey-container';
       document.body.appendChild(container);
 
-      const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
-
       const config: InlineSurveyConfig = {
         elementSelector: '#survey-container',
         autoHeight: true,
@@ -1459,13 +1457,355 @@ describe('InlineSurvey', () => {
       });
       window.dispatchEvent(event);
 
-      // Height should not be set
+      // Height should not be set - message silently rejected for security
       expect(survey.iFrame.style.height).toBe('');
-      expect(consoleWarnSpy).toHaveBeenCalledWith(
-        expect.stringContaining('unexpected origin'),
-      );
+    });
+  });
 
-      consoleWarnSpy.mockRestore();
+  describe('K. Survey Status Detection Tests', () => {
+    beforeEach(() => {
+      jest.useFakeTimers();
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    test('should call onSurveyStatus with ready when survey sends ready message', () => {
+      const container = document.createElement('div');
+      container.id = 'survey-container';
+      document.body.appendChild(container);
+
+      const onSurveyStatus = jest.fn();
+      const config: InlineSurveyConfig = {
+        elementSelector: '#survey-container',
+        callbacks: { onSurveyStatus },
+      };
+
+      new InlineSurvey(mockUrlBuilder, config);
+
+      // Send a status message
+      const event = new MessageEvent('message', {
+        data: { type: 'hc:status', status: 'ready' },
+        origin: 'https://example.com',
+      });
+      window.dispatchEvent(event);
+
+      expect(onSurveyStatus).toHaveBeenCalledWith({
+        status: 'ready',
+        reason: undefined,
+        message: undefined,
+      });
+    });
+
+    test('should call onSurveyStatus with unavailable when survey is deactivated', () => {
+      const container = document.createElement('div');
+      container.id = 'survey-container';
+      document.body.appendChild(container);
+
+      const onSurveyStatus = jest.fn();
+      const config: InlineSurveyConfig = {
+        elementSelector: '#survey-container',
+        callbacks: { onSurveyStatus },
+      };
+
+      new InlineSurvey(mockUrlBuilder, config);
+
+      // Send an unavailable status message
+      const event = new MessageEvent('message', {
+        data: {
+          type: 'hc:status',
+          status: 'unavailable',
+          reason: 'deactivated',
+          message: 'This survey has been deactivated',
+        },
+        origin: 'https://example.com',
+      });
+      window.dispatchEvent(event);
+
+      expect(onSurveyStatus).toHaveBeenCalledWith({
+        status: 'unavailable',
+        reason: 'deactivated',
+        message: 'This survey has been deactivated',
+      });
+    });
+
+    test('should call onSurveyStatus with timeout if no message received within timeout', () => {
+      const container = document.createElement('div');
+      container.id = 'survey-container';
+      document.body.appendChild(container);
+
+      const onSurveyStatus = jest.fn();
+      const config: InlineSurveyConfig = {
+        elementSelector: '#survey-container',
+        statusTimeout: 5000,
+        callbacks: { onSurveyStatus },
+      };
+
+      new InlineSurvey(mockUrlBuilder, config);
+
+      // Fast-forward time to trigger timeout
+      jest.advanceTimersByTime(5000);
+
+      expect(onSurveyStatus).toHaveBeenCalledWith({
+        status: 'timeout',
+        reason: 'no_response',
+        message: 'Survey did not respond within timeout period',
+      });
+    });
+
+    test('should use default 10 second timeout', () => {
+      const container = document.createElement('div');
+      container.id = 'survey-container';
+      document.body.appendChild(container);
+
+      const onSurveyStatus = jest.fn();
+      const config: InlineSurveyConfig = {
+        elementSelector: '#survey-container',
+        callbacks: { onSurveyStatus },
+      };
+
+      new InlineSurvey(mockUrlBuilder, config);
+
+      // Should not trigger after 9 seconds
+      jest.advanceTimersByTime(9000);
+      expect(onSurveyStatus).not.toHaveBeenCalled();
+
+      // Should trigger after 10 seconds
+      jest.advanceTimersByTime(1000);
+      expect(onSurveyStatus).toHaveBeenCalledWith({
+        status: 'timeout',
+        reason: 'no_response',
+        message: 'Survey did not respond within timeout period',
+      });
+    });
+
+    test('should not trigger timeout callback if status received in time', () => {
+      const container = document.createElement('div');
+      container.id = 'survey-container';
+      document.body.appendChild(container);
+
+      const onSurveyStatus = jest.fn();
+      const config: InlineSurveyConfig = {
+        elementSelector: '#survey-container',
+        statusTimeout: 5000,
+        callbacks: { onSurveyStatus },
+      };
+
+      new InlineSurvey(mockUrlBuilder, config);
+
+      // Advance time partially
+      jest.advanceTimersByTime(3000);
+
+      // Send a status message before timeout
+      const event = new MessageEvent('message', {
+        data: { type: 'hc:status', status: 'ready' },
+        origin: 'https://example.com',
+      });
+      window.dispatchEvent(event);
+
+      expect(onSurveyStatus).toHaveBeenCalledWith({
+        status: 'ready',
+        reason: undefined,
+        message: undefined,
+      });
+      expect(onSurveyStatus).toHaveBeenCalledTimes(1);
+
+      // Advance past the timeout
+      jest.advanceTimersByTime(3000);
+
+      // Should still only have one call (the ready one, not timeout)
+      expect(onSurveyStatus).toHaveBeenCalledTimes(1);
+    });
+
+    test('should clear timeout on destroy', () => {
+      const container = document.createElement('div');
+      container.id = 'survey-container';
+      document.body.appendChild(container);
+
+      const onSurveyStatus = jest.fn();
+      const config: InlineSurveyConfig = {
+        elementSelector: '#survey-container',
+        statusTimeout: 5000,
+        callbacks: { onSurveyStatus },
+      };
+
+      const survey = new InlineSurvey(mockUrlBuilder, config);
+
+      // Destroy before timeout
+      survey.destroy();
+
+      // Advance past the timeout
+      jest.advanceTimersByTime(6000);
+
+      // Should not have been called
+      expect(onSurveyStatus).not.toHaveBeenCalled();
+    });
+
+    test('should ignore status messages from wrong origin', () => {
+      const container = document.createElement('div');
+      container.id = 'survey-container';
+      document.body.appendChild(container);
+
+      const onSurveyStatus = jest.fn();
+      const config: InlineSurveyConfig = {
+        elementSelector: '#survey-container',
+        statusTimeout: 0, // Disable timeout for this test
+        callbacks: { onSurveyStatus },
+      };
+
+      new InlineSurvey(mockUrlBuilder, config);
+
+      // Send a status message from wrong origin
+      const event = new MessageEvent('message', {
+        data: { type: 'hc:status', status: 'ready' },
+        origin: 'https://malicious.com',
+      });
+      window.dispatchEvent(event);
+
+      // Callback should not be called - message silently rejected for security
+      expect(onSurveyStatus).not.toHaveBeenCalled();
+    });
+
+    test('should handle malformed status messages gracefully', () => {
+      const container = document.createElement('div');
+      container.id = 'survey-container';
+      document.body.appendChild(container);
+
+      const onSurveyStatus = jest.fn();
+      const config: InlineSurveyConfig = {
+        elementSelector: '#survey-container',
+        statusTimeout: 0, // Disable timeout for this test
+        callbacks: { onSurveyStatus },
+      };
+
+      new InlineSurvey(mockUrlBuilder, config);
+
+      // Send various malformed messages
+      const malformedMessages = [
+        { type: 'hc:status' }, // missing status
+        { type: 'wrong:type', status: 'ready' }, // wrong type
+        { status: 'ready' }, // missing type
+        { type: 'hc:status', status: 123 }, // non-string status
+        null,
+        'string message',
+        123,
+      ];
+
+      malformedMessages.forEach((data) => {
+        const event = new MessageEvent('message', {
+          data,
+          origin: 'https://example.com',
+        });
+        window.dispatchEvent(event);
+      });
+
+      // Should not have been called for any malformed message
+      expect(onSurveyStatus).not.toHaveBeenCalled();
+    });
+
+    test('should not set up timeout when statusTimeout is 0', () => {
+      const container = document.createElement('div');
+      container.id = 'survey-container';
+      document.body.appendChild(container);
+
+      const onSurveyStatus = jest.fn();
+      const config: InlineSurveyConfig = {
+        elementSelector: '#survey-container',
+        statusTimeout: 0,
+        callbacks: { onSurveyStatus },
+      };
+
+      new InlineSurvey(mockUrlBuilder, config);
+
+      // Advance time well past default timeout
+      jest.advanceTimersByTime(20000);
+
+      // Should not have been called
+      expect(onSurveyStatus).not.toHaveBeenCalled();
+    });
+
+    test('should handle error status from survey', () => {
+      const container = document.createElement('div');
+      container.id = 'survey-container';
+      document.body.appendChild(container);
+
+      const onSurveyStatus = jest.fn();
+      const config: InlineSurveyConfig = {
+        elementSelector: '#survey-container',
+        callbacks: { onSurveyStatus },
+      };
+
+      new InlineSurvey(mockUrlBuilder, config);
+
+      // Send an error status message
+      const event = new MessageEvent('message', {
+        data: {
+          type: 'hc:status',
+          status: 'error',
+          reason: 'internal_error',
+          message: 'An unexpected error occurred',
+        },
+        origin: 'https://example.com',
+      });
+      window.dispatchEvent(event);
+
+      expect(onSurveyStatus).toHaveBeenCalledWith({
+        status: 'error',
+        reason: 'internal_error',
+        message: 'An unexpected error occurred',
+      });
+    });
+
+    test('should not throw if onSurveyStatus callback not provided', () => {
+      const container = document.createElement('div');
+      container.id = 'survey-container';
+      document.body.appendChild(container);
+
+      const config: InlineSurveyConfig = {
+        elementSelector: '#survey-container',
+        statusTimeout: 1000,
+      };
+
+      const survey = new InlineSurvey(mockUrlBuilder, config);
+
+      // Should not throw when status message received
+      expect(() => {
+        const event = new MessageEvent('message', {
+          data: { type: 'hc:status', status: 'ready' },
+          origin: 'https://example.com',
+        });
+        window.dispatchEvent(event);
+      }).not.toThrow();
+
+      // Should not throw when timeout fires
+      expect(() => {
+        jest.advanceTimersByTime(2000);
+      }).not.toThrow();
+
+      survey.destroy();
+    });
+
+    test('should clear statusTimeoutId on destroy', () => {
+      const container = document.createElement('div');
+      container.id = 'survey-container';
+      document.body.appendChild(container);
+
+      const config: InlineSurveyConfig = {
+        elementSelector: '#survey-container',
+        statusTimeout: 5000,
+      };
+
+      const survey = new InlineSurvey(mockUrlBuilder, config);
+
+      // Verify statusTimeoutId is set
+      expect(survey['statusTimeoutId']).toBeDefined();
+
+      // Destroy
+      survey.destroy();
+
+      // Verify statusTimeoutId is cleared
+      expect(survey['statusTimeoutId']).toBeUndefined();
     });
   });
 });

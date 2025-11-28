@@ -5,6 +5,7 @@ import { observeDOMRemoval } from '../../core/utils/dom-removal-observer.util';
 import { trueByDefault } from '../../core/utils/true-by-default.util';
 import { UrlBuilder } from '../../url-builder/url.builder';
 import { BaseSurvey } from '../common/base-survey';
+import { StatusMessage } from '../common/survey-status.interface';
 
 import { ClassNamesConfigType } from './class-names-config.type';
 import { ModalSurveyConfig } from './modal-survey-config.interface';
@@ -111,6 +112,9 @@ export class ModalSurvey extends BaseSurvey<ModalSurveyConfig> {
   private focusTrapActivationTimeout: ReturnType<typeof setTimeout> | null =
     null;
   private domRemovalCleanup?: () => void;
+  private statusTimeoutId?: ReturnType<typeof setTimeout>;
+  private statusReceived = false;
+  private internalMessageHandler?: (event: MessageEvent) => void;
 
   constructor(
     configBuilder: UrlBuilder,
@@ -131,10 +135,8 @@ export class ModalSurvey extends BaseSurvey<ModalSurveyConfig> {
       this.destroy(),
     );
 
-    // Set up auto-height listener if enabled
-    if (this.modalConfig.autoHeight) {
-      this.setupAutoHeightListener();
-    }
+    // Set up unified message listener for auto-height and status detection
+    this.setupMessageListener();
 
     if (!this.modalConfig.ignoreDefaultStyles) this.initModalClasses();
     this.reload();
@@ -261,6 +263,18 @@ export class ModalSurvey extends BaseSurvey<ModalSurveyConfig> {
     if (this.domRemovalCleanup) {
       this.domRemovalCleanup();
       this.domRemovalCleanup = undefined;
+    }
+
+    // Clean up status timeout if pending
+    if (this.statusTimeoutId) {
+      clearTimeout(this.statusTimeoutId);
+      this.statusTimeoutId = undefined;
+    }
+
+    // Clean up internal message handler
+    if (this.internalMessageHandler) {
+      window.removeEventListener('message', this.internalMessageHandler);
+      this.internalMessageHandler = undefined;
     }
 
     // Deactivate focus trap
@@ -399,16 +413,51 @@ export class ModalSurvey extends BaseSurvey<ModalSurveyConfig> {
   }
 
   /**
-   * Set up listener for auto-height resize messages from the survey iframe.
+   * Set up internal message listener for auto-height and status messages.
+   * Uses a separate listener from onMessage() to avoid conflicts with external usage.
+   * Handles hc:resize (auto-height) and hc:status (survey availability) messages.
    * @private
    */
-  private setupAutoHeightListener(): void {
-    this.onMessage((data: unknown) => {
-      if (this.isResizeMessage(data)) {
+  private setupMessageListener(): void {
+    // Get expected origin for security verification
+    const expectedOrigin = new URL(this.urlFactory!.getBaseUrlWithLanguage())
+      .origin;
+
+    this.internalMessageHandler = (event: MessageEvent) => {
+      // Verify origin for security
+      if (event.origin !== expectedOrigin) {
+        return;
+      }
+
+      const data = event.data;
+
+      // Handle auto-height resize messages
+      if (this.modalConfig.autoHeight && this.isResizeMessage(data)) {
         const constrainedHeight = this.applyHeightConstraints(data.height);
         this.iFrameHandle!.style.height = `${constrainedHeight}px`;
       }
-    });
+
+      // Handle status messages
+      if (this.isStatusMessage(data)) {
+        this.handleStatusMessage(data);
+      }
+    };
+
+    window.addEventListener('message', this.internalMessageHandler);
+
+    // Setup timeout for surveys that don't respond with status
+    const timeout = this.modalConfig.statusTimeout ?? 10000;
+    if (timeout > 0) {
+      this.statusTimeoutId = setTimeout(() => {
+        if (!this.statusReceived) {
+          this.modalConfig.callbacks?.onSurveyStatus?.({
+            status: 'timeout',
+            reason: 'no_response',
+            message: 'Survey did not respond within timeout period',
+          });
+        }
+      }, timeout);
+    }
   }
 
   /**
@@ -444,6 +493,41 @@ export class ModalSurvey extends BaseSurvey<ModalSurveyConfig> {
     }
 
     return result;
+  }
+
+  /**
+   * Type guard to check if a message is a valid status message.
+   * @private
+   */
+  private isStatusMessage(data: unknown): data is StatusMessage {
+    return (
+      typeof data === 'object' &&
+      data !== null &&
+      'type' in data &&
+      (data as StatusMessage).type === 'hc:status' &&
+      'status' in data &&
+      typeof (data as StatusMessage).status === 'string'
+    );
+  }
+
+  /**
+   * Handle an incoming status message from the survey iframe.
+   * @private
+   */
+  private handleStatusMessage(message: StatusMessage): void {
+    this.statusReceived = true;
+
+    // Clear the timeout since we received a response
+    if (this.statusTimeoutId) {
+      clearTimeout(this.statusTimeoutId);
+      this.statusTimeoutId = undefined;
+    }
+
+    this.modalConfig.callbacks?.onSurveyStatus?.({
+      status: message.status,
+      reason: message.reason,
+      message: message.message,
+    });
   }
 
   private computeModalStyle(): Required<
