@@ -53,4 +53,30 @@ export interface ModalSurveyConfig extends BaseSurveyConfig {
    * Provides additional context to screen readers
    */
   ariaDescription?: string;
+  /**
+   * Enable auto-height adjustment based on survey content.
+   * When enabled, the iframe height will automatically adjust when receiving
+   * resize messages from the survey (requires backend support).
+   *
+   * @example
+   * ```typescript
+   * const modal = new ModalSurvey(urlBuilder, {
+   *   autoHeight: true,
+   *   maxHeight: 600, // Cap at 600px to fit viewport
+   * });
+   * ```
+   */
+  autoHeight?: boolean;
+  /**
+   * Minimum height constraint in pixels for auto-height mode.
+   * The iframe will never be shorter than this value.
+   * Only applies when `autoHeight` is enabled.
+   */
+  minHeight?: number;
+  /**
+   * Maximum height constraint in pixels for auto-height mode.
+   * The iframe will never be taller than this value (content will scroll).
+   * Only applies when `autoHeight` is enabled.
+   */
+  maxHeight?: number;
 }

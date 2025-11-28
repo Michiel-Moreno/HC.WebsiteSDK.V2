@@ -1120,4 +1120,352 @@ describe('InlineSurvey', () => {
       expect(document.body.children.length).toBe(0);
     });
   });
+
+  describe('J. Auto-Height Tests', () => {
+    test('should set up auto-height listener when autoHeight is enabled', () => {
+      const container = document.createElement('div');
+      container.id = 'survey-container';
+      document.body.appendChild(container);
+
+      const config: InlineSurveyConfig = {
+        elementSelector: '#survey-container',
+        autoHeight: true,
+      };
+
+      const survey = new InlineSurvey(mockUrlBuilder, config);
+
+      // Send a resize message
+      const event = new MessageEvent('message', {
+        data: { type: 'hc:resize', height: 500 },
+        origin: 'https://example.com',
+      });
+      window.dispatchEvent(event);
+
+      expect(survey.iFrame.style.height).toBe('500px');
+    });
+
+    test('should not set up auto-height listener when autoHeight is disabled', () => {
+      const container = document.createElement('div');
+      container.id = 'survey-container';
+      document.body.appendChild(container);
+
+      const config: InlineSurveyConfig = {
+        elementSelector: '#survey-container',
+        autoHeight: false,
+      };
+
+      const survey = new InlineSurvey(mockUrlBuilder, config);
+
+      // Send a resize message
+      const event = new MessageEvent('message', {
+        data: { type: 'hc:resize', height: 500 },
+        origin: 'https://example.com',
+      });
+      window.dispatchEvent(event);
+
+      // Height should not be set
+      expect(survey.iFrame.style.height).toBe('');
+    });
+
+    test('should ignore messages with wrong type', () => {
+      const container = document.createElement('div');
+      container.id = 'survey-container';
+      document.body.appendChild(container);
+
+      const config: InlineSurveyConfig = {
+        elementSelector: '#survey-container',
+        autoHeight: true,
+      };
+
+      const survey = new InlineSurvey(mockUrlBuilder, config);
+
+      // Send a message with wrong type
+      const event = new MessageEvent('message', {
+        data: { type: 'other:resize', height: 500 },
+        origin: 'https://example.com',
+      });
+      window.dispatchEvent(event);
+
+      // Height should not be set
+      expect(survey.iFrame.style.height).toBe('');
+    });
+
+    test('should ignore messages without height property', () => {
+      const container = document.createElement('div');
+      container.id = 'survey-container';
+      document.body.appendChild(container);
+
+      const config: InlineSurveyConfig = {
+        elementSelector: '#survey-container',
+        autoHeight: true,
+      };
+
+      const survey = new InlineSurvey(mockUrlBuilder, config);
+
+      // Send a message without height
+      const event = new MessageEvent('message', {
+        data: { type: 'hc:resize' },
+        origin: 'https://example.com',
+      });
+      window.dispatchEvent(event);
+
+      // Height should not be set
+      expect(survey.iFrame.style.height).toBe('');
+    });
+
+    test('should ignore messages with non-numeric height', () => {
+      const container = document.createElement('div');
+      container.id = 'survey-container';
+      document.body.appendChild(container);
+
+      const config: InlineSurveyConfig = {
+        elementSelector: '#survey-container',
+        autoHeight: true,
+      };
+
+      const survey = new InlineSurvey(mockUrlBuilder, config);
+
+      // Send a message with string height
+      const event = new MessageEvent('message', {
+        data: { type: 'hc:resize', height: '500px' },
+        origin: 'https://example.com',
+      });
+      window.dispatchEvent(event);
+
+      // Height should not be set
+      expect(survey.iFrame.style.height).toBe('');
+    });
+
+    test('should apply minHeight constraint', () => {
+      const container = document.createElement('div');
+      container.id = 'survey-container';
+      document.body.appendChild(container);
+
+      const config: InlineSurveyConfig = {
+        elementSelector: '#survey-container',
+        autoHeight: true,
+        minHeight: 400,
+      };
+
+      const survey = new InlineSurvey(mockUrlBuilder, config);
+
+      // Send a resize message with height below minHeight
+      const event = new MessageEvent('message', {
+        data: { type: 'hc:resize', height: 200 },
+        origin: 'https://example.com',
+      });
+      window.dispatchEvent(event);
+
+      // Should be clamped to minHeight
+      expect(survey.iFrame.style.height).toBe('400px');
+    });
+
+    test('should apply maxHeight constraint', () => {
+      const container = document.createElement('div');
+      container.id = 'survey-container';
+      document.body.appendChild(container);
+
+      const config: InlineSurveyConfig = {
+        elementSelector: '#survey-container',
+        autoHeight: true,
+        maxHeight: 600,
+      };
+
+      const survey = new InlineSurvey(mockUrlBuilder, config);
+
+      // Send a resize message with height above maxHeight
+      const event = new MessageEvent('message', {
+        data: { type: 'hc:resize', height: 1000 },
+        origin: 'https://example.com',
+      });
+      window.dispatchEvent(event);
+
+      // Should be clamped to maxHeight
+      expect(survey.iFrame.style.height).toBe('600px');
+    });
+
+    test('should apply both minHeight and maxHeight constraints', () => {
+      const container = document.createElement('div');
+      container.id = 'survey-container';
+      document.body.appendChild(container);
+
+      const config: InlineSurveyConfig = {
+        elementSelector: '#survey-container',
+        autoHeight: true,
+        minHeight: 300,
+        maxHeight: 800,
+      };
+
+      const survey = new InlineSurvey(mockUrlBuilder, config);
+
+      // Test below minHeight
+      const event1 = new MessageEvent('message', {
+        data: { type: 'hc:resize', height: 100 },
+        origin: 'https://example.com',
+      });
+      window.dispatchEvent(event1);
+      expect(survey.iFrame.style.height).toBe('300px');
+
+      // Test above maxHeight
+      const event2 = new MessageEvent('message', {
+        data: { type: 'hc:resize', height: 1200 },
+        origin: 'https://example.com',
+      });
+      window.dispatchEvent(event2);
+      expect(survey.iFrame.style.height).toBe('800px');
+
+      // Test within range
+      const event3 = new MessageEvent('message', {
+        data: { type: 'hc:resize', height: 500 },
+        origin: 'https://example.com',
+      });
+      window.dispatchEvent(event3);
+      expect(survey.iFrame.style.height).toBe('500px');
+    });
+
+    test('should allow height exactly at minHeight', () => {
+      const container = document.createElement('div');
+      container.id = 'survey-container';
+      document.body.appendChild(container);
+
+      const config: InlineSurveyConfig = {
+        elementSelector: '#survey-container',
+        autoHeight: true,
+        minHeight: 400,
+      };
+
+      const survey = new InlineSurvey(mockUrlBuilder, config);
+
+      const event = new MessageEvent('message', {
+        data: { type: 'hc:resize', height: 400 },
+        origin: 'https://example.com',
+      });
+      window.dispatchEvent(event);
+
+      expect(survey.iFrame.style.height).toBe('400px');
+    });
+
+    test('should allow height exactly at maxHeight', () => {
+      const container = document.createElement('div');
+      container.id = 'survey-container';
+      document.body.appendChild(container);
+
+      const config: InlineSurveyConfig = {
+        elementSelector: '#survey-container',
+        autoHeight: true,
+        maxHeight: 800,
+      };
+
+      const survey = new InlineSurvey(mockUrlBuilder, config);
+
+      const event = new MessageEvent('message', {
+        data: { type: 'hc:resize', height: 800 },
+        origin: 'https://example.com',
+      });
+      window.dispatchEvent(event);
+
+      expect(survey.iFrame.style.height).toBe('800px');
+    });
+
+    test('should clean up auto-height listener on destroy', () => {
+      const container = document.createElement('div');
+      container.id = 'survey-container';
+      document.body.appendChild(container);
+
+      const config: InlineSurveyConfig = {
+        elementSelector: '#survey-container',
+        autoHeight: true,
+      };
+
+      const survey = new InlineSurvey(mockUrlBuilder, config);
+
+      // First verify auto-height works
+      const event1 = new MessageEvent('message', {
+        data: { type: 'hc:resize', height: 500 },
+        origin: 'https://example.com',
+      });
+      window.dispatchEvent(event1);
+      expect(survey.iFrame.style.height).toBe('500px');
+
+      // Now destroy the survey
+      survey.destroy();
+
+      // Create a new container and survey to check no cross-talk
+      const container2 = document.createElement('div');
+      container2.id = 'survey-container-2';
+      document.body.appendChild(container2);
+
+      const survey2 = new InlineSurvey(mockUrlBuilder, {
+        elementSelector: '#survey-container-2',
+        autoHeight: false,
+      });
+
+      // Send another resize message - should not affect destroyed survey
+      const event2 = new MessageEvent('message', {
+        data: { type: 'hc:resize', height: 700 },
+        origin: 'https://example.com',
+      });
+      window.dispatchEvent(event2);
+
+      // survey2 doesn't have autoHeight, so its height should be empty
+      expect(survey2.iFrame.style.height).toBe('');
+
+      survey2.destroy();
+    });
+
+    test('should handle multiple resize messages', () => {
+      const container = document.createElement('div');
+      container.id = 'survey-container';
+      document.body.appendChild(container);
+
+      const config: InlineSurveyConfig = {
+        elementSelector: '#survey-container',
+        autoHeight: true,
+      };
+
+      const survey = new InlineSurvey(mockUrlBuilder, config);
+
+      // Send multiple resize messages
+      const heights = [300, 450, 600, 350, 800];
+
+      heights.forEach((height) => {
+        const event = new MessageEvent('message', {
+          data: { type: 'hc:resize', height },
+          origin: 'https://example.com',
+        });
+        window.dispatchEvent(event);
+        expect(survey.iFrame.style.height).toBe(`${height}px`);
+      });
+    });
+
+    test('should reject resize messages from wrong origin', () => {
+      const container = document.createElement('div');
+      container.id = 'survey-container';
+      document.body.appendChild(container);
+
+      const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
+
+      const config: InlineSurveyConfig = {
+        elementSelector: '#survey-container',
+        autoHeight: true,
+      };
+
+      const survey = new InlineSurvey(mockUrlBuilder, config);
+
+      // Send a resize message from wrong origin
+      const event = new MessageEvent('message', {
+        data: { type: 'hc:resize', height: 500 },
+        origin: 'https://malicious.com',
+      });
+      window.dispatchEvent(event);
+
+      // Height should not be set
+      expect(survey.iFrame.style.height).toBe('');
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('unexpected origin'),
+      );
+
+      consoleWarnSpy.mockRestore();
+    });
+  });
 });

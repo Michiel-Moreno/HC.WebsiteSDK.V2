@@ -2076,4 +2076,247 @@ describe('ModalSurvey', () => {
       expect(StyledElementFactory.hasStyleClass(hoverClassName)).toBe(true);
     });
   });
+
+  describe('N. Auto-Height Tests', () => {
+    test('should set up auto-height listener when autoHeight is enabled', () => {
+      const config: ModalSurveyConfig = {
+        autoHeight: true,
+      };
+
+      const survey = new ModalSurvey(mockUrlBuilder, config);
+      createdModals.push(survey);
+
+      // Send a resize message
+      const event = new MessageEvent('message', {
+        data: { type: 'hc:resize', height: 500 },
+        origin: 'https://example.com',
+      });
+      window.dispatchEvent(event);
+
+      expect(survey.iFrame.style.height).toBe('500px');
+    });
+
+    test('should not set up auto-height listener when autoHeight is disabled', () => {
+      const config: ModalSurveyConfig = {
+        autoHeight: false,
+      };
+
+      const survey = new ModalSurvey(mockUrlBuilder, config);
+      createdModals.push(survey);
+
+      // Send a resize message
+      const event = new MessageEvent('message', {
+        data: { type: 'hc:resize', height: 500 },
+        origin: 'https://example.com',
+      });
+      window.dispatchEvent(event);
+
+      // Height should not be set to 500px
+      expect(survey.iFrame.style.height).not.toBe('500px');
+    });
+
+    test('should ignore messages with wrong type', () => {
+      const config: ModalSurveyConfig = {
+        autoHeight: true,
+      };
+
+      const survey = new ModalSurvey(mockUrlBuilder, config);
+      createdModals.push(survey);
+
+      const initialHeight = survey.iFrame.style.height;
+
+      // Send a message with wrong type
+      const event = new MessageEvent('message', {
+        data: { type: 'other:resize', height: 500 },
+        origin: 'https://example.com',
+      });
+      window.dispatchEvent(event);
+
+      // Height should not change
+      expect(survey.iFrame.style.height).toBe(initialHeight);
+    });
+
+    test('should ignore messages without height property', () => {
+      const config: ModalSurveyConfig = {
+        autoHeight: true,
+      };
+
+      const survey = new ModalSurvey(mockUrlBuilder, config);
+      createdModals.push(survey);
+
+      const initialHeight = survey.iFrame.style.height;
+
+      // Send a message without height
+      const event = new MessageEvent('message', {
+        data: { type: 'hc:resize' },
+        origin: 'https://example.com',
+      });
+      window.dispatchEvent(event);
+
+      // Height should not change
+      expect(survey.iFrame.style.height).toBe(initialHeight);
+    });
+
+    test('should apply minHeight constraint', () => {
+      const config: ModalSurveyConfig = {
+        autoHeight: true,
+        minHeight: 400,
+      };
+
+      const survey = new ModalSurvey(mockUrlBuilder, config);
+      createdModals.push(survey);
+
+      // Send a resize message with height below minHeight
+      const event = new MessageEvent('message', {
+        data: { type: 'hc:resize', height: 200 },
+        origin: 'https://example.com',
+      });
+      window.dispatchEvent(event);
+
+      // Should be clamped to minHeight
+      expect(survey.iFrame.style.height).toBe('400px');
+    });
+
+    test('should apply maxHeight constraint', () => {
+      const config: ModalSurveyConfig = {
+        autoHeight: true,
+        maxHeight: 600,
+      };
+
+      const survey = new ModalSurvey(mockUrlBuilder, config);
+      createdModals.push(survey);
+
+      // Send a resize message with height above maxHeight
+      const event = new MessageEvent('message', {
+        data: { type: 'hc:resize', height: 1000 },
+        origin: 'https://example.com',
+      });
+      window.dispatchEvent(event);
+
+      // Should be clamped to maxHeight
+      expect(survey.iFrame.style.height).toBe('600px');
+    });
+
+    test('should apply both minHeight and maxHeight constraints', () => {
+      const config: ModalSurveyConfig = {
+        autoHeight: true,
+        minHeight: 300,
+        maxHeight: 800,
+      };
+
+      const survey = new ModalSurvey(mockUrlBuilder, config);
+      createdModals.push(survey);
+
+      // Test below minHeight
+      const event1 = new MessageEvent('message', {
+        data: { type: 'hc:resize', height: 100 },
+        origin: 'https://example.com',
+      });
+      window.dispatchEvent(event1);
+      expect(survey.iFrame.style.height).toBe('300px');
+
+      // Test above maxHeight
+      const event2 = new MessageEvent('message', {
+        data: { type: 'hc:resize', height: 1200 },
+        origin: 'https://example.com',
+      });
+      window.dispatchEvent(event2);
+      expect(survey.iFrame.style.height).toBe('800px');
+
+      // Test within range
+      const event3 = new MessageEvent('message', {
+        data: { type: 'hc:resize', height: 500 },
+        origin: 'https://example.com',
+      });
+      window.dispatchEvent(event3);
+      expect(survey.iFrame.style.height).toBe('500px');
+    });
+
+    test('should handle multiple resize messages', () => {
+      const config: ModalSurveyConfig = {
+        autoHeight: true,
+      };
+
+      const survey = new ModalSurvey(mockUrlBuilder, config);
+      createdModals.push(survey);
+
+      // Send multiple resize messages
+      const heights = [300, 450, 600, 350, 800];
+
+      heights.forEach((height) => {
+        const event = new MessageEvent('message', {
+          data: { type: 'hc:resize', height },
+          origin: 'https://example.com',
+        });
+        window.dispatchEvent(event);
+        expect(survey.iFrame.style.height).toBe(`${height}px`);
+      });
+    });
+
+    test('should reject resize messages from wrong origin', () => {
+      const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
+
+      const config: ModalSurveyConfig = {
+        autoHeight: true,
+      };
+
+      const survey = new ModalSurvey(mockUrlBuilder, config);
+      createdModals.push(survey);
+
+      const initialHeight = survey.iFrame.style.height;
+
+      // Send a resize message from wrong origin
+      const event = new MessageEvent('message', {
+        data: { type: 'hc:resize', height: 500 },
+        origin: 'https://malicious.com',
+      });
+      window.dispatchEvent(event);
+
+      // Height should not change
+      expect(survey.iFrame.style.height).toBe(initialHeight);
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('unexpected origin'),
+      );
+
+      consoleWarnSpy.mockRestore();
+    });
+
+    test('should clean up auto-height listener on destroy', () => {
+      const config: ModalSurveyConfig = {
+        autoHeight: true,
+      };
+
+      const survey = new ModalSurvey(mockUrlBuilder, config);
+      createdModals.push(survey);
+
+      // First verify auto-height works
+      const event1 = new MessageEvent('message', {
+        data: { type: 'hc:resize', height: 500 },
+        origin: 'https://example.com',
+      });
+      window.dispatchEvent(event1);
+      expect(survey.iFrame.style.height).toBe('500px');
+
+      // Now destroy the survey
+      survey.destroy();
+
+      // Create a new survey without auto-height
+      const survey2 = new ModalSurvey(mockUrlBuilder, {
+        autoHeight: false,
+      });
+      createdModals.push(survey2);
+
+      const initialHeight = survey2.iFrame.style.height;
+
+      // Send another resize message - should not affect new survey
+      const event2 = new MessageEvent('message', {
+        data: { type: 'hc:resize', height: 700 },
+        origin: 'https://example.com',
+      });
+      window.dispatchEvent(event2);
+
+      // survey2 doesn't have autoHeight, so its height should not change
+      expect(survey2.iFrame.style.height).toBe(initialHeight);
+    });
+  });
 });

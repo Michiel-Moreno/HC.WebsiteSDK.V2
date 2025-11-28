@@ -131,6 +131,11 @@ export class ModalSurvey extends BaseSurvey<ModalSurveyConfig> {
       this.destroy(),
     );
 
+    // Set up auto-height listener if enabled
+    if (this.modalConfig.autoHeight) {
+      this.setupAutoHeightListener();
+    }
+
     if (!this.modalConfig.ignoreDefaultStyles) this.initModalClasses();
     this.reload();
     if (this.modalConfig.showByDefault) this.show();
@@ -391,6 +396,54 @@ export class ModalSurvey extends BaseSurvey<ModalSurveyConfig> {
       this.focusTrapHandler = null;
       this.focusTrapHandlerCast = null;
     }
+  }
+
+  /**
+   * Set up listener for auto-height resize messages from the survey iframe.
+   * @private
+   */
+  private setupAutoHeightListener(): void {
+    this.onMessage((data: unknown) => {
+      if (this.isResizeMessage(data)) {
+        const constrainedHeight = this.applyHeightConstraints(data.height);
+        this.iFrameHandle!.style.height = `${constrainedHeight}px`;
+      }
+    });
+  }
+
+  /**
+   * Type guard to check if a message is a valid resize message.
+   * @private
+   */
+  private isResizeMessage(
+    data: unknown,
+  ): data is { type: string; height: number } {
+    return (
+      typeof data === 'object' &&
+      data !== null &&
+      'type' in data &&
+      (data as { type: string }).type === 'hc:resize' &&
+      'height' in data &&
+      typeof (data as { height: number }).height === 'number'
+    );
+  }
+
+  /**
+   * Apply min/max height constraints to the given height.
+   * @private
+   */
+  private applyHeightConstraints(height: number): number {
+    let result = height;
+
+    if (this.modalConfig.minHeight !== undefined) {
+      result = Math.max(result, this.modalConfig.minHeight);
+    }
+
+    if (this.modalConfig.maxHeight !== undefined) {
+      result = Math.min(result, this.modalConfig.maxHeight);
+    }
+
+    return result;
   }
 
   private computeModalStyle(): Required<
