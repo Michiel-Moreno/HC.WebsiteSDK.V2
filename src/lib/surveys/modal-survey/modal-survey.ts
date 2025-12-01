@@ -100,6 +100,7 @@ import { closeIconSvgElementFactory } from './modal-survey.svg-factory';
  */
 export class ModalSurvey extends BaseSurvey<ModalSurveyConfig> {
   private readonly modalHandle: HTMLDivElement;
+  private readonly windowHandle: HTMLDivElement;
   private readonly computedStyles: Required<
     Omit<ModalSurveyStyleConfig, 'windowCloseButtonHoverStyle'>
   > &
@@ -126,9 +127,10 @@ export class ModalSurvey extends BaseSurvey<ModalSurveyConfig> {
     // ModalSurvey-specific initialization
     this.computedStyles = this.computeModalStyle();
     this.computedClassNames = this.computeClassNames();
-    const [root, frame] = this.createModal();
+    const [root, windowDiv, frame] = this.createModal();
     this.iFrameHandle = frame;
     this.modalHandle = root;
+    this.windowHandle = windowDiv;
 
     // Set up DOM removal detection
     this.domRemovalCleanup = observeDOMRemoval(this.modalHandle, () =>
@@ -429,17 +431,66 @@ export class ModalSurvey extends BaseSurvey<ModalSurveyConfig> {
         return;
       }
 
+      // Verify message is from this modal's iframe (not another iframe on the page)
+      // Only check if source is defined (JSDOM in tests doesn't set source)
+      if (event.source && event.source !== this.iFrameHandle?.contentWindow) {
+        return;
+      }
+
       const data = event.data;
 
       // Handle auto-height resize messages
       if (this.modalConfig.autoHeight && this.isResizeMessage(data)) {
         const constrainedHeight = this.applyHeightConstraints(data.height);
         this.iFrameHandle!.style.height = `${constrainedHeight}px`;
+        // Set window to auto height so it resizes with content
+        this.windowHandle.style.height = 'auto';
+        this.windowHandle.style.maxHeight = 'none';
       }
 
       // Handle status messages
       if (this.isStatusMessage(data)) {
         this.handleStatusMessage(data);
+      }
+
+      // Handle completed messages
+      if (this.isCompletedMessage(data)) {
+        this.modalConfig.callbacks?.onCompleted?.({
+          timestamp: data.timestamp,
+        });
+
+        // Auto-close modal if configured
+        if (this.modalConfig.autoCloseOnComplete) {
+          this.hide();
+        }
+      }
+
+      // Handle page changed messages
+      if (this.isPageChangedMessage(data)) {
+        this.modalConfig.callbacks?.onPageChanged?.({
+          currentPage: data.currentPage,
+          totalPages: data.totalPages,
+          timestamp: data.timestamp,
+        });
+      }
+
+      // Handle selected messages
+      if (this.isSelectedMessage(data)) {
+        this.modalConfig.callbacks?.onSelected?.({
+          questionType: data.questionType,
+          questionId: data.questionId,
+          questionIndex: data.questionIndex,
+          pageIndex: data.pageIndex,
+          timestamp: data.timestamp,
+        });
+      }
+
+      // Handle first interaction messages
+      if (this.isFirstInteractionMessage(data)) {
+        this.modalConfig.callbacks?.onFirstInteraction?.({
+          questionType: data.questionType,
+          timestamp: data.timestamp,
+        });
       }
     };
 
@@ -507,6 +558,87 @@ export class ModalSurvey extends BaseSurvey<ModalSurveyConfig> {
       (data as StatusMessage).type === 'hc:status' &&
       'status' in data &&
       typeof (data as StatusMessage).status === 'string'
+    );
+  }
+
+  /**
+   * Type guard to check if a message is a valid completed message.
+   * @private
+   */
+  private isCompletedMessage(
+    data: unknown,
+  ): data is { type: 'hc:completed'; timestamp: number } {
+    const d = data as Record<string, unknown>;
+    return (
+      typeof data === 'object' &&
+      data !== null &&
+      d.type === 'hc:completed' &&
+      typeof d.timestamp === 'number'
+    );
+  }
+
+  /**
+   * Type guard to check if a message is a valid page changed message.
+   * @private
+   */
+  private isPageChangedMessage(data: unknown): data is {
+    type: 'hc:pagechanged';
+    currentPage: number;
+    totalPages: number;
+    timestamp: number;
+  } {
+    const d = data as Record<string, unknown>;
+    return (
+      typeof data === 'object' &&
+      data !== null &&
+      d.type === 'hc:pagechanged' &&
+      typeof d.currentPage === 'number' &&
+      typeof d.totalPages === 'number' &&
+      typeof d.timestamp === 'number'
+    );
+  }
+
+  /**
+   * Type guard to check if a message is a valid selected message.
+   * @private
+   */
+  private isSelectedMessage(data: unknown): data is {
+    type: 'hc:selected';
+    questionType: string;
+    questionId: string;
+    questionIndex: number;
+    pageIndex: number;
+    timestamp: number;
+  } {
+    const d = data as Record<string, unknown>;
+    return (
+      typeof data === 'object' &&
+      data !== null &&
+      d.type === 'hc:selected' &&
+      typeof d.questionType === 'string' &&
+      typeof d.questionId === 'string' &&
+      typeof d.questionIndex === 'number' &&
+      typeof d.pageIndex === 'number' &&
+      typeof d.timestamp === 'number'
+    );
+  }
+
+  /**
+   * Type guard to check if a message is a valid first interaction message.
+   * @private
+   */
+  private isFirstInteractionMessage(data: unknown): data is {
+    type: 'hc:firstinteraction';
+    questionType: string;
+    timestamp: number;
+  } {
+    const d = data as Record<string, unknown>;
+    return (
+      typeof data === 'object' &&
+      data !== null &&
+      d.type === 'hc:firstinteraction' &&
+      typeof d.questionType === 'string' &&
+      typeof d.timestamp === 'number'
     );
   }
 
@@ -653,7 +785,7 @@ export class ModalSurvey extends BaseSurvey<ModalSurveyConfig> {
    *
    * @private
    */
-  private createModal(): [HTMLDivElement, HTMLIFrameElement] {
+  private createModal(): [HTMLDivElement, HTMLDivElement, HTMLIFrameElement] {
     const modalStyle = this.getModalStyle();
     const styleClasses = this.getClassNames();
     const iFrame = new StyledElementFactory(
@@ -768,6 +900,6 @@ export class ModalSurvey extends BaseSurvey<ModalSurveyConfig> {
         );
       root.appendChild(modalRoot);
     } else document.body.appendChild(modalRoot);
-    return [modalRoot, iFrame];
+    return [modalRoot, windowDiv, iFrame];
   }
 }

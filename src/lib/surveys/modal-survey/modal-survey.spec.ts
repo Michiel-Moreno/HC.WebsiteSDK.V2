@@ -2609,4 +2609,447 @@ describe('ModalSurvey', () => {
       expect(survey['statusTimeoutId']).toBeUndefined();
     });
   });
+
+  describe('L. Survey Completed Event Tests', () => {
+    test('should call onCompleted callback when valid completed message received', () => {
+      const onCompleted = jest.fn();
+      const config: ModalSurveyConfig = {
+        statusTimeout: 0,
+        callbacks: { onCompleted },
+      };
+
+      const survey = new ModalSurvey(mockUrlBuilder, config);
+      createdModals.push(survey);
+
+      const event = new MessageEvent('message', {
+        data: { type: 'hc:completed', timestamp: 1234567890 },
+        origin: 'https://example.com',
+      });
+      window.dispatchEvent(event);
+
+      expect(onCompleted).toHaveBeenCalledWith({ timestamp: 1234567890 });
+    });
+
+    test('should ignore completed message with missing timestamp', () => {
+      const onCompleted = jest.fn();
+      const config: ModalSurveyConfig = {
+        statusTimeout: 0,
+        callbacks: { onCompleted },
+      };
+
+      const survey = new ModalSurvey(mockUrlBuilder, config);
+      createdModals.push(survey);
+
+      const event = new MessageEvent('message', {
+        data: { type: 'hc:completed' },
+        origin: 'https://example.com',
+      });
+      window.dispatchEvent(event);
+
+      expect(onCompleted).not.toHaveBeenCalled();
+    });
+
+    test('should ignore completed message from wrong origin', () => {
+      const onCompleted = jest.fn();
+      const config: ModalSurveyConfig = {
+        statusTimeout: 0,
+        callbacks: { onCompleted },
+      };
+
+      const survey = new ModalSurvey(mockUrlBuilder, config);
+      createdModals.push(survey);
+
+      const event = new MessageEvent('message', {
+        data: { type: 'hc:completed', timestamp: 1234567890 },
+        origin: 'https://malicious.com',
+      });
+      window.dispatchEvent(event);
+
+      expect(onCompleted).not.toHaveBeenCalled();
+    });
+
+    test('should auto-close modal when autoCloseOnComplete is true', () => {
+      const onCompleted = jest.fn();
+      const onClose = jest.fn();
+      const config: ModalSurveyConfig = {
+        statusTimeout: 0,
+        autoCloseOnComplete: true,
+        showByDefault: true,
+        callbacks: { onCompleted, onClose },
+      };
+
+      const survey = new ModalSurvey(mockUrlBuilder, config);
+      createdModals.push(survey);
+
+      // Verify modal is visible
+      expect(
+        survey.modalContainer.classList.contains(
+          'hello-customer-modal--visible',
+        ),
+      ).toBe(true);
+
+      const event = new MessageEvent('message', {
+        data: { type: 'hc:completed', timestamp: 1234567890 },
+        origin: 'https://example.com',
+      });
+      window.dispatchEvent(event);
+
+      // Verify callbacks were called
+      expect(onCompleted).toHaveBeenCalledWith({ timestamp: 1234567890 });
+      expect(onClose).toHaveBeenCalled();
+
+      // Verify modal is hidden
+      expect(
+        survey.modalContainer.classList.contains(
+          'hello-customer-modal--visible',
+        ),
+      ).toBe(false);
+    });
+
+    test('should not auto-close modal when autoCloseOnComplete is false', () => {
+      const onCompleted = jest.fn();
+      const onClose = jest.fn();
+      const config: ModalSurveyConfig = {
+        statusTimeout: 0,
+        autoCloseOnComplete: false,
+        showByDefault: true,
+        callbacks: { onCompleted, onClose },
+      };
+
+      const survey = new ModalSurvey(mockUrlBuilder, config);
+      createdModals.push(survey);
+
+      const event = new MessageEvent('message', {
+        data: { type: 'hc:completed', timestamp: 1234567890 },
+        origin: 'https://example.com',
+      });
+      window.dispatchEvent(event);
+
+      expect(onCompleted).toHaveBeenCalled();
+      expect(onClose).not.toHaveBeenCalled();
+
+      // Verify modal is still visible
+      expect(
+        survey.modalContainer.classList.contains(
+          'hello-customer-modal--visible',
+        ),
+      ).toBe(true);
+    });
+
+    test('should not auto-close modal when autoCloseOnComplete is not set', () => {
+      const onCompleted = jest.fn();
+      const onClose = jest.fn();
+      const config: ModalSurveyConfig = {
+        statusTimeout: 0,
+        showByDefault: true,
+        callbacks: { onCompleted, onClose },
+      };
+
+      const survey = new ModalSurvey(mockUrlBuilder, config);
+      createdModals.push(survey);
+
+      const event = new MessageEvent('message', {
+        data: { type: 'hc:completed', timestamp: 1234567890 },
+        origin: 'https://example.com',
+      });
+      window.dispatchEvent(event);
+
+      expect(onCompleted).toHaveBeenCalled();
+      expect(onClose).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('M. Survey Page Changed Event Tests', () => {
+    test('should call onPageChanged callback when valid page changed message received', () => {
+      const onPageChanged = jest.fn();
+      const config: ModalSurveyConfig = {
+        statusTimeout: 0,
+        callbacks: { onPageChanged },
+      };
+
+      const survey = new ModalSurvey(mockUrlBuilder, config);
+      createdModals.push(survey);
+
+      const event = new MessageEvent('message', {
+        data: {
+          type: 'hc:pagechanged',
+          currentPage: 2,
+          totalPages: 5,
+          timestamp: 1234567890,
+        },
+        origin: 'https://example.com',
+      });
+      window.dispatchEvent(event);
+
+      expect(onPageChanged).toHaveBeenCalledWith({
+        currentPage: 2,
+        totalPages: 5,
+        timestamp: 1234567890,
+      });
+    });
+
+    test('should ignore page changed message with missing fields', () => {
+      const onPageChanged = jest.fn();
+      const config: ModalSurveyConfig = {
+        statusTimeout: 0,
+        callbacks: { onPageChanged },
+      };
+
+      const survey = new ModalSurvey(mockUrlBuilder, config);
+      createdModals.push(survey);
+
+      const malformedMessages = [
+        { type: 'hc:pagechanged', currentPage: 1 },
+        { type: 'hc:pagechanged', totalPages: 5 },
+        { type: 'hc:pagechanged', currentPage: 1, totalPages: 5 },
+      ];
+
+      malformedMessages.forEach((data) => {
+        const event = new MessageEvent('message', {
+          data,
+          origin: 'https://example.com',
+        });
+        window.dispatchEvent(event);
+      });
+
+      expect(onPageChanged).not.toHaveBeenCalled();
+    });
+
+    test('should ignore page changed message from wrong origin', () => {
+      const onPageChanged = jest.fn();
+      const config: ModalSurveyConfig = {
+        statusTimeout: 0,
+        callbacks: { onPageChanged },
+      };
+
+      const survey = new ModalSurvey(mockUrlBuilder, config);
+      createdModals.push(survey);
+
+      const event = new MessageEvent('message', {
+        data: {
+          type: 'hc:pagechanged',
+          currentPage: 2,
+          totalPages: 5,
+          timestamp: 1234567890,
+        },
+        origin: 'https://malicious.com',
+      });
+      window.dispatchEvent(event);
+
+      expect(onPageChanged).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('N. Survey Selected Event Tests', () => {
+    test('should call onSelected callback when valid selected message received', () => {
+      const onSelected = jest.fn();
+      const config: ModalSurveyConfig = {
+        statusTimeout: 0,
+        callbacks: { onSelected },
+      };
+
+      const survey = new ModalSurvey(mockUrlBuilder, config);
+      createdModals.push(survey);
+
+      const event = new MessageEvent('message', {
+        data: {
+          type: 'hc:selected',
+          questionType: 'NPS',
+          questionId: 'q1',
+          questionIndex: 0,
+          pageIndex: 0,
+          timestamp: 1234567890,
+        },
+        origin: 'https://example.com',
+      });
+      window.dispatchEvent(event);
+
+      expect(onSelected).toHaveBeenCalledWith({
+        questionType: 'NPS',
+        questionId: 'q1',
+        questionIndex: 0,
+        pageIndex: 0,
+        timestamp: 1234567890,
+      });
+    });
+
+    test('should call onSelected multiple times for multiple selections', () => {
+      const onSelected = jest.fn();
+      const config: ModalSurveyConfig = {
+        statusTimeout: 0,
+        callbacks: { onSelected },
+      };
+
+      const survey = new ModalSurvey(mockUrlBuilder, config);
+      createdModals.push(survey);
+
+      // First selection
+      window.dispatchEvent(
+        new MessageEvent('message', {
+          data: {
+            type: 'hc:selected',
+            questionType: 'NPS',
+            questionId: 'q1',
+            questionIndex: 0,
+            pageIndex: 0,
+            timestamp: 1234567890,
+          },
+          origin: 'https://example.com',
+        }),
+      );
+
+      // Second selection
+      window.dispatchEvent(
+        new MessageEvent('message', {
+          data: {
+            type: 'hc:selected',
+            questionType: 'NPS',
+            questionId: 'q1',
+            questionIndex: 0,
+            pageIndex: 0,
+            timestamp: 1234567891,
+          },
+          origin: 'https://example.com',
+        }),
+      );
+
+      expect(onSelected).toHaveBeenCalledTimes(2);
+    });
+
+    test('should ignore selected message with missing fields', () => {
+      const onSelected = jest.fn();
+      const config: ModalSurveyConfig = {
+        statusTimeout: 0,
+        callbacks: { onSelected },
+      };
+
+      const survey = new ModalSurvey(mockUrlBuilder, config);
+      createdModals.push(survey);
+
+      const malformedMessages = [
+        { type: 'hc:selected', questionType: 'NPS' },
+        { type: 'hc:selected', questionId: 'q1' },
+        {
+          type: 'hc:selected',
+          questionType: 'NPS',
+          questionId: 'q1',
+          questionIndex: 0,
+        },
+      ];
+
+      malformedMessages.forEach((data) => {
+        const event = new MessageEvent('message', {
+          data,
+          origin: 'https://example.com',
+        });
+        window.dispatchEvent(event);
+      });
+
+      expect(onSelected).not.toHaveBeenCalled();
+    });
+
+    test('should ignore selected message from wrong origin', () => {
+      const onSelected = jest.fn();
+      const config: ModalSurveyConfig = {
+        statusTimeout: 0,
+        callbacks: { onSelected },
+      };
+
+      const survey = new ModalSurvey(mockUrlBuilder, config);
+      createdModals.push(survey);
+
+      const event = new MessageEvent('message', {
+        data: {
+          type: 'hc:selected',
+          questionType: 'NPS',
+          questionId: 'q1',
+          questionIndex: 0,
+          pageIndex: 0,
+          timestamp: 1234567890,
+        },
+        origin: 'https://malicious.com',
+      });
+      window.dispatchEvent(event);
+
+      expect(onSelected).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('O. Survey First Interaction Event Tests', () => {
+    test('should call onFirstInteraction callback when valid first interaction message received', () => {
+      const onFirstInteraction = jest.fn();
+      const config: ModalSurveyConfig = {
+        statusTimeout: 0,
+        callbacks: { onFirstInteraction },
+      };
+
+      const survey = new ModalSurvey(mockUrlBuilder, config);
+      createdModals.push(survey);
+
+      const event = new MessageEvent('message', {
+        data: {
+          type: 'hc:firstinteraction',
+          questionType: 'NPS',
+          timestamp: 1234567890,
+        },
+        origin: 'https://example.com',
+      });
+      window.dispatchEvent(event);
+
+      expect(onFirstInteraction).toHaveBeenCalledWith({
+        questionType: 'NPS',
+        timestamp: 1234567890,
+      });
+    });
+
+    test('should ignore first interaction message with missing fields', () => {
+      const onFirstInteraction = jest.fn();
+      const config: ModalSurveyConfig = {
+        statusTimeout: 0,
+        callbacks: { onFirstInteraction },
+      };
+
+      const survey = new ModalSurvey(mockUrlBuilder, config);
+      createdModals.push(survey);
+
+      const malformedMessages = [
+        { type: 'hc:firstinteraction' },
+        { type: 'hc:firstinteraction', questionType: 'NPS' },
+        { type: 'hc:firstinteraction', timestamp: 123 },
+      ];
+
+      malformedMessages.forEach((data) => {
+        const event = new MessageEvent('message', {
+          data,
+          origin: 'https://example.com',
+        });
+        window.dispatchEvent(event);
+      });
+
+      expect(onFirstInteraction).not.toHaveBeenCalled();
+    });
+
+    test('should ignore first interaction message from wrong origin', () => {
+      const onFirstInteraction = jest.fn();
+      const config: ModalSurveyConfig = {
+        statusTimeout: 0,
+        callbacks: { onFirstInteraction },
+      };
+
+      const survey = new ModalSurvey(mockUrlBuilder, config);
+      createdModals.push(survey);
+
+      const event = new MessageEvent('message', {
+        data: {
+          type: 'hc:firstinteraction',
+          questionType: 'NPS',
+          timestamp: 1234567890,
+        },
+        origin: 'https://malicious.com',
+      });
+      window.dispatchEvent(event);
+
+      expect(onFirstInteraction).not.toHaveBeenCalled();
+    });
+  });
 });

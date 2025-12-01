@@ -103,4 +103,24 @@ export interface ModalSurveyConfig extends BaseSurveyConfig {
    * ```
    */
   statusTimeout?: number;
+  /**
+   * Automatically close (hide) the modal when survey is completed.
+   * When enabled, the modal will hide after receiving the `hc:completed` event.
+   * The `onCompleted` callback will still fire before the modal closes.
+   *
+   * @default false
+   *
+   * @example
+   * ```typescript
+   * const modal = new ModalSurvey(urlBuilder, {
+   *   autoCloseOnComplete: true,
+   *   callbacks: {
+   *     onCompleted: (event) => {
+   *       console.log('Survey completed, modal closing...');
+   *     }
+   *   }
+   * });
+   * ```
+   */
+  autoCloseOnComplete?: boolean;
 }

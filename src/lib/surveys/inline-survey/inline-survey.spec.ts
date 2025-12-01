@@ -1808,4 +1808,431 @@ describe('InlineSurvey', () => {
       expect(survey['statusTimeoutId']).toBeUndefined();
     });
   });
+
+  describe('L. Survey Completed Event Tests', () => {
+    test('should call onCompleted callback when valid completed message received', () => {
+      const container = document.createElement('div');
+      container.id = 'survey-container';
+      document.body.appendChild(container);
+
+      const onCompleted = jest.fn();
+      const config: InlineSurveyConfig = {
+        elementSelector: '#survey-container',
+        statusTimeout: 0,
+        callbacks: { onCompleted },
+      };
+
+      new InlineSurvey(mockUrlBuilder, config);
+
+      const event = new MessageEvent('message', {
+        data: { type: 'hc:completed', timestamp: 1234567890 },
+        origin: 'https://example.com',
+      });
+      window.dispatchEvent(event);
+
+      expect(onCompleted).toHaveBeenCalledWith({ timestamp: 1234567890 });
+    });
+
+    test('should ignore completed message with missing timestamp', () => {
+      const container = document.createElement('div');
+      container.id = 'survey-container';
+      document.body.appendChild(container);
+
+      const onCompleted = jest.fn();
+      const config: InlineSurveyConfig = {
+        elementSelector: '#survey-container',
+        statusTimeout: 0,
+        callbacks: { onCompleted },
+      };
+
+      new InlineSurvey(mockUrlBuilder, config);
+
+      const event = new MessageEvent('message', {
+        data: { type: 'hc:completed' },
+        origin: 'https://example.com',
+      });
+      window.dispatchEvent(event);
+
+      expect(onCompleted).not.toHaveBeenCalled();
+    });
+
+    test('should ignore completed message from wrong origin', () => {
+      const container = document.createElement('div');
+      container.id = 'survey-container';
+      document.body.appendChild(container);
+
+      const onCompleted = jest.fn();
+      const config: InlineSurveyConfig = {
+        elementSelector: '#survey-container',
+        statusTimeout: 0,
+        callbacks: { onCompleted },
+      };
+
+      new InlineSurvey(mockUrlBuilder, config);
+
+      const event = new MessageEvent('message', {
+        data: { type: 'hc:completed', timestamp: 1234567890 },
+        origin: 'https://malicious.com',
+      });
+      window.dispatchEvent(event);
+
+      expect(onCompleted).not.toHaveBeenCalled();
+    });
+
+    test('should not throw if onCompleted callback not provided', () => {
+      const container = document.createElement('div');
+      container.id = 'survey-container';
+      document.body.appendChild(container);
+
+      const config: InlineSurveyConfig = {
+        elementSelector: '#survey-container',
+        statusTimeout: 0,
+      };
+
+      new InlineSurvey(mockUrlBuilder, config);
+
+      expect(() => {
+        const event = new MessageEvent('message', {
+          data: { type: 'hc:completed', timestamp: 1234567890 },
+          origin: 'https://example.com',
+        });
+        window.dispatchEvent(event);
+      }).not.toThrow();
+    });
+  });
+
+  describe('M. Survey Page Changed Event Tests', () => {
+    test('should call onPageChanged callback when valid page changed message received', () => {
+      const container = document.createElement('div');
+      container.id = 'survey-container';
+      document.body.appendChild(container);
+
+      const onPageChanged = jest.fn();
+      const config: InlineSurveyConfig = {
+        elementSelector: '#survey-container',
+        statusTimeout: 0,
+        callbacks: { onPageChanged },
+      };
+
+      new InlineSurvey(mockUrlBuilder, config);
+
+      const event = new MessageEvent('message', {
+        data: {
+          type: 'hc:pagechanged',
+          currentPage: 2,
+          totalPages: 5,
+          timestamp: 1234567890,
+        },
+        origin: 'https://example.com',
+      });
+      window.dispatchEvent(event);
+
+      expect(onPageChanged).toHaveBeenCalledWith({
+        currentPage: 2,
+        totalPages: 5,
+        timestamp: 1234567890,
+      });
+    });
+
+    test('should ignore page changed message with missing fields', () => {
+      const container = document.createElement('div');
+      container.id = 'survey-container';
+      document.body.appendChild(container);
+
+      const onPageChanged = jest.fn();
+      const config: InlineSurveyConfig = {
+        elementSelector: '#survey-container',
+        statusTimeout: 0,
+        callbacks: { onPageChanged },
+      };
+
+      new InlineSurvey(mockUrlBuilder, config);
+
+      const malformedMessages = [
+        { type: 'hc:pagechanged', currentPage: 1 }, // missing totalPages and timestamp
+        { type: 'hc:pagechanged', totalPages: 5 }, // missing currentPage and timestamp
+        { type: 'hc:pagechanged', currentPage: 1, totalPages: 5 }, // missing timestamp
+        { type: 'hc:pagechanged', timestamp: 123 }, // missing currentPage and totalPages
+      ];
+
+      malformedMessages.forEach((data) => {
+        const event = new MessageEvent('message', {
+          data,
+          origin: 'https://example.com',
+        });
+        window.dispatchEvent(event);
+      });
+
+      expect(onPageChanged).not.toHaveBeenCalled();
+    });
+
+    test('should ignore page changed message from wrong origin', () => {
+      const container = document.createElement('div');
+      container.id = 'survey-container';
+      document.body.appendChild(container);
+
+      const onPageChanged = jest.fn();
+      const config: InlineSurveyConfig = {
+        elementSelector: '#survey-container',
+        statusTimeout: 0,
+        callbacks: { onPageChanged },
+      };
+
+      new InlineSurvey(mockUrlBuilder, config);
+
+      const event = new MessageEvent('message', {
+        data: {
+          type: 'hc:pagechanged',
+          currentPage: 2,
+          totalPages: 5,
+          timestamp: 1234567890,
+        },
+        origin: 'https://malicious.com',
+      });
+      window.dispatchEvent(event);
+
+      expect(onPageChanged).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('N. Survey Selected Event Tests', () => {
+    test('should call onSelected callback when valid selected message received', () => {
+      const container = document.createElement('div');
+      container.id = 'survey-container';
+      document.body.appendChild(container);
+
+      const onSelected = jest.fn();
+      const config: InlineSurveyConfig = {
+        elementSelector: '#survey-container',
+        statusTimeout: 0,
+        callbacks: { onSelected },
+      };
+
+      new InlineSurvey(mockUrlBuilder, config);
+
+      const event = new MessageEvent('message', {
+        data: {
+          type: 'hc:selected',
+          questionType: 'NPS',
+          questionId: 'q1',
+          questionIndex: 0,
+          pageIndex: 0,
+          timestamp: 1234567890,
+        },
+        origin: 'https://example.com',
+      });
+      window.dispatchEvent(event);
+
+      expect(onSelected).toHaveBeenCalledWith({
+        questionType: 'NPS',
+        questionId: 'q1',
+        questionIndex: 0,
+        pageIndex: 0,
+        timestamp: 1234567890,
+      });
+    });
+
+    test('should call onSelected multiple times for multiple selections', () => {
+      const container = document.createElement('div');
+      container.id = 'survey-container';
+      document.body.appendChild(container);
+
+      const onSelected = jest.fn();
+      const config: InlineSurveyConfig = {
+        elementSelector: '#survey-container',
+        statusTimeout: 0,
+        callbacks: { onSelected },
+      };
+
+      new InlineSurvey(mockUrlBuilder, config);
+
+      // First selection
+      window.dispatchEvent(
+        new MessageEvent('message', {
+          data: {
+            type: 'hc:selected',
+            questionType: 'NPS',
+            questionId: 'q1',
+            questionIndex: 0,
+            pageIndex: 0,
+            timestamp: 1234567890,
+          },
+          origin: 'https://example.com',
+        }),
+      );
+
+      // Second selection (user changed answer)
+      window.dispatchEvent(
+        new MessageEvent('message', {
+          data: {
+            type: 'hc:selected',
+            questionType: 'NPS',
+            questionId: 'q1',
+            questionIndex: 0,
+            pageIndex: 0,
+            timestamp: 1234567891,
+          },
+          origin: 'https://example.com',
+        }),
+      );
+
+      expect(onSelected).toHaveBeenCalledTimes(2);
+    });
+
+    test('should ignore selected message with missing fields', () => {
+      const container = document.createElement('div');
+      container.id = 'survey-container';
+      document.body.appendChild(container);
+
+      const onSelected = jest.fn();
+      const config: InlineSurveyConfig = {
+        elementSelector: '#survey-container',
+        statusTimeout: 0,
+        callbacks: { onSelected },
+      };
+
+      new InlineSurvey(mockUrlBuilder, config);
+
+      const malformedMessages = [
+        { type: 'hc:selected', questionType: 'NPS' }, // missing other required fields
+        { type: 'hc:selected', questionId: 'q1' }, // missing other required fields
+        {
+          type: 'hc:selected',
+          questionType: 'NPS',
+          questionId: 'q1',
+          questionIndex: 0,
+        }, // missing pageIndex and timestamp
+      ];
+
+      malformedMessages.forEach((data) => {
+        const event = new MessageEvent('message', {
+          data,
+          origin: 'https://example.com',
+        });
+        window.dispatchEvent(event);
+      });
+
+      expect(onSelected).not.toHaveBeenCalled();
+    });
+
+    test('should ignore selected message from wrong origin', () => {
+      const container = document.createElement('div');
+      container.id = 'survey-container';
+      document.body.appendChild(container);
+
+      const onSelected = jest.fn();
+      const config: InlineSurveyConfig = {
+        elementSelector: '#survey-container',
+        statusTimeout: 0,
+        callbacks: { onSelected },
+      };
+
+      new InlineSurvey(mockUrlBuilder, config);
+
+      const event = new MessageEvent('message', {
+        data: {
+          type: 'hc:selected',
+          questionType: 'NPS',
+          questionId: 'q1',
+          questionIndex: 0,
+          pageIndex: 0,
+          timestamp: 1234567890,
+        },
+        origin: 'https://malicious.com',
+      });
+      window.dispatchEvent(event);
+
+      expect(onSelected).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('O. Survey First Interaction Event Tests', () => {
+    test('should call onFirstInteraction callback when valid first interaction message received', () => {
+      const container = document.createElement('div');
+      container.id = 'survey-container';
+      document.body.appendChild(container);
+
+      const onFirstInteraction = jest.fn();
+      const config: InlineSurveyConfig = {
+        elementSelector: '#survey-container',
+        statusTimeout: 0,
+        callbacks: { onFirstInteraction },
+      };
+
+      new InlineSurvey(mockUrlBuilder, config);
+
+      const event = new MessageEvent('message', {
+        data: {
+          type: 'hc:firstinteraction',
+          questionType: 'NPS',
+          timestamp: 1234567890,
+        },
+        origin: 'https://example.com',
+      });
+      window.dispatchEvent(event);
+
+      expect(onFirstInteraction).toHaveBeenCalledWith({
+        questionType: 'NPS',
+        timestamp: 1234567890,
+      });
+    });
+
+    test('should ignore first interaction message with missing fields', () => {
+      const container = document.createElement('div');
+      container.id = 'survey-container';
+      document.body.appendChild(container);
+
+      const onFirstInteraction = jest.fn();
+      const config: InlineSurveyConfig = {
+        elementSelector: '#survey-container',
+        statusTimeout: 0,
+        callbacks: { onFirstInteraction },
+      };
+
+      new InlineSurvey(mockUrlBuilder, config);
+
+      const malformedMessages = [
+        { type: 'hc:firstinteraction' }, // missing questionType and timestamp
+        { type: 'hc:firstinteraction', questionType: 'NPS' }, // missing timestamp
+        { type: 'hc:firstinteraction', timestamp: 123 }, // missing questionType
+      ];
+
+      malformedMessages.forEach((data) => {
+        const event = new MessageEvent('message', {
+          data,
+          origin: 'https://example.com',
+        });
+        window.dispatchEvent(event);
+      });
+
+      expect(onFirstInteraction).not.toHaveBeenCalled();
+    });
+
+    test('should ignore first interaction message from wrong origin', () => {
+      const container = document.createElement('div');
+      container.id = 'survey-container';
+      document.body.appendChild(container);
+
+      const onFirstInteraction = jest.fn();
+      const config: InlineSurveyConfig = {
+        elementSelector: '#survey-container',
+        statusTimeout: 0,
+        callbacks: { onFirstInteraction },
+      };
+
+      new InlineSurvey(mockUrlBuilder, config);
+
+      const event = new MessageEvent('message', {
+        data: {
+          type: 'hc:firstinteraction',
+          questionType: 'NPS',
+          timestamp: 1234567890,
+        },
+        origin: 'https://malicious.com',
+      });
+      window.dispatchEvent(event);
+
+      expect(onFirstInteraction).not.toHaveBeenCalled();
+    });
+  });
 });

@@ -244,6 +244,12 @@ export class InlineSurvey extends BaseSurvey<InlineSurveyConfig> {
         return;
       }
 
+      // Verify message is from this survey's iframe (not another iframe on the page)
+      // Only check if source is defined (JSDOM in tests doesn't set source)
+      if (event.source && event.source !== this.iFrameHandle?.contentWindow) {
+        return;
+      }
+
       const data = event.data;
 
       // Handle auto-height resize messages
@@ -255,6 +261,41 @@ export class InlineSurvey extends BaseSurvey<InlineSurveyConfig> {
       // Handle status messages
       if (this.isStatusMessage(data)) {
         this.handleStatusMessage(data);
+      }
+
+      // Handle completed messages
+      if (this.isCompletedMessage(data)) {
+        this.inlineConfig.callbacks?.onCompleted?.({
+          timestamp: data.timestamp,
+        });
+      }
+
+      // Handle page changed messages
+      if (this.isPageChangedMessage(data)) {
+        this.inlineConfig.callbacks?.onPageChanged?.({
+          currentPage: data.currentPage,
+          totalPages: data.totalPages,
+          timestamp: data.timestamp,
+        });
+      }
+
+      // Handle selected messages
+      if (this.isSelectedMessage(data)) {
+        this.inlineConfig.callbacks?.onSelected?.({
+          questionType: data.questionType,
+          questionId: data.questionId,
+          questionIndex: data.questionIndex,
+          pageIndex: data.pageIndex,
+          timestamp: data.timestamp,
+        });
+      }
+
+      // Handle first interaction messages
+      if (this.isFirstInteractionMessage(data)) {
+        this.inlineConfig.callbacks?.onFirstInteraction?.({
+          questionType: data.questionType,
+          timestamp: data.timestamp,
+        });
       }
     };
 
@@ -322,6 +363,87 @@ export class InlineSurvey extends BaseSurvey<InlineSurveyConfig> {
       (data as StatusMessage).type === 'hc:status' &&
       'status' in data &&
       typeof (data as StatusMessage).status === 'string'
+    );
+  }
+
+  /**
+   * Type guard to check if a message is a valid completed message.
+   * @private
+   */
+  private isCompletedMessage(
+    data: unknown,
+  ): data is { type: 'hc:completed'; timestamp: number } {
+    const d = data as Record<string, unknown>;
+    return (
+      typeof data === 'object' &&
+      data !== null &&
+      d.type === 'hc:completed' &&
+      typeof d.timestamp === 'number'
+    );
+  }
+
+  /**
+   * Type guard to check if a message is a valid page changed message.
+   * @private
+   */
+  private isPageChangedMessage(data: unknown): data is {
+    type: 'hc:pagechanged';
+    currentPage: number;
+    totalPages: number;
+    timestamp: number;
+  } {
+    const d = data as Record<string, unknown>;
+    return (
+      typeof data === 'object' &&
+      data !== null &&
+      d.type === 'hc:pagechanged' &&
+      typeof d.currentPage === 'number' &&
+      typeof d.totalPages === 'number' &&
+      typeof d.timestamp === 'number'
+    );
+  }
+
+  /**
+   * Type guard to check if a message is a valid selected message.
+   * @private
+   */
+  private isSelectedMessage(data: unknown): data is {
+    type: 'hc:selected';
+    questionType: string;
+    questionId: string;
+    questionIndex: number;
+    pageIndex: number;
+    timestamp: number;
+  } {
+    const d = data as Record<string, unknown>;
+    return (
+      typeof data === 'object' &&
+      data !== null &&
+      d.type === 'hc:selected' &&
+      typeof d.questionType === 'string' &&
+      typeof d.questionId === 'string' &&
+      typeof d.questionIndex === 'number' &&
+      typeof d.pageIndex === 'number' &&
+      typeof d.timestamp === 'number'
+    );
+  }
+
+  /**
+   * Type guard to check if a message is a valid first interaction message.
+   * @private
+   */
+  private isFirstInteractionMessage(data: unknown): data is {
+    type: 'hc:firstinteraction';
+    questionType: string;
+    timestamp: number;
+  } {
+    const d = data as Record<string, unknown>;
+    return (
+      typeof data === 'object' &&
+      data !== null &&
+      d.type === 'hc:firstinteraction' &&
+      typeof d.questionType === 'string' &&
+      typeof d.timestamp === 'number'
     );
   }
 
