@@ -5,3 +5,4 @@ coverage
 .idea
 .rpt2_cache
 bundle-analysis.html
+demo/*

@@ -197,16 +197,17 @@ const survey = new InlineSurvey(urlBuilder, {
 });
 
 // Listen for events from survey iframe
+// (metadata only - no answer content is exposed, by design)
 survey.onMessage((data) => {
-  if (data.type === 'question_answered') {
-    // Track individual question responses
+  if (data.type === 'hc:selected') {
+    // Track individual question engagement
     analytics.track('question_answered', {
-      questionId: data.questionId,
-      answer: data.answer
+      questionType: data.questionType,
+      questionId: data.questionId
     });
   }
 
-  if (data.type === 'survey_submitted') {
+  if (data.type === 'hc:completed') {
     // Track survey completion
     analytics.track('survey_completed');
   }

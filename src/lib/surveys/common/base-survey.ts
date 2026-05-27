@@ -268,11 +268,18 @@ export abstract class BaseSurvey<TConfig extends BaseSurveyConfig> {
    * @param callback - Function to call when message received
    * @returns Cleanup function to stop listening
    *
+   * For the common lifecycle events, prefer the typed callbacks
+   * (onCompleted, onPageChanged, onSelected, onFirstInteraction, onSurveyStatus).
+   * Use onMessage for raw access to the message stream.
+   *
+   * Message types emitted by the survey iframe: 'hc:resize', 'hc:status',
+   * 'hc:completed', 'hc:pagechanged', 'hc:selected', 'hc:firstinteraction'.
+   *
    * @example
    * ```typescript
    * // Basic usage
    * const cleanup = survey.onMessage((data) => {
-   *   if (data.type === 'survey_completed') {
+   *   if (data.type === 'hc:completed') {
    *     console.log('Survey completed!');
    *   }
    * });
@@ -287,18 +294,18 @@ export abstract class BaseSurvey<TConfig extends BaseSurveyConfig> {
    * survey.onMessage((data) => {
    *   window.dataLayer = window.dataLayer || [];
    *
-   *   if (data.type === 'question_answered') {
+   *   if (data.type === 'hc:selected') {
    *     window.dataLayer.push({
    *       event: 'survey_question_answered',
-   *       questionId: data.questionId,
-   *       answer: data.answer
+   *       questionType: data.questionType,
+   *       questionId: data.questionId
    *     });
    *   }
    *
-   *   if (data.type === 'survey_submitted') {
+   *   if (data.type === 'hc:completed') {
    *     window.dataLayer.push({
    *       event: 'survey_completed',
-   *       surveyId: data.surveyId
+   *       timestamp: data.timestamp
    *     });
    *   }
    * });
@@ -306,28 +313,28 @@ export abstract class BaseSurvey<TConfig extends BaseSurveyConfig> {
    *
    * @example
    * ```typescript
-   * // Advanced analytics with response tracking
+   * // Engagement analytics (metadata only - no answer content is exposed)
    * const analytics = {
-   *   questionViews: {},
    *   responses: {},
    *   startTime: Date.now()
    * };
    *
    * survey.onMessage((data) => {
    *   switch (data.type) {
-   *     case 'question_shown':
-   *       analytics.questionViews[data.questionId] = Date.now();
+   *     case 'hc:firstinteraction':
+   *       analytics.startTime = data.timestamp;
    *       break;
    *
-   *     case 'question_answered':
+   *     case 'hc:selected':
    *       analytics.responses[data.questionId] = {
-   *         answer: data.answer,
-   *         timeSpent: Date.now() - analytics.questionViews[data.questionId]
+   *         questionType: data.questionType,
+   *         pageIndex: data.pageIndex,
+   *         at: data.timestamp
    *       };
    *       break;
    *
-   *     case 'survey_submitted':
-   *       const totalTime = Date.now() - analytics.startTime;
+   *     case 'hc:completed':
+   *       const totalTime = data.timestamp - analytics.startTime;
    *       console.log('Survey analytics:', { ...analytics, totalTime });
    *       // Send to your analytics service
    *       break;

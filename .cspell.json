@@ -59,7 +59,10 @@
     "връзка",
     "Σχόλια",
     "تعليقات",
-    "opinión"
+    "opinión",
+    "pagechanged",
+    "firstinteraction",
+    "scrollbars"
   ],
   "flagWords": [],
   "ignorePaths": [

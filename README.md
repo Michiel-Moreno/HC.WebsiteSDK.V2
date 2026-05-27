@@ -29,6 +29,59 @@ Please consult the docs for more [configuration options](https://hellocustomer.g
 
 ***
 
+### Automatic Language Detection from URL
+
+The SDK automatically detects the survey language from URL query parameters. This is useful for multi-language websites where the language is indicated in the URL.
+
+#### Supported Parameters
+The SDK checks these parameters in order of priority:
+1. `?lang=` (highest priority)
+2. `?language=`
+3. `?locale=`
+
+If none are found, it uses the `language` specified in the configuration. If no language is specified in the configuration, it defaults to `'EN'`.
+
+#### Example
+
+```javascript
+// Configuration specifies English as default
+const urlBuilder = new hcWebsiteTouchpoint.UrlBuilder({
+  baseUrl: 'https://surveys.example.com',
+  tenantId: 'xxx',
+  touchPointId: 'zzz',
+  language: 'EN'  // Default fallback
+});
+
+// URL: https://your-site.com?lang=nl
+// Survey will load in Dutch (NL) instead of English
+
+// URL: https://your-site.com
+// Survey will load in English (EN) as configured
+
+// No language configured, no URL parameter
+const urlBuilder2 = new hcWebsiteTouchpoint.UrlBuilder({
+  baseUrl: 'https://surveys.example.com',
+  tenantId: 'xxx',
+  touchPointId: 'zzz'
+});
+// Survey will load in English (EN) by default
+```
+
+#### Use Cases
+
+- **Multi-language websites**: `example.com/nl?lang=nl` and `example.com/fr?lang=fr`
+- **Language switchers**: User selects language, URL updates, survey language follows automatically
+- **Localized campaigns**: Different language URLs for different audiences
+
+#### Notes
+
+- Language codes are case-insensitive (`nl`, `NL`, `Nl` all work)
+- The detected language is normalized to uppercase
+- Works with both CDN (script tag) and npm package usage
+- Works with all survey types (Inline, Modal, Window, Button Trigger)
+
+***
+
 ### Inline survey
 #### Example (script tag)
 ```html
@@ -127,7 +180,7 @@ Please consult the docs for more [configuration options](https://hellocustomer.g
       }
      });
      const windowSurvey = new hcWebsiteTouchpoint.WindowSurvey(urlBuilder, {
-        openNewWindow: true
+        openAsPopup: true
      });
      windowSurvey.open();
 </script>
@@ -502,31 +555,98 @@ const modalSurvey = new hcWebsiteTouchpoint.ModalSurvey(urlBuilder, {
 
 ***
 
-### PostMessage Communication
+### Survey Event Callbacks
 
-**InlineSurvey and ModalSurvey** support bidirectional iframe communication for advanced integrations like response-level analytics.
+**InlineSurvey and ModalSurvey** emit lifecycle events from the survey iframe. The recommended way to consume them is via typed callbacks on the `callbacks` option, covered below. For raw or custom messages, see the [low-level message API](#low-level-message-api).
 
-#### Receiving Messages from Survey
+Every event object includes a `timestamp` (milliseconds since epoch). All callbacks are optional.
+
+#### onCompleted
+
+Fires when the user successfully submits the survey.
+
+```js
+const survey = new hcWebsiteTouchpoint.InlineSurvey(urlBuilder, {
+  elementSelector: '#survey',
+  callbacks: {
+    onCompleted: (event) => {
+      analytics.track('survey_completed', { at: event.timestamp });
+    }
+  }
+});
+```
+
+Event shape: `{ timestamp: number }`
+
+**ModalSurvey only** — set `autoCloseOnComplete: true` to hide the modal automatically after the survey is submitted. The `onCompleted` callback still fires before the modal closes.
+
+```js
+new hcWebsiteTouchpoint.ModalSurvey(urlBuilder, {
+  autoCloseOnComplete: true,
+  callbacks: { onCompleted: (event) => { /* ... */ } }
+});
+```
+
+#### onPageChanged
+
+Fires when the user navigates between pages of a multi-page survey.
+
+```js
+callbacks: {
+  onPageChanged: (event) => {
+    console.log(`Page ${event.currentPage} of ${event.totalPages}`);
+  }
+}
+```
+
+Event shape: `{ currentPage: number, totalPages: number, timestamp: number }` (pages are 1-indexed)
+
+#### onSelected
+
+Fires in real time whenever the user selects or changes an answer. May fire multiple times for the same question if the user changes their mind. **Metadata only — no answer content is exposed, by design.**
+
+```js
+callbacks: {
+  onSelected: (event) => {
+    analytics.track('question_answered', {
+      questionType: event.questionType,
+      questionIndex: event.questionIndex
+    });
+  }
+}
+```
+
+Event shape: `{ questionType: string, questionId: string, questionIndex: number, pageIndex: number, timestamp: number }` (indices are 0-indexed)
+
+#### onFirstInteraction
+
+Fires once per survey session, the first time the user interacts with any question. Useful for engagement funnels.
+
+```js
+callbacks: {
+  onFirstInteraction: (event) => {
+    analytics.track('survey_engagement_started');
+  }
+}
+```
+
+Event shape: `{ questionType: string, timestamp: number }`
+
+***
+
+#### Low-Level Message API
+
+For events outside the typed callbacks above (custom integrations or raw access to the message stream), use `onMessage()` to subscribe to the raw postMessage events sent by the survey iframe.
 
 ```js
 const survey = new hcWebsiteTouchpoint.InlineSurvey(urlBuilder, {
   elementSelector: '#survey'
 });
 
-// Listen for messages from the survey iframe
 const cleanup = survey.onMessage((data) => {
   console.log('Survey event:', data);
 
-  // Example: Track individual question responses
-  if (data.type === 'question_answered') {
-    analytics.track('question_answered', {
-      questionId: data.questionId,
-      answer: data.answer
-    });
-  }
-
-  // Example: Track survey completion
-  if (data.type === 'survey_submitted') {
+  if (data.type === 'hc:completed') {
     analytics.track('survey_completed');
   }
 });
@@ -535,15 +655,18 @@ const cleanup = survey.onMessage((data) => {
 cleanup();
 ```
 
-**Standard Survey Events:**
-- `question_shown` - A question was displayed
-- `question_answered` - User answered a question
-- `question_skipped` - User skipped a question
-- `survey_submitted` - User completed the survey
-- `survey_abandoned` - User exited without completing
-- `validation_error` - User input failed validation
+The survey iframe currently emits these message types (`data.type`):
 
-**Note:** Only one message listener is supported at a time. Calling `onMessage()` again will replace the previous listener.
+| Type | When | Payload |
+|------|------|---------|
+| `hc:resize` | Iframe content height changes | `{ type, version, source, height }` |
+| `hc:status` | Survey load state changes | `{ type, status, reason?, message? }` — see [Survey Status Detection](#survey-status-detection) |
+| `hc:completed` | Survey submitted | `{ type, timestamp }` |
+| `hc:pagechanged` | Page navigation | `{ type, currentPage, totalPages, timestamp }` |
+| `hc:selected` | Answer selected or changed | `{ type, questionType, questionId, questionIndex, pageIndex, timestamp }` |
+| `hc:firstinteraction` | First user interaction | `{ type, questionType, timestamp }` |
+
+**Note:** Only one `onMessage` listener is supported at a time — calling `onMessage()` again replaces the previous listener. The typed callbacks above run independently and do not conflict with `onMessage`.
 
 #### Sending Messages to Survey
 
@@ -555,15 +678,15 @@ survey.sendMessage({ action: 'update_context', userId: '12345' });
 survey.sendMessage({ action: 'ping' }, 'https://custom-origin.com');
 ```
 
-**Security:** All incoming messages are validated against the survey's origin. Messages from unexpected origins are rejected with a console warning.
+**Security:** All incoming messages are validated against the survey's origin and source frame. Messages from unexpected origins are dropped.
 
 #### Use Cases
-- **Analytics Integration**: Track question-level responses and completion funnels
-- **GTM Integration**: Forward survey events to Google Tag Manager dataLayer
-- **Multi-Step Flows**: Update survey context as user progresses through your app
-- **Custom Logic**: Trigger actions based on specific survey responses
+- **Analytics Integration**: Track question-level engagement with `onSelected` and completion with `onCompleted`
+- **GTM Integration**: Forward survey events to the Google Tag Manager dataLayer from any callback
+- **Multi-Step Flows**: Use `sendMessage` to push context updates into the survey as the user progresses
+- **Funnel Tracking**: Combine `onFirstInteraction` and `onCompleted` to measure engagement-to-completion rate
 
-#### ButtonTriggerSurvey with PostMessage
+#### ButtonTriggerSurvey Example
 
 ```js
 // Create a feedback button that spawns a modal with analytics
@@ -571,14 +694,16 @@ const button = new hcWebsiteTouchpoint.ButtonTriggerSurvey({
   position: 'bottom-right',
   text: 'Feedback',
   onTrigger: () => {
-    const modal = new hcWebsiteTouchpoint.ModalSurvey(urlBuilder, {});
-
-    // Track survey events
-    modal.onMessage((data) => {
-      window.dataLayer.push({
-        event: `survey_${data.type}`,
-        surveyData: data
-      });
+    const modal = new hcWebsiteTouchpoint.ModalSurvey(urlBuilder, {
+      autoCloseOnComplete: true,
+      callbacks: {
+        onCompleted: (event) => {
+          window.dataLayer.push({
+            event: 'feedback_submitted',
+            at: event.timestamp
+          });
+        }
+      }
     });
 
     modal.show();
@@ -587,6 +712,130 @@ const button = new hcWebsiteTouchpoint.ButtonTriggerSurvey({
 
 button.show();
 ```
+
+***
+
+### Auto-Height Support
+
+**InlineSurvey and ModalSurvey** can automatically adjust their height based on survey content, eliminating scrollbars and providing a seamless experience.
+
+#### Basic Usage
+
+```js
+const survey = new hcWebsiteTouchpoint.InlineSurvey(urlBuilder, {
+  elementSelector: '#survey',
+  autoHeight: true
+});
+```
+
+#### With Height Constraints
+
+```js
+const survey = new hcWebsiteTouchpoint.InlineSurvey(urlBuilder, {
+  elementSelector: '#survey',
+  autoHeight: true,
+  minHeight: 200,   // Minimum height in pixels
+  maxHeight: 800    // Maximum height in pixels
+});
+```
+
+#### ModalSurvey Example
+
+```js
+const modalSurvey = new hcWebsiteTouchpoint.ModalSurvey(urlBuilder, {
+  autoHeight: true,
+  minHeight: 300,
+  maxHeight: 600
+});
+```
+
+**Note:** Auto-height relies on the survey page emitting `hc:resize` messages, which current Hello Customer surveys do automatically when embedded. If an older, cached version of the survey page does not emit them, the iframe simply keeps its initial height (no error is thrown).
+
+***
+
+### Survey Status Detection
+
+Detect when surveys are unavailable (deactivated, quota exceeded, etc.) and handle them gracefully.
+
+#### Basic Usage
+
+```js
+const survey = new hcWebsiteTouchpoint.InlineSurvey(urlBuilder, {
+  elementSelector: '#survey-container',
+  callbacks: {
+    onSurveyStatus: (event) => {
+      switch (event.status) {
+        case 'ready':
+          console.log('Survey is ready for interaction');
+          break;
+
+        case 'unavailable':
+          // Hide survey and show fallback content
+          document.querySelector('#survey-container').style.display = 'none';
+          document.querySelector('#fallback-content').style.display = 'block';
+          console.warn(`Survey unavailable: ${event.reason} - ${event.message}`);
+          break;
+
+        case 'timeout':
+          // Survey page didn't respond (may be older version)
+          console.warn('Survey did not respond within timeout');
+          break;
+
+        case 'error':
+          console.error(`Survey error: ${event.message}`);
+          break;
+      }
+    }
+  }
+});
+```
+
+#### Status Types
+
+| Status | Description |
+|--------|-------------|
+| `ready` | Survey loaded successfully and is interactive |
+| `unavailable` | Survey cannot be displayed (deactivated, quota exceeded, etc.) |
+| `timeout` | Survey page didn't respond within timeout period |
+| `error` | An error occurred during survey loading |
+
+#### Reasons for `unavailable` Status
+
+- `deactivated` - Survey has been deactivated by admin
+- `quota_exceeded` - Response quota has been reached
+- `expired` - Survey has passed its end date
+- `not_started` - Survey has not yet reached its start date
+- `not_found` - Survey does not exist
+- `access_denied` - Access to the survey was denied
+- `already_answered` - This respondent has already submitted a response
+
+#### Reasons for `error` Status
+
+- `internal_error` - An unexpected error occurred on the survey page
+- `invalid_config` - The survey configuration is invalid
+- `load_failed` - The survey failed to load
+
+#### Custom Timeout
+
+By default, the SDK waits 10 seconds for a status response. You can customize this:
+
+```js
+const survey = new hcWebsiteTouchpoint.InlineSurvey(urlBuilder, {
+  elementSelector: '#survey',
+  statusTimeout: 15000, // 15 seconds
+  callbacks: {
+    onSurveyStatus: (event) => { /* ... */ }
+  }
+});
+
+// Disable timeout entirely
+const survey2 = new hcWebsiteTouchpoint.InlineSurvey(urlBuilder, {
+  elementSelector: '#survey',
+  statusTimeout: 0 // No timeout
+});
+```
+
+**Note:** Survey status detection relies on the survey page emitting `hc:status` messages, which current Hello Customer surveys do automatically when embedded. If an older, cached version of the survey page does not emit them, the `timeout` status fires after the configured timeout period instead.
 
 ***
 
