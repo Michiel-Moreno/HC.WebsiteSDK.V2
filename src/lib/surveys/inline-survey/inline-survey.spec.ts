@@ -925,6 +925,33 @@ describe('InlineSurvey', () => {
         expect(callback).not.toHaveBeenCalled();
       });
 
+      test('should replace previous listener without leaking when called twice', () => {
+        const container = document.createElement('div');
+        container.id = 'survey-container';
+        document.body.appendChild(container);
+
+        const config: InlineSurveyConfig = {
+          elementSelector: '#survey-container',
+        };
+
+        const survey = new InlineSurvey(mockUrlBuilder, config);
+        const first = jest.fn();
+        const second = jest.fn();
+
+        survey.onMessage(first);
+        survey.onMessage(second);
+
+        const event = new MessageEvent('message', {
+          data: { type: 'test' },
+          origin: 'https://example.com',
+        });
+        window.dispatchEvent(event);
+
+        // Only the current listener fires; the replaced one is fully removed
+        expect(second).toHaveBeenCalledTimes(1);
+        expect(first).not.toHaveBeenCalled();
+      });
+
       test('should clean up listeners on destroy', () => {
         const container = document.createElement('div');
         container.id = 'survey-container';

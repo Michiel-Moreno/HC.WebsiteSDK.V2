@@ -556,12 +556,13 @@ export class ModalSurvey extends IframeSurvey<ModalSurveyConfig> {
       modalStyle.iFrameStyle,
     ).styledElement;
 
-    // Add event listeners for iframe load and error
-    iFrame.addEventListener('load', () => {
+    // Add tracked event listeners for iframe load and error so they are
+    // cleaned up on destroy() (matches InlineSurvey behavior).
+    this.addTrackedListener(iFrame, 'load', () => {
       this.modalConfig.callbacks?.onLoad?.(iFrame);
     });
 
-    iFrame.addEventListener('error', () => {
+    this.addTrackedListener(iFrame, 'error', () => {
       const error = new Error('Failed to load survey iframe');
       this.modalConfig.callbacks?.onError?.(error);
     });

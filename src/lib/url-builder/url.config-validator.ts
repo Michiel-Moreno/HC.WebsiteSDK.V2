@@ -25,7 +25,7 @@ export class UrlConfigValidator extends BaseConfigValidator<SurveyConfig> {
             };
       },
       (config) => {
-        return (typeof config.baseUrl as unknown) == 'string'
+        return typeof config.baseUrl === 'string'
           ? null
           : {
               baseUrlIsString: 'Base URL must be a string',
@@ -42,29 +42,28 @@ export class UrlConfigValidator extends BaseConfigValidator<SurveyConfig> {
             };
       },
       (config) => {
-        return (typeof config.tenantId as unknown) === 'string'
+        return typeof config.tenantId === 'string'
           ? null
           : {
               tenantIdIsString: 'tenantId must be a string',
             };
       },
       (config) => {
-        return (typeof config.touchPointId as unknown) === 'string'
+        return typeof config.touchPointId === 'string'
           ? null
           : {
               touchPointIdIsString: 'touchPointId must be a string',
             };
       },
       (config) => {
-        return !config.language ||
-          (typeof config.language as unknown) === 'string'
+        return !config.language || typeof config.language === 'string'
           ? null
           : {
               languageIsString: 'Language must be a string',
             };
       },
       (config) => {
-        return !config.extra || (typeof config.extra as unknown) === 'object'
+        return !config.extra || typeof config.extra === 'object'
           ? null
           : {
               extraConfigIsObject: 'Extra config must be an object',

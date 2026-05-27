@@ -349,6 +349,13 @@ export abstract class BaseSurvey<TConfig extends BaseSurveyConfig> {
       );
     }
 
+    // Replace any existing listener so calling onMessage() again does not
+    // leak the previous window listener.
+    if (this.messageEventListener) {
+      window.removeEventListener('message', this.messageEventListener);
+      this.messageEventListener = null;
+    }
+
     this.messageHandler = callback;
 
     const handler = (event: MessageEvent) => {

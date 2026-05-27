@@ -14,7 +14,7 @@ export class QuarantineService {
     if (this.quarantineConfig) {
       const quarantineStartData = this.getQuarantineStartData();
       const quarantineStart = quarantineStartData
-        ? parseInt(quarantineStartData)
+        ? parseInt(quarantineStartData, 10)
         : null;
 
       return (
@@ -43,7 +43,7 @@ export class QuarantineService {
 
     const quarantineStartData = this.getQuarantineStartData();
     const quarantineStart = quarantineStartData
-      ? parseInt(quarantineStartData)
+      ? parseInt(quarantineStartData, 10)
       : null;
 
     // Return 0 if no quarantine start time or invalid data
