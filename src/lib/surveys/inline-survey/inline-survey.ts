@@ -2,8 +2,7 @@ import { InvalidQuerySelectorException } from '../../core/exceptions/invalid-que
 import { StyledElementFactory } from '../../core/factories/styled-element.factory';
 import { observeDOMRemoval } from '../../core/utils/dom-removal-observer.util';
 import { UrlBuilder } from '../../url-builder/url.builder';
-import { BaseSurvey } from '../common/base-survey';
-import { StatusMessage } from '../common/survey-status.interface';
+import { IframeSurvey } from '../common/iframe-survey';
 
 import { InlineSurveyConfig } from './inline-survey-config.interface';
 import { InlineSurveyConfigValidator } from './inline-survey.config-validator';
@@ -88,11 +87,8 @@ import { InlineSurveyConfigValidator } from './inline-survey.config-validator';
  *
  * @category Surveys
  */
-export class InlineSurvey extends BaseSurvey<InlineSurveyConfig> {
+export class InlineSurvey extends IframeSurvey<InlineSurveyConfig> {
   private domRemovalCleanup?: () => void;
-  private statusTimeoutId?: ReturnType<typeof setTimeout>;
-  private statusReceived = false;
-  private internalMessageHandler?: (event: MessageEvent) => void;
 
   constructor(
     configBuilder: UrlBuilder,
@@ -203,17 +199,8 @@ export class InlineSurvey extends BaseSurvey<InlineSurveyConfig> {
       this.domRemovalCleanup = undefined;
     }
 
-    // Clean up status timeout if pending
-    if (this.statusTimeoutId) {
-      clearTimeout(this.statusTimeoutId);
-      this.statusTimeoutId = undefined;
-    }
-
-    // Clean up internal message handler
-    if (this.internalMessageHandler) {
-      window.removeEventListener('message', this.internalMessageHandler);
-      this.internalMessageHandler = undefined;
-    }
+    // Clean up internal message listener and pending status timeout
+    this.cleanupIframeMessageListener();
 
     // Clean up message listeners if active
     this.cleanupMessageHandlers();
@@ -225,246 +212,6 @@ export class InlineSurvey extends BaseSurvey<InlineSurveyConfig> {
       this.iFrame.parentElement.removeChild(this.iFrame);
     }
     this.inlineConfig.callbacks?.onDestroy?.();
-  }
-
-  /**
-   * Set up internal message listener for auto-height and status messages.
-   * Uses a separate listener from onMessage() to avoid conflicts with external usage.
-   * Handles hc:resize (auto-height) and hc:status (survey availability) messages.
-   * @private
-   */
-  private setupMessageListener(): void {
-    // Get expected origin for security verification
-    const expectedOrigin = new URL(this.urlFactory!.getBaseUrlWithLanguage())
-      .origin;
-
-    this.internalMessageHandler = (event: MessageEvent) => {
-      // Verify origin for security
-      if (event.origin !== expectedOrigin) {
-        return;
-      }
-
-      // Verify message is from this survey's iframe (not another iframe on the page)
-      // Only check if source is defined (JSDOM in tests doesn't set source)
-      if (event.source && event.source !== this.iFrameHandle?.contentWindow) {
-        return;
-      }
-
-      const data = event.data;
-
-      // Handle auto-height resize messages
-      if (this.inlineConfig.autoHeight && this.isResizeMessage(data)) {
-        const constrainedHeight = this.applyHeightConstraints(data.height);
-        this.iFrameHandle!.style.height = `${constrainedHeight}px`;
-      }
-
-      // Handle status messages
-      if (this.isStatusMessage(data)) {
-        this.handleStatusMessage(data);
-      }
-
-      // Handle completed messages
-      if (this.isCompletedMessage(data)) {
-        this.inlineConfig.callbacks?.onCompleted?.({
-          timestamp: data.timestamp,
-        });
-      }
-
-      // Handle page changed messages
-      if (this.isPageChangedMessage(data)) {
-        this.inlineConfig.callbacks?.onPageChanged?.({
-          currentPage: data.currentPage,
-          totalPages: data.totalPages,
-          timestamp: data.timestamp,
-        });
-      }
-
-      // Handle selected messages
-      if (this.isSelectedMessage(data)) {
-        this.inlineConfig.callbacks?.onSelected?.({
-          questionType: data.questionType,
-          questionId: data.questionId,
-          questionIndex: data.questionIndex,
-          pageIndex: data.pageIndex,
-          timestamp: data.timestamp,
-        });
-      }
-
-      // Handle first interaction messages
-      if (this.isFirstInteractionMessage(data)) {
-        this.inlineConfig.callbacks?.onFirstInteraction?.({
-          questionType: data.questionType,
-          timestamp: data.timestamp,
-        });
-      }
-    };
-
-    window.addEventListener('message', this.internalMessageHandler);
-
-    // Setup timeout for surveys that don't respond with status
-    const timeout = this.inlineConfig.statusTimeout ?? 10000;
-    if (timeout > 0) {
-      this.statusTimeoutId = setTimeout(() => {
-        if (!this.statusReceived) {
-          this.inlineConfig.callbacks?.onSurveyStatus?.({
-            status: 'timeout',
-            reason: 'no_response',
-            message: 'Survey did not respond within timeout period',
-          });
-        }
-      }, timeout);
-    }
-  }
-
-  /**
-   * Type guard to check if a message is a valid resize message.
-   * @private
-   */
-  private isResizeMessage(
-    data: unknown,
-  ): data is { type: string; height: number } {
-    return (
-      typeof data === 'object' &&
-      data !== null &&
-      'type' in data &&
-      (data as { type: string }).type === 'hc:resize' &&
-      'height' in data &&
-      typeof (data as { height: number }).height === 'number'
-    );
-  }
-
-  /**
-   * Apply min/max height constraints to the given height.
-   * @private
-   */
-  private applyHeightConstraints(height: number): number {
-    let result = height;
-
-    if (this.inlineConfig.minHeight !== undefined) {
-      result = Math.max(result, this.inlineConfig.minHeight);
-    }
-
-    if (this.inlineConfig.maxHeight !== undefined) {
-      result = Math.min(result, this.inlineConfig.maxHeight);
-    }
-
-    return result;
-  }
-
-  /**
-   * Type guard to check if a message is a valid status message.
-   * @private
-   */
-  private isStatusMessage(data: unknown): data is StatusMessage {
-    return (
-      typeof data === 'object' &&
-      data !== null &&
-      'type' in data &&
-      (data as StatusMessage).type === 'hc:status' &&
-      'status' in data &&
-      typeof (data as StatusMessage).status === 'string'
-    );
-  }
-
-  /**
-   * Type guard to check if a message is a valid completed message.
-   * @private
-   */
-  private isCompletedMessage(
-    data: unknown,
-  ): data is { type: 'hc:completed'; timestamp: number } {
-    const d = data as Record<string, unknown>;
-    return (
-      typeof data === 'object' &&
-      data !== null &&
-      d.type === 'hc:completed' &&
-      typeof d.timestamp === 'number'
-    );
-  }
-
-  /**
-   * Type guard to check if a message is a valid page changed message.
-   * @private
-   */
-  private isPageChangedMessage(data: unknown): data is {
-    type: 'hc:pagechanged';
-    currentPage: number;
-    totalPages: number;
-    timestamp: number;
-  } {
-    const d = data as Record<string, unknown>;
-    return (
-      typeof data === 'object' &&
-      data !== null &&
-      d.type === 'hc:pagechanged' &&
-      typeof d.currentPage === 'number' &&
-      typeof d.totalPages === 'number' &&
-      typeof d.timestamp === 'number'
-    );
-  }
-
-  /**
-   * Type guard to check if a message is a valid selected message.
-   * @private
-   */
-  private isSelectedMessage(data: unknown): data is {
-    type: 'hc:selected';
-    questionType: string;
-    questionId: string;
-    questionIndex: number;
-    pageIndex: number;
-    timestamp: number;
-  } {
-    const d = data as Record<string, unknown>;
-    return (
-      typeof data === 'object' &&
-      data !== null &&
-      d.type === 'hc:selected' &&
-      typeof d.questionType === 'string' &&
-      typeof d.questionId === 'string' &&
-      typeof d.questionIndex === 'number' &&
-      typeof d.pageIndex === 'number' &&
-      typeof d.timestamp === 'number'
-    );
-  }
-
-  /**
-   * Type guard to check if a message is a valid first interaction message.
-   * @private
-   */
-  private isFirstInteractionMessage(data: unknown): data is {
-    type: 'hc:firstinteraction';
-    questionType: string;
-    timestamp: number;
-  } {
-    const d = data as Record<string, unknown>;
-    return (
-      typeof data === 'object' &&
-      data !== null &&
-      d.type === 'hc:firstinteraction' &&
-      typeof d.questionType === 'string' &&
-      typeof d.timestamp === 'number'
-    );
-  }
-
-  /**
-   * Handle an incoming status message from the survey iframe.
-   * @private
-   */
-  private handleStatusMessage(message: StatusMessage): void {
-    this.statusReceived = true;
-
-    // Clear the timeout since we received a response
-    if (this.statusTimeoutId) {
-      clearTimeout(this.statusTimeoutId);
-      this.statusTimeoutId = undefined;
-    }
-
-    this.inlineConfig.callbacks?.onSurveyStatus?.({
-      status: message.status,
-      reason: message.reason,
-      message: message.message,
-    });
   }
 
   /**

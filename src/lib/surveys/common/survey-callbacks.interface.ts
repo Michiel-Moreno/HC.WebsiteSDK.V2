@@ -69,6 +69,41 @@ export interface SurveySelectedEvent {
    * Timestamp when selection was made (milliseconds since epoch)
    */
   timestamp: number;
+
+  /**
+   * Selected score value (score-based questions: NPS, CSAT, CES, Score, etc.)
+   */
+  score?: number;
+
+  /**
+   * Minimum possible score (score-based questions)
+   */
+  minScore?: number;
+
+  /**
+   * Maximum possible score (score-based questions)
+   */
+  maxScore?: number;
+
+  /**
+   * Boolean value (YesNo questions)
+   */
+  value?: boolean;
+
+  /**
+   * Number of selected options (MultipleChoice questions)
+   */
+  selectedCount?: number;
+
+  /**
+   * Whether text has been entered (Text questions). Never the actual content.
+   */
+  hasText?: boolean;
+
+  /**
+   * Length of entered text (Text questions). Never the actual content.
+   */
+  textLength?: number;
 }
 
 /**

@@ -90,22 +90,35 @@ export class QuarantineService {
    */
   clearQuarantine(): void {
     if (this.quarantineConfig) {
-      localStorage.removeItem(
-        `${QuarantineService.quarantineStartKey}:${this.surveyIdentifier}`,
-      );
+      this.safeStorageOp(() => localStorage.removeItem(this.storageKey()));
     }
   }
 
+  private storageKey(): string {
+    return `${QuarantineService.quarantineStartKey}:${this.surveyIdentifier}`;
+  }
+
   private getQuarantineStartData(): string | null {
-    return localStorage.getItem(
-      `${QuarantineService.quarantineStartKey}:${this.surveyIdentifier}`,
-    );
+    return this.safeStorageOp(() => localStorage.getItem(this.storageKey()));
   }
 
   private setQuarantineStartData(data: string): void {
-    localStorage.setItem(
-      `${QuarantineService.quarantineStartKey}:${this.surveyIdentifier}`,
-      data,
-    );
+    this.safeStorageOp(() => localStorage.setItem(this.storageKey(), data));
+  }
+
+  /**
+   * Run a localStorage operation, swallowing access errors.
+   *
+   * localStorage throws (SecurityError) when storage is blocked — e.g. Safari
+   * private mode, cross-origin iframes with restricted storage access, or when
+   * the user has disabled cookies/site data. In those contexts quarantine
+   * simply degrades to inactive rather than breaking survey display.
+   */
+  private safeStorageOp<T>(op: () => T): T | null {
+    try {
+      return op();
+    } catch {
+      return null;
+    }
   }
 }

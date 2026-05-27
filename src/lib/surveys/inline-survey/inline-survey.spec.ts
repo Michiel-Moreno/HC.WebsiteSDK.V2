@@ -2032,6 +2032,56 @@ describe('InlineSurvey', () => {
       });
     });
 
+    test('should forward optional question metadata when present', () => {
+      const container = document.createElement('div');
+      container.id = 'survey-container';
+      document.body.appendChild(container);
+
+      const onSelected = jest.fn();
+      const config: InlineSurveyConfig = {
+        elementSelector: '#survey-container',
+        statusTimeout: 0,
+        callbacks: { onSelected },
+      };
+
+      new InlineSurvey(mockUrlBuilder, config);
+
+      const event = new MessageEvent('message', {
+        data: {
+          type: 'hc:selected',
+          questionType: 'NPS',
+          questionId: 'q1',
+          questionIndex: 2,
+          pageIndex: 1,
+          timestamp: 1234567890,
+          score: 9,
+          minScore: 0,
+          maxScore: 10,
+          selectedCount: 1,
+          value: true,
+          hasText: false,
+          textLength: 0,
+        },
+        origin: 'https://example.com',
+      });
+      window.dispatchEvent(event);
+
+      expect(onSelected).toHaveBeenCalledWith({
+        questionType: 'NPS',
+        questionId: 'q1',
+        questionIndex: 2,
+        pageIndex: 1,
+        timestamp: 1234567890,
+        score: 9,
+        minScore: 0,
+        maxScore: 10,
+        selectedCount: 1,
+        value: true,
+        hasText: false,
+        textLength: 0,
+      });
+    });
+
     test('should call onSelected multiple times for multiple selections', () => {
       const container = document.createElement('div');
       container.id = 'survey-container';

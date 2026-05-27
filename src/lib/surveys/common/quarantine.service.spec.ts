@@ -146,4 +146,50 @@ describe('QuarantineService', () => {
       expect(service.getRemainingDays()).toBe(5);
     });
   });
+
+  describe('localStorage unavailable (private mode / blocked storage)', () => {
+    const config: SurveyQuarantineConfig = { period: 7 };
+    let getItemSpy: jest.SpyInstance;
+    let setItemSpy: jest.SpyInstance;
+    let removeItemSpy: jest.SpyInstance;
+
+    beforeEach(() => {
+      const securityError = () => {
+        throw new DOMException('storage blocked', 'SecurityError');
+      };
+      getItemSpy = jest
+        .spyOn(Storage.prototype, 'getItem')
+        .mockImplementation(securityError);
+      setItemSpy = jest
+        .spyOn(Storage.prototype, 'setItem')
+        .mockImplementation(securityError);
+      removeItemSpy = jest
+        .spyOn(Storage.prototype, 'removeItem')
+        .mockImplementation(securityError);
+    });
+
+    afterEach(() => {
+      getItemSpy.mockRestore();
+      setItemSpy.mockRestore();
+      removeItemSpy.mockRestore();
+    });
+
+    it('does not throw and reports not quarantined when reads fail', () => {
+      const service = new QuarantineService(surveyIdentifier, config);
+
+      expect(() => service.isUnderQuarantine()).not.toThrow();
+      expect(service.isUnderQuarantine()).toBe(false);
+      expect(service.getRemainingDays()).toBe(0);
+    });
+
+    it('does not throw when starting quarantine fails to persist', () => {
+      const service = new QuarantineService(surveyIdentifier, config);
+      expect(() => service.startQuarantine()).not.toThrow();
+    });
+
+    it('does not throw when clearing quarantine fails', () => {
+      const service = new QuarantineService(surveyIdentifier, config);
+      expect(() => service.clearQuarantine()).not.toThrow();
+    });
+  });
 });

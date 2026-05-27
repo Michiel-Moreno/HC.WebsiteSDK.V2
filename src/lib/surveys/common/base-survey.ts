@@ -353,8 +353,17 @@ export abstract class BaseSurvey<TConfig extends BaseSurveyConfig> {
 
     const handler = (event: MessageEvent) => {
       // Verify origin for security
-      const expectedOrigin = new URL(this.urlFactory!.getBaseUrlWithLanguage())
-        .origin;
+      let expectedOrigin: string;
+      try {
+        expectedOrigin = new URL(this.urlFactory!.getBaseUrlWithLanguage())
+          .origin;
+      } catch {
+        console.warn(
+          '[Hello Customer SDK] Could not determine survey origin; ' +
+            'incoming message rejected.',
+        );
+        return;
+      }
 
       if (event.origin !== expectedOrigin) {
         console.warn(

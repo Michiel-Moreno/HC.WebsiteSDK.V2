@@ -610,13 +610,29 @@ callbacks: {
   onSelected: (event) => {
     analytics.track('question_answered', {
       questionType: event.questionType,
-      questionIndex: event.questionIndex
+      questionIndex: event.questionIndex,
+      score: event.score
     });
   }
 }
 ```
 
-Event shape: `{ questionType: string, questionId: string, questionIndex: number, pageIndex: number, timestamp: number }` (indices are 0-indexed)
+Event shape (indices are 0-indexed):
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `questionType` | `string` | Always present (e.g. `NPS`, `CSAT`, `YesNo`, `MultipleChoice`, `Text`) |
+| `questionId` | `string` | Always present |
+| `questionIndex` | `number` | Always present |
+| `pageIndex` | `number` | Always present |
+| `timestamp` | `number` | Always present |
+| `score` | `number?` | Score-based questions (NPS, CSAT, CES, Score, …) |
+| `minScore` / `maxScore` | `number?` | Score range for score-based questions |
+| `value` | `boolean?` | YesNo questions |
+| `selectedCount` | `number?` | MultipleChoice questions |
+| `hasText` / `textLength` | `boolean?` / `number?` | Text questions — never the actual content |
+
+The optional fields are populated only for the relevant question types; the five core fields are always present.
 
 #### onFirstInteraction
 
@@ -663,7 +679,7 @@ The survey iframe currently emits these message types (`data.type`):
 | `hc:status` | Survey load state changes | `{ type, status, reason?, message? }` — see [Survey Status Detection](#survey-status-detection) |
 | `hc:completed` | Survey submitted | `{ type, timestamp }` |
 | `hc:pagechanged` | Page navigation | `{ type, currentPage, totalPages, timestamp }` |
-| `hc:selected` | Answer selected or changed | `{ type, questionType, questionId, questionIndex, pageIndex, timestamp }` |
+| `hc:selected` | Answer selected or changed | `{ type, questionType, questionId, questionIndex, pageIndex, timestamp, score?, minScore?, maxScore?, value?, selectedCount?, hasText?, textLength? }` |
 | `hc:firstinteraction` | First user interaction | `{ type, questionType, timestamp }` |
 
 **Note:** Only one `onMessage` listener is supported at a time — calling `onMessage()` again replaces the previous listener. The typed callbacks above run independently and do not conflict with `onMessage`.

@@ -4,8 +4,7 @@ import { computeClassNames } from '../../core/utils/compute-class-names.util';
 import { observeDOMRemoval } from '../../core/utils/dom-removal-observer.util';
 import { trueByDefault } from '../../core/utils/true-by-default.util';
 import { UrlBuilder } from '../../url-builder/url.builder';
-import { BaseSurvey } from '../common/base-survey';
-import { StatusMessage } from '../common/survey-status.interface';
+import { IframeSurvey } from '../common/iframe-survey';
 
 import { ClassNamesConfigType } from './class-names-config.type';
 import { ModalSurveyConfig } from './modal-survey-config.interface';
@@ -98,7 +97,7 @@ import { closeIconSvgElementFactory } from './modal-survey.svg-factory';
  *
  * @category Surveys
  */
-export class ModalSurvey extends BaseSurvey<ModalSurveyConfig> {
+export class ModalSurvey extends IframeSurvey<ModalSurveyConfig> {
   private readonly modalHandle: HTMLDivElement;
   private readonly windowHandle: HTMLDivElement;
   private readonly computedStyles: Required<
@@ -113,9 +112,6 @@ export class ModalSurvey extends BaseSurvey<ModalSurveyConfig> {
   private focusTrapActivationTimeout: ReturnType<typeof setTimeout> | null =
     null;
   private domRemovalCleanup?: () => void;
-  private statusTimeoutId?: ReturnType<typeof setTimeout>;
-  private statusReceived = false;
-  private internalMessageHandler?: (event: MessageEvent) => void;
 
   constructor(
     configBuilder: UrlBuilder,
@@ -267,17 +263,8 @@ export class ModalSurvey extends BaseSurvey<ModalSurveyConfig> {
       this.domRemovalCleanup = undefined;
     }
 
-    // Clean up status timeout if pending
-    if (this.statusTimeoutId) {
-      clearTimeout(this.statusTimeoutId);
-      this.statusTimeoutId = undefined;
-    }
-
-    // Clean up internal message handler
-    if (this.internalMessageHandler) {
-      window.removeEventListener('message', this.internalMessageHandler);
-      this.internalMessageHandler = undefined;
-    }
+    // Clean up internal message listener and pending status timeout
+    this.cleanupIframeMessageListener();
 
     // Deactivate focus trap
     this.deactivateFocusTrap();
@@ -415,251 +402,25 @@ export class ModalSurvey extends BaseSurvey<ModalSurveyConfig> {
   }
 
   /**
-   * Set up internal message listener for auto-height and status messages.
-   * Uses a separate listener from onMessage() to avoid conflicts with external usage.
-   * Handles hc:resize (auto-height) and hc:status (survey availability) messages.
-   * @private
+   * Apply the constrained height to the iframe and let the modal window
+   * grow with its content (overrides the base iframe-only behavior).
+   * @protected
    */
-  private setupMessageListener(): void {
-    // Get expected origin for security verification
-    const expectedOrigin = new URL(this.urlFactory!.getBaseUrlWithLanguage())
-      .origin;
+  protected override applyResizeHeight(constrainedHeight: number): void {
+    super.applyResizeHeight(constrainedHeight);
+    // Set window to auto height so it resizes with content
+    this.windowHandle.style.height = 'auto';
+    this.windowHandle.style.maxHeight = 'none';
+  }
 
-    this.internalMessageHandler = (event: MessageEvent) => {
-      // Verify origin for security
-      if (event.origin !== expectedOrigin) {
-        return;
-      }
-
-      // Verify message is from this modal's iframe (not another iframe on the page)
-      // Only check if source is defined (JSDOM in tests doesn't set source)
-      if (event.source && event.source !== this.iFrameHandle?.contentWindow) {
-        return;
-      }
-
-      const data = event.data;
-
-      // Handle auto-height resize messages
-      if (this.modalConfig.autoHeight && this.isResizeMessage(data)) {
-        const constrainedHeight = this.applyHeightConstraints(data.height);
-        this.iFrameHandle!.style.height = `${constrainedHeight}px`;
-        // Set window to auto height so it resizes with content
-        this.windowHandle.style.height = 'auto';
-        this.windowHandle.style.maxHeight = 'none';
-      }
-
-      // Handle status messages
-      if (this.isStatusMessage(data)) {
-        this.handleStatusMessage(data);
-      }
-
-      // Handle completed messages
-      if (this.isCompletedMessage(data)) {
-        this.modalConfig.callbacks?.onCompleted?.({
-          timestamp: data.timestamp,
-        });
-
-        // Auto-close modal if configured
-        if (this.modalConfig.autoCloseOnComplete) {
-          this.hide();
-        }
-      }
-
-      // Handle page changed messages
-      if (this.isPageChangedMessage(data)) {
-        this.modalConfig.callbacks?.onPageChanged?.({
-          currentPage: data.currentPage,
-          totalPages: data.totalPages,
-          timestamp: data.timestamp,
-        });
-      }
-
-      // Handle selected messages
-      if (this.isSelectedMessage(data)) {
-        this.modalConfig.callbacks?.onSelected?.({
-          questionType: data.questionType,
-          questionId: data.questionId,
-          questionIndex: data.questionIndex,
-          pageIndex: data.pageIndex,
-          timestamp: data.timestamp,
-        });
-      }
-
-      // Handle first interaction messages
-      if (this.isFirstInteractionMessage(data)) {
-        this.modalConfig.callbacks?.onFirstInteraction?.({
-          questionType: data.questionType,
-          timestamp: data.timestamp,
-        });
-      }
-    };
-
-    window.addEventListener('message', this.internalMessageHandler);
-
-    // Setup timeout for surveys that don't respond with status
-    const timeout = this.modalConfig.statusTimeout ?? 10000;
-    if (timeout > 0) {
-      this.statusTimeoutId = setTimeout(() => {
-        if (!this.statusReceived) {
-          this.modalConfig.callbacks?.onSurveyStatus?.({
-            status: 'timeout',
-            reason: 'no_response',
-            message: 'Survey did not respond within timeout period',
-          });
-        }
-      }, timeout);
+  /**
+   * Auto-close the modal after completion when configured.
+   * @protected
+   */
+  protected override onSurveyCompleted(): void {
+    if (this.modalConfig.autoCloseOnComplete) {
+      this.hide();
     }
-  }
-
-  /**
-   * Type guard to check if a message is a valid resize message.
-   * @private
-   */
-  private isResizeMessage(
-    data: unknown,
-  ): data is { type: string; height: number } {
-    return (
-      typeof data === 'object' &&
-      data !== null &&
-      'type' in data &&
-      (data as { type: string }).type === 'hc:resize' &&
-      'height' in data &&
-      typeof (data as { height: number }).height === 'number'
-    );
-  }
-
-  /**
-   * Apply min/max height constraints to the given height.
-   * @private
-   */
-  private applyHeightConstraints(height: number): number {
-    let result = height;
-
-    if (this.modalConfig.minHeight !== undefined) {
-      result = Math.max(result, this.modalConfig.minHeight);
-    }
-
-    if (this.modalConfig.maxHeight !== undefined) {
-      result = Math.min(result, this.modalConfig.maxHeight);
-    }
-
-    return result;
-  }
-
-  /**
-   * Type guard to check if a message is a valid status message.
-   * @private
-   */
-  private isStatusMessage(data: unknown): data is StatusMessage {
-    return (
-      typeof data === 'object' &&
-      data !== null &&
-      'type' in data &&
-      (data as StatusMessage).type === 'hc:status' &&
-      'status' in data &&
-      typeof (data as StatusMessage).status === 'string'
-    );
-  }
-
-  /**
-   * Type guard to check if a message is a valid completed message.
-   * @private
-   */
-  private isCompletedMessage(
-    data: unknown,
-  ): data is { type: 'hc:completed'; timestamp: number } {
-    const d = data as Record<string, unknown>;
-    return (
-      typeof data === 'object' &&
-      data !== null &&
-      d.type === 'hc:completed' &&
-      typeof d.timestamp === 'number'
-    );
-  }
-
-  /**
-   * Type guard to check if a message is a valid page changed message.
-   * @private
-   */
-  private isPageChangedMessage(data: unknown): data is {
-    type: 'hc:pagechanged';
-    currentPage: number;
-    totalPages: number;
-    timestamp: number;
-  } {
-    const d = data as Record<string, unknown>;
-    return (
-      typeof data === 'object' &&
-      data !== null &&
-      d.type === 'hc:pagechanged' &&
-      typeof d.currentPage === 'number' &&
-      typeof d.totalPages === 'number' &&
-      typeof d.timestamp === 'number'
-    );
-  }
-
-  /**
-   * Type guard to check if a message is a valid selected message.
-   * @private
-   */
-  private isSelectedMessage(data: unknown): data is {
-    type: 'hc:selected';
-    questionType: string;
-    questionId: string;
-    questionIndex: number;
-    pageIndex: number;
-    timestamp: number;
-  } {
-    const d = data as Record<string, unknown>;
-    return (
-      typeof data === 'object' &&
-      data !== null &&
-      d.type === 'hc:selected' &&
-      typeof d.questionType === 'string' &&
-      typeof d.questionId === 'string' &&
-      typeof d.questionIndex === 'number' &&
-      typeof d.pageIndex === 'number' &&
-      typeof d.timestamp === 'number'
-    );
-  }
-
-  /**
-   * Type guard to check if a message is a valid first interaction message.
-   * @private
-   */
-  private isFirstInteractionMessage(data: unknown): data is {
-    type: 'hc:firstinteraction';
-    questionType: string;
-    timestamp: number;
-  } {
-    const d = data as Record<string, unknown>;
-    return (
-      typeof data === 'object' &&
-      data !== null &&
-      d.type === 'hc:firstinteraction' &&
-      typeof d.questionType === 'string' &&
-      typeof d.timestamp === 'number'
-    );
-  }
-
-  /**
-   * Handle an incoming status message from the survey iframe.
-   * @private
-   */
-  private handleStatusMessage(message: StatusMessage): void {
-    this.statusReceived = true;
-
-    // Clear the timeout since we received a response
-    if (this.statusTimeoutId) {
-      clearTimeout(this.statusTimeoutId);
-      this.statusTimeoutId = undefined;
-    }
-
-    this.modalConfig.callbacks?.onSurveyStatus?.({
-      status: message.status,
-      reason: message.reason,
-      message: message.message,
-    });
   }
 
   private computeModalStyle(): Required<
