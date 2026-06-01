@@ -21,6 +21,7 @@ export abstract class BaseSurvey<TConfig extends BaseSurveyConfig> {
   protected readonly urlFactory?: UrlFactory;
   protected readonly quarantineService: QuarantineService;
   protected readonly validator: BaseConfigValidator<TConfig>;
+  protected config: TConfig;
   protected iFrameHandle?: HTMLIFrameElement;
   private messageHandler: ((data: unknown) => void) | null = null;
   private messageEventListener: ((event: MessageEvent) => void) | null = null;
@@ -41,10 +42,14 @@ export abstract class BaseSurvey<TConfig extends BaseSurveyConfig> {
    */
   constructor(
     configBuilder: UrlBuilder | null,
-    protected config: TConfig,
+    config: TConfig,
     validator: BaseConfigValidator<TConfig>,
     quarantineIdentifier?: string,
   ) {
+    // Treat a missing config as an empty config so "no options" (and thus
+    // "no quarantine") is a valid, default state instead of a TypeError.
+    this.config = config ?? ({} as TConfig);
+
     // Initialize UrlFactory if UrlBuilder provided
     if (configBuilder) {
       this.urlFactory = configBuilder.getUrlFactory();
@@ -52,7 +57,7 @@ export abstract class BaseSurvey<TConfig extends BaseSurveyConfig> {
 
     // Validate configuration
     this.validator = validator;
-    this.validator.validateAndThrowOnErrors(config);
+    this.validator.validateAndThrowOnErrors(this.config);
 
     // Initialize quarantine service
     // Use custom identifier if provided (e.g., ButtonTriggerSurvey),
@@ -63,7 +68,7 @@ export abstract class BaseSurvey<TConfig extends BaseSurveyConfig> {
 
     this.quarantineService = new QuarantineService(
       identifier,
-      config.quarantineConfig,
+      this.config.quarantineConfig,
     );
   }
 

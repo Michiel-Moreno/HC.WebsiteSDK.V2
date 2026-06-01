@@ -56,7 +56,7 @@ export class WindowSurvey extends BaseSurvey<WindowSurveyConfig> {
 
   constructor(
     configBuilder: UrlBuilder,
-    private windowConfig: WindowSurveyConfig,
+    private windowConfig: WindowSurveyConfig = {},
   ) {
     // Call parent constructor with UrlBuilder, config, and validator
     super(configBuilder, windowConfig, new WindowSurveyConfigValidator());

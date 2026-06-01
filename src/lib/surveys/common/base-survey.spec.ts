@@ -149,6 +149,23 @@ describe('BaseSurvey', () => {
         config,
       );
     });
+
+    test('should normalize a missing config to an empty object', () => {
+      // Regression: a missing config used to throw
+      // "Cannot read properties of undefined (reading 'quarantineConfig')".
+      const config = undefined as unknown as BaseSurveyConfig;
+
+      let survey: TestSurvey | undefined;
+      expect(() => {
+        survey = new TestSurvey(mockUrlBuilder, config, mockValidator);
+      }).not.toThrow();
+
+      expect(survey).toBeDefined();
+      // Validation runs against the normalized empty config, not undefined.
+      expect(mockValidator.validateAndThrowOnErrors).toHaveBeenCalledWith({});
+      // With no quarantine config, the survey is never quarantined.
+      expect(survey?.isQuarantined()).toBe(false);
+    });
   });
 
   describe('B. Abstract Methods Tests', () => {

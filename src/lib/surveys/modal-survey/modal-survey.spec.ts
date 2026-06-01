@@ -90,6 +90,19 @@ describe('ModalSurvey', () => {
       expect(survey.modalContainer).toBeDefined();
     });
 
+    test('should create ModalSurvey when the config argument is omitted', () => {
+      // Regression: omitting the second argument used to throw
+      // "Cannot read properties of undefined (reading 'quarantineConfig')".
+      // No config (and thus no quarantine) must be a valid, default state.
+      const survey = new ModalSurvey(mockUrlBuilder);
+
+      createdModals.push(survey);
+
+      expect(survey).toBeDefined();
+      expect(survey.iFrame).toBeDefined();
+      expect(survey.modalContainer).toBeDefined();
+    });
+
     test('should create ModalSurvey with all config options', () => {
       const config: ModalSurveyConfig = {
         showByDefault: true,

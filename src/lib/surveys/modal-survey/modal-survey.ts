@@ -115,7 +115,7 @@ export class ModalSurvey extends IframeSurvey<ModalSurveyConfig> {
 
   constructor(
     configBuilder: UrlBuilder,
-    private modalConfig: ModalSurveyConfig,
+    private modalConfig: ModalSurveyConfig = {},
   ) {
     // Call parent constructor with UrlBuilder, config, and validator
     super(configBuilder, modalConfig, new ModalSurveyConfigValidator());
